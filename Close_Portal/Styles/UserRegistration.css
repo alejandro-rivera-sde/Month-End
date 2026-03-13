@@ -1,0 +1,340 @@
+﻿/* =========================================================
+   UserRegistration.css — prefijo: ur-
+   Layout: dos columnas (datos izq | OMS der)
+   ========================================================= */
+
+/* ── CARD PRINCIPAL ───────────────────────────────── */
+.ur-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.ur-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--sidebar-bg);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+    .ur-card-header .material-icons {
+        color: var(--primary-color);
+        font-size: 20px;
+    }
+
+/* ── DOS COLUMNAS ─────────────────────────────────── */
+.ur-body {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+}
+
+
+@media (max-width: 860px) {
+    .ur-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── COLUMNA IZQUIERDA ────────────────────────────── */
+.ur-col-left {
+    padding: 22px 20px;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 860px) {
+    .ur-col-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+/* ── COLUMNA DERECHA ──────────────────────────────── */
+.ur-col-right {
+    display: flex;
+    flex-direction: column;
+    background: var(--sidebar-bg);
+}
+
+.ur-oms-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+    .ur-oms-header .material-icons {
+        font-size: 16px;
+        color: var(--primary-color);
+    }
+
+.ur-oms-checklist {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 16px;
+}
+
+    .ur-oms-checklist::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .ur-oms-checklist::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .ur-oms-checklist::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+    }
+
+/* ── FIELD GROUP ──────────────────────────────────── */
+.ur-field-group {
+    margin-bottom: 20px;
+}
+
+    .ur-field-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+.ur-required {
+    color: #ef4444;
+    margin-left: 3px;
+}
+
+/* ── INPUT ────────────────────────────────────────── */
+.ur-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ur-input-icon {
+    position: absolute;
+    left: 11px;
+    color: var(--text-secondary);
+    font-size: 17px;
+    pointer-events: none;
+}
+
+.ur-input {
+    width: 100%;
+    padding: 10px 13px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+    .ur-input.has-icon {
+        padding-left: 40px;
+    }
+
+    .ur-input:focus {
+        border-color: var(--primary-color);
+    }
+
+    .ur-input option {
+        background: var(--card-bg);
+    }
+
+.ur-field-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+/* ── OMS WMS COLUMN ───────────────────────────────── */
+/* Cada grupo WMS es una columna independiente */
+.ur-oms-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.um-oms-group-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 0 4px 6px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+/* ── OMS CHECK ITEM ───────────────────────────────── */
+.wms-check-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: flex-start;
+}
+
+    .wms-check-item:hover {
+        border-color: var(--primary-color);
+    }
+
+    .wms-check-item.checked {
+        border-color: var(--primary-color);
+        background: rgba(99,102,241,0.06);
+    }
+
+    .wms-check-item input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--primary-color);
+        cursor: pointer;
+        flex-shrink: 0;
+        flex-grow: 0;
+        margin: 0;
+    }
+
+.wms-check-code {
+    display: none;
+}
+
+.wms-check-oms {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-left: 0;
+    text-align: left;
+    flex: 1;
+}
+
+/* ── LOADING ──────────────────────────────────────── */
+.ur-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 32px 0;
+}
+
+@keyframes ur-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ur-spin {
+    animation: ur-spin 1s linear infinite;
+}
+
+/* ── FORM MESSAGE ─────────────────────────────────── */
+.ur-form-message {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+    .ur-form-message.error {
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.35);
+        color: #ef4444;
+    }
+
+    .ur-form-message.success {
+        background: rgba(16,185,129,0.1);
+        border: 1px solid rgba(16,185,129,0.35);
+        color: #10b981;
+    }
+
+/* ── FOOTER ACTIONS ───────────────────────────────── */
+.ur-footer-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.ur-btn-cancel {
+    padding: 9px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+    .ur-btn-cancel:hover {
+        border-color: var(--text-secondary);
+    }
+
+.ur-btn-save {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 22px;
+    border: none;
+    border-radius: 10px;
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    flex: 1;
+    justify-content: center;
+}
+
+    .ur-btn-save:hover {
+        opacity: 0.88;
+    }
+
+    .ur-btn-save:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .ur-btn-save .material-icons {
+        font-size: 17px;
+    }

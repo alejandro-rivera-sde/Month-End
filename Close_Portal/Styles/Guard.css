@@ -1,0 +1,779 @@
+﻿/* =========================================================
+   Guardia.css  — Módulo de Gestión de Guardia
+   Prefijo: gd-   (evita conflictos con Bootstrap 5 y Dashboard)
+   Theme:   usa 100% variables de Variables.css  (dark/light)
+   ========================================================= */
+
+/* ─── ACCENT LOCAL DEL MÓDULO ─────────────────────────── */
+/* El módulo Guardia usa ámbar como identidad propia,
+   independiente del --accent-color global (pink/indigo). */
+:root {
+    --gd-accent: #f59e0b;
+    --gd-accent-hover: #d97706;
+    --gd-accent-alpha: rgba(245, 158, 11, 0.12);
+}
+
+/* ─── PAGE HEADER ─────────────────────────────────────── */
+.gd-header-badge {
+    margin-bottom: 10px;
+}
+/* Override: .page-title p usa --text-muted (#64748b en dark),
+   demasiado oscuro. Forzamos --text-secondary para mejor contraste. */
+.page-title p {
+    color: var(--text-secondary);
+}
+
+.gd-title-icon {
+    vertical-align: middle;
+    margin-right: 8px;
+    color: var(--gd-accent);
+    font-size: 28px;
+}
+
+.gd-header-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+    .gd-header-badge.active {
+        background: var(--success-bg);
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+
+    .gd-header-badge.inactive {
+        background: var(--error-bg);
+        border-color: var(--error-color);
+        color: var(--error-color);
+    }
+
+    .gd-header-badge .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── MAIN GRID ───────────────────────────────────────── */
+.gd-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .gd-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ─── PANEL ───────────────────────────────────────────── */
+.gd-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.gd-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+    .gd-panel-header .material-icons {
+        color: var(--gd-accent);
+        font-size: 22px;
+    }
+
+    .gd-panel-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+.gd-panel-body {
+    padding: 20px;
+}
+
+/* ─── COUNT BADGE ─────────────────────────────────────── */
+.gd-count-badge {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    min-width: 28px;
+    text-align: center;
+}
+
+/* ─── SEARCH BOX ──────────────────────────────────────── */
+.gd-search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+
+    .gd-search-box:focus-within {
+        border-color: var(--gd-accent);
+    }
+
+    .gd-search-box .material-icons {
+        color: var(--text-secondary);
+        font-size: 18px;
+    }
+
+    .gd-search-box input {
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        width: 100%;
+        outline: none;
+    }
+
+        .gd-search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+/* ─── OWNERS LIST ─────────────────────────────────────── */
+.gd-owners-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+    .gd-owners-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .gd-owners-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .gd-owners-list::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+    }
+
+/* ─── OWNER CARD ──────────────────────────────────────── */
+.gd-owner-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .gd-owner-card:hover {
+        border-color: var(--gd-accent);
+        box-shadow: 0 2px 12px var(--gd-accent-alpha);
+    }
+
+    .gd-owner-card.gd-on-guard {
+        border-color: var(--success-color);
+        background: var(--success-bg);
+    }
+
+/* Avatar */
+.gd-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
+}
+
+.gd-owner-card.gd-on-guard .gd-avatar {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Info */
+.gd-owner-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gd-owner-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-owner-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Status pill */
+.gd-guard-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+    .gd-guard-pill.active {
+        background: var(--success-bg);
+        color: var(--success-color);
+        border: 1px solid var(--success-color);
+    }
+
+/* Assign button */
+.gd-btn-assign {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    border: 1px solid var(--gd-accent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gd-accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+    .gd-btn-assign:hover {
+        background: var(--gd-accent);
+        color: #000;
+    }
+
+    .gd-btn-assign .material-icons {
+        font-size: 16px;
+    }
+
+/* ─── LOADING ──────────────────────────────────────────── */
+.gd-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 20px 0;
+    justify-content: center;
+}
+
+@keyframes gd-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.gd-spin {
+    animation: gd-spin 1s linear infinite;
+}
+
+/* ─── EMPTY STATE ─────────────────────────────────────── */
+.gd-empty-schedule {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+}
+
+    .gd-empty-schedule .material-icons {
+        font-size: 48px;
+        opacity: 0.4;
+    }
+
+    .gd-empty-schedule p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+/* ─── SCHEDULE TABLE ──────────────────────────────────── */
+.gd-table-wrapper {
+    overflow-x: auto;
+}
+
+.gd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+    .gd-table thead th {
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
+    }
+
+    .gd-table tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s;
+    }
+
+        .gd-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .gd-table tbody tr:hover {
+            background: var(--divider-color);
+        }
+
+        .gd-table tbody tr.gd-row-active {
+            background: var(--success-bg);
+        }
+
+    .gd-table td {
+        padding: 14px 14px;
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+/* Owner cell */
+.gd-table-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gd-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
+}
+
+.gd-table-user-name {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.gd-table-user-email {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* Datetime */
+.gd-datetime {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+    .gd-datetime .gd-date {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .gd-datetime .gd-time {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+/* Status badges */
+.gd-status-active {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--success-bg);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.gd-status-upcoming {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+    .gd-status-active .material-icons,
+    .gd-status-upcoming .material-icons {
+        font-size: 12px;
+    }
+
+/* Delete button */
+.gd-btn-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+    .gd-btn-delete:hover {
+        border-color: var(--error-color);
+        color: var(--error-color);
+        background: var(--error-bg);
+    }
+
+    .gd-btn-delete .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── MODAL OVERLAY ────────────────────────────────────── */
+/* MODAL FIX: creado con insertAdjacentHTML en document.body */
+.gd-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: gd-fadeIn 0.15s ease;
+}
+
+@keyframes gd-fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.gd-modal {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-xl);
+    animation: gd-slideIn 0.2s ease;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+@keyframes gd-slideIn {
+    from {
+        transform: translateY(-16px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.gd-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+    .gd-modal-header .material-icons {
+        color: var(--gd-accent);
+        font-size: 22px;
+    }
+
+    .gd-modal-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+.gd-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+    .gd-modal-close:hover {
+        color: var(--text-primary);
+        background: var(--border-color);
+    }
+
+.gd-modal-body {
+    padding: 24px;
+}
+
+/* Owner info dentro del modal */
+.gd-modal-owner-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+/* Form fields */
+.gd-field-group {
+    margin-bottom: 18px;
+}
+
+    .gd-field-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .gd-field-group input[type="datetime-local"] {
+        width: 100%;
+        padding: 11px 14px;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+/* El color-scheme hace visible el icono de calendario en dark */
+[data-theme="dark"] .gd-field-group input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+.gd-field-group input[type="datetime-local"]:focus {
+    border-color: var(--gd-accent);
+    box-shadow: 0 0 0 3px var(--gd-accent-alpha);
+}
+
+/* Error inline */
+.gd-field-error {
+    display: none;
+    font-size: 12px;
+    color: var(--error-color);
+    margin-top: 6px;
+}
+
+/* Error general del modal */
+.gd-modal-error {
+    display: none;
+    background: var(--error-bg);
+    border: 1px solid var(--error-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--error-color);
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+/* Modal footer */
+.gd-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.gd-btn-cancel {
+    padding: 10px 22px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+    .gd-btn-cancel:hover {
+        border-color: var(--text-secondary);
+        color: var(--text-primary);
+    }
+
+.gd-btn-confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: var(--gd-accent);
+    color: #000;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .gd-btn-confirm:hover {
+        opacity: 0.88;
+    }
+
+    .gd-btn-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .gd-btn-confirm .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── CONFIRM DELETE MODAL ────────────────────────────── */
+.gd-confirm-modal {
+    max-width: 380px;
+}
+
+.gd-confirm-body {
+    padding: 24px;
+    text-align: center;
+}
+
+.gd-confirm-icon {
+    font-size: 48px;
+    color: var(--error-color);
+    margin-bottom: 12px;
+}
+
+.gd-confirm-body p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.gd-confirm-body strong {
+    color: var(--text-primary);
+}
+
+.gd-btn-danger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: var(--error-color);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .gd-btn-danger:hover {
+        opacity: 0.88;
+    }
+
+    .gd-btn-danger .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── TOAST ────────────────────────────────────────────── */
+.gd-toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-xl);
+    animation: gd-fadeIn 0.2s ease;
+    max-width: 380px;
+}
+
+    .gd-toast.success {
+        background: var(--success-bg);
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+    }
+
+    .gd-toast.error {
+        background: var(--error-bg);
+        border: 1px solid var(--error-color);
+        color: var(--error-color);
+    }

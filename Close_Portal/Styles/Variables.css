@@ -1,0 +1,73 @@
+﻿/* Variables.css - Sistema de Temas */
+:root {
+    /* LIGHT MODE */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-elevated: #ffffff;
+    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --gradient-secondary: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --text-inverse: #ffffff;
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    --divider-color: rgba(0, 0, 0, 0.06);
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --secondary-color: #8b5cf6;
+    --accent-color: #ec4899;
+    --success-bg: #d1fae5;
+    --success-text: #065f46;
+    --success-color: #10b981;
+    --error-bg: #fee2e2;
+    --error-text: #991b1b;
+    --error-color: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
+    --input-focus: #6366f1;
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow: 500ms ease;
+}
+
+/* DARK MODE */
+[data-theme="dark"] {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-elevated: #334155;
+    --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    --gradient-secondary: linear-gradient(135deg, #db2777 0%, #7c3aed 100%);
+    --text-primary: #f1f5f9; /* sin cambio — títulos y texto principal */
+    --text-secondary: #cbd5e1; /* sin cambio — texto de apoyo */
+    --text-muted: #94a3b8; /* FIX: era #64748b, demasiado oscuro en dark */
+    --text-inverse: #0f172a;
+    --border-color: #334155;
+    --border-light: #475569;
+    --divider-color: rgba(255, 255, 255, 0.06);
+    --primary-color: #818cf8;
+    --primary-hover: #a5b4fc;
+    --secondary-color: #a78bfa;
+    --accent-color: #f472b6;
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --success-text: #6ee7b7;
+    --success-color: #34d399;
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --error-text: #fca5a5;
+    --error-color: #f87171;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --input-bg: #334155;
+    --input-border: #475569;
+    --input-focus: #818cf8;
+}
