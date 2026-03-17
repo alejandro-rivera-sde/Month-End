@@ -135,22 +135,111 @@ namespace Close_Portal.Services {
         }
 
         // ════════════════════════════════════════════════════════════════
-        // Se envía al Owner asignado cuando se crea su turno
+        // NOTIFICACIÓN DE INICIO DE GUARDIA
+        // Se envía a todos los responsables de los spots + guardias activos
+        // cuando se declara el inicio formal de la guardia.
+        // spots: lista de (DeptCode, DeptName, Username, Email)
         // ════════════════════════════════════════════════════════════════
 
-        public static void NotifyGuardAssigned(string ownerEmail, string ownerUsername,
-                                               DateTime startTime, DateTime endTime,
-                                               string assignedByEmail) {
+        public static void NotifyGuardStarted(
+                DateTime startTime,
+                string startedByEmail,
+                System.Collections.Generic.List<(string DeptCode, string DeptName, string Username, string Email)> spots) {
+
+            // Destinatarios: todos los responsables de spots + guardias activos
+            var recipients = new System.Collections.Generic.HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var s in spots)
+                if (!string.IsNullOrWhiteSpace(s.Email))
+                    recipients.Add(s.Email.Trim());
+
+            string activeGuards = GuardDataAccess.GetActiveGuardEmails();
+            if (!string.IsNullOrWhiteSpace(activeGuards))
+                foreach (var addr in activeGuards.Split(';'))
+                    if (!string.IsNullOrWhiteSpace(addr)) recipients.Add(addr.Trim());
+
+            if (recipients.Count == 0) return;
+
+            // Construir filas de spots para el template
+            var spotRows = new System.Text.StringBuilder();
+            foreach (var s in spots) {
+                spotRows.Append($@"
+                <tr>
+                  <td style='padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'>
+                    <span style='display:inline-block;background:#fef3c7;color:#d97706;border:1px solid #fde68a;
+                                 padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;
+                                 margin-right:10px;vertical-align:middle;'>{System.Web.HttpUtility.HtmlEncode(s.DeptCode)}</span>
+                    {System.Web.HttpUtility.HtmlEncode(s.DeptName)}
+                  </td>
+                  <td style='padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;font-weight:600;'>
+                    {System.Web.HttpUtility.HtmlEncode(s.Username ?? s.Email)}
+                  </td>
+                </tr>");
+            }
+
+            string body = $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
+<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
+<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
+<table width='560' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
+
+  <tr><td style='background:#f59e0b;padding:28px 32px;text-align:center;'>
+    <div style='font-size:40px;color:#fff;margin-bottom:8px;'>&#128737;</div>
+    <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>Guardia iniciada</h1>
+    <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
+  </td></tr>
+
+  <tr><td style='padding:28px 32px;'>
+    <p style='margin:0 0 20px;font-size:15px;color:#334155;'>
+      La guardia fue declarada iniciada el <strong>{startTime:dd/MM/yyyy}</strong>
+      a las <strong>{startTime:HH:mm} hrs</strong> por <strong>{System.Web.HttpUtility.HtmlEncode(startedByEmail)}</strong>.
+    </p>
+    <p style='margin:0 0 12px;font-size:13px;font-weight:700;color:#64748b;
+              text-transform:uppercase;letter-spacing:0.5px;'>Responsables asignados</p>
+    <table width='100%' cellpadding='0' cellspacing='0'
+           style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;'>
+      <thead>
+        <tr style='background:#f8fafc;'>
+          <th style='padding:10px 14px;text-align:left;font-size:12px;color:#64748b;
+                     font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+                     border-bottom:1px solid #e2e8f0;'>Departamento</th>
+          <th style='padding:10px 14px;text-align:left;font-size:12px;color:#64748b;
+                     font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+                     border-bottom:1px solid #e2e8f0;'>Responsable</th>
+        </tr>
+      </thead>
+      <tbody>{spotRows}</tbody>
+    </table>
+  </td></tr>
+
+  <tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
+    <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal.</p>
+  </td></tr>
+
+</table></td></tr></table></body></html>";
+
             Send(
-                subject: $"[Close Portal] Turno de guardia asignado",
-                body: BuildTemplate("Turno de guardia asignado", "#f59e0b", "&#128274;", new[] {
-                    $"<b>Owner de guardia:</b> {ownerUsername ?? ownerEmail}",
-                    $"<b>Inicio del turno:</b> {startTime:dd/MM/yyyy HH:mm} hrs",
-                    $"<b>Fin del turno:</b>   {endTime:dd/MM/yyyy HH:mm} hrs",
-                    $"<b>Asignado por:</b> {assignedByEmail}",
-                    $"<b>Fecha de asignación:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                subject: $"[Close Portal] Guardia iniciada — {startTime:dd/MM/yyyy HH:mm} hrs",
+                body: body,
+                recipientList: string.Join(";", recipients)
+            );
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // NOTIFICACIÓN DE CIERRE DE GUARDIA
+        // Se envía a guardias activos (o Call_God) cuando el sistema
+        // cierra automáticamente la guardia al completarse todas las locaciones.
+        // ════════════════════════════════════════════════════════════════
+
+        public static void NotifyGuardClosed(DateTime closedAt, string triggeredByEmail) {
+            Send(
+                subject: $"[Close Portal] Guardia cerrada — {closedAt:dd/MM/yyyy HH:mm} hrs",
+                body: BuildTemplate("Guardia cerrada automáticamente", "#6366f1", "&#128274;", new[] {
+                    "<b>Todas las locaciones cerraron correctamente.</b>",
+                    $"<b>Cierre registrado:</b> {closedAt:dd/MM/yyyy HH:mm} hrs",
+                    $"<b>Disparado por:</b> {triggeredByEmail ?? "Sistema"}"
                 }),
-                recipientList: ownerEmail
+                recipientList: ResolveGuardRecipients()
             );
         }
 

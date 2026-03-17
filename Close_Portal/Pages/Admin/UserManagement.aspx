@@ -92,6 +92,14 @@
                 </ItemTemplate>
             </asp:Repeater>
         </select>
+        <select class="filter-select" id="filterDepartment" onchange="filterTable()">
+            <option value="" data-translate-key="um.filter.all_departments">Todos los departamentos</option>
+            <asp:Repeater ID="rptDepartmentsFilter" runat="server">
+                <ItemTemplate>
+                    <option value="<%# Eval("Department_Code") %>"><%# Eval("Department_Code") %> — <%# Eval("Department_Name") %></option>
+                </ItemTemplate>
+            </asp:Repeater>
+        </select>
     </div>
 
     <!-- ========== TABLE ========== -->
@@ -101,6 +109,7 @@
                 <tr>
                     <th data-translate-key="um.table.user">Usuario</th>
                     <th data-translate-key="um.table.role">Rol</th>
+                    <th data-translate-key="um.table.department">Departamento</th>
                     <th data-translate-key="um.table.wms">WMS / Locaciones</th>
                     <th data-translate-key="um.table.login">Login</th>
                     <th data-translate-key="um.table.status">Estado</th>
@@ -112,7 +121,8 @@
                     <ItemTemplate>
                         <tr data-role="<%# Eval("RoleName") %>" 
                             data-status="<%# Eval("StatusLabel") %>" 
-                            data-wms="<%# Eval("WmsCodes") %>">
+                            data-wms="<%# Eval("WmsCodes") %>"
+                            data-department="<%# Eval("DepartmentCode") %>">
                             <td>
                                 <div class="user-cell">
                                     <div class="avatar"><%# Eval("Initials") %></div>
@@ -124,6 +134,11 @@
                             </td>
                             <td>
                                 <span class="badge badge-<%# Eval("RoleBadge") %>"><%# Eval("RoleName") %></span>
+                            </td>
+                            <td>
+                                <%# !string.IsNullOrEmpty(Eval("DepartmentCode")?.ToString())
+                                    ? $"<span class='dept-badge'>{Eval("DepartmentCode")}</span><span class='dept-name'> {Eval("DepartmentName")}</span>"
+                                    : "<span style='color:var(--text-muted);font-size:11px'>—</span>" %>
                             </td>
                             <td>
                                 <div class="wms-tags"><%# Eval("WmsTagsHtml") %></div>
@@ -213,6 +228,18 @@
                             <asp:Repeater ID="rptRoles" runat="server">
                                 <ItemTemplate>
                                     <option value="<%# Eval("Role_Id") %>"><%# Eval("Role_Name") %></option>
+                                </ItemTemplate>
+                            </asp:Repeater>
+                        </select>
+                    </div>
+
+                    <div class="field-group">
+                        <label data-translate-key="um.modal.department_label">Departamento</label>
+                        <select id="modalDepartment">
+                            <option value="" data-translate-key="um.modal.department_placeholder">Seleccionar departamento</option>
+                            <asp:Repeater ID="rptDepartments" runat="server">
+                                <ItemTemplate>
+                                    <option value="<%# Eval("Department_Id") %>"><%# Eval("Department_Code") %> — <%# Eval("Department_Name") %></option>
                                 </ItemTemplate>
                             </asp:Repeater>
                         </select>

@@ -55,6 +55,13 @@
                                 <span class="nav-text" data-translate-key="admin.warehouse_management">Gestión de Bodegas</span>
                             </a>
                         </li>
+                    </ul>
+                </div>
+
+                <!-- Guard Section — Owner y Administrador -->
+                <div class="nav-section" id="sectionGuard" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.guard">Guardia</div>
+                    <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="~/Pages/Admin/Guard.aspx" runat="server">
                                 <span class="material-icons">security</span>
@@ -78,6 +85,12 @@
                             <a class="nav-link" href="~/Pages/Users/UserRegistration.aspx" runat="server">
                                 <span class="material-icons">person_add</span>
                                 <span class="nav-text" data-translate-key="users.registration">Alta Usuarios</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/Pages/Users/InvitationRegistration.aspx" runat="server">
+                                <span class="material-icons">mail_outline</span>
+                                <span class="nav-text" data-translate-key="users.invitation">Alta con Invitación</span>
                             </a>
                         </li>
                     </ul>

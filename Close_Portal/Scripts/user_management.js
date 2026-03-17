@@ -32,19 +32,23 @@ function filterTable() {
     const filterRole = document.getElementById('filterRole').value.toLowerCase();
     const filterStat = document.getElementById('filterStatus').value;
     const filterWms = document.getElementById('filterWms').value.toUpperCase();
+    const filterDeptEl = document.getElementById('filterDepartment');
+    const filterDept = filterDeptEl ? filterDeptEl.value.toUpperCase() : '';
 
     document.querySelectorAll('#usersTable tbody tr').forEach(row => {
         const text = row.innerText.toLowerCase();
         const role = (row.dataset.role || '').toLowerCase();
         const status = (row.dataset.status || '');
         const wms = (row.dataset.wms || '').toUpperCase();
+        const dept = (row.dataset.department || '').toUpperCase();
 
         const matchSearch = !search || text.includes(search);
         const matchRole = !filterRole || role === filterRole;
         const matchStatus = !filterStat || status === filterStat;
         const matchWms = !filterWms || wms.split(',').includes(filterWms);
+        const matchDept = !filterDept || dept === filterDept;
 
-        row.style.display = (matchSearch && matchRole && matchStatus && matchWms) ? '' : 'none';
+        row.style.display = (matchSearch && matchRole && matchStatus && matchWms && matchDept) ? '' : 'none';
     });
 }
 
@@ -107,6 +111,9 @@ function openModalNew() {
     document.getElementById('modalActive').checked = true;
     document.getElementById('modalLocked').checked = false;
 
+    const deptNew = document.getElementById('modalDepartment');
+    if (deptNew) deptNew.selectedIndex = 0;
+
     document.getElementById('modalOverlay').dataset.mode = 'new';
     document.getElementById('modalOverlay').dataset.userId = '0';
 
@@ -142,6 +149,17 @@ function populateModal(data) {
 
     document.getElementById('modalActive').checked = data.Active;
     document.getElementById('modalLocked').checked = data.Locked;
+
+    // Departamento
+    const deptSelect = document.getElementById('modalDepartment');
+    if (deptSelect) {
+        for (let i = 0; i < deptSelect.options.length; i++) {
+            if (parseInt(deptSelect.options[i].value) === data.DepartmentId) {
+                deptSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
 
     // Primero OMS (define el scope), luego locaciones filtradas por OMS asignados
     buildOmsChecklist(data.OmsList);
@@ -317,6 +335,8 @@ function saveChanges() {
     const roleId = parseInt(document.getElementById('modalRole').value);
     const active = document.getElementById('modalActive').checked;
     const locked = document.getElementById('modalLocked').checked;
+    const deptEl = document.getElementById('modalDepartment');
+    const departmentId = deptEl && deptEl.value ? parseInt(deptEl.value) : null;
 
     const omsIds = Array.from(
         document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')
@@ -327,13 +347,13 @@ function saveChanges() {
     ).map(cb => parseInt(cb.value));
 
     if (mode === 'edit') {
-        saveEditChanges(userId, roleId, active, locked, omsIds, locationIds);
+        saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId);
     } else {
-        saveNewUser(roleId, omsIds, locationIds);
+        saveNewUser(roleId, omsIds, locationIds, departmentId);
     }
 }
 
-function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds) {
+function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId) {
     const username = (document.getElementById('editUsername').value || '').trim();
     const password1 = document.getElementById('editPassword1').value;
     const password2 = document.getElementById('editPassword2').value;
@@ -371,7 +391,8 @@ function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds) {
             omsIds,
             locationIds,
             username,
-            newPassword: password1 || null
+            newPassword: password1 || null,
+            departmentId: departmentId || 0
         }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -393,47 +414,8 @@ function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds) {
     });
 }
 
-function saveNewUser(roleId, omsIds, locationIds) {
-    const email = (document.getElementById('newEmail').value || '').trim();
-    const username = (document.getElementById('newUsername').value || '').trim();
-
-    if (!email) {
-        showToast(getTranslation('um.modal.email_required') || 'El email es obligatorio', 'error');
-        return;
-    }
-    if (!email.endsWith('@novamex.com')) {
-        showToast(getTranslation('um.modal.email_domain') || 'El email debe ser @novamex.com', 'error');
-        return;
-    }
-    if (!roleId) {
-        showToast(getTranslation('um.modal.role_required') || 'Debes seleccionar un rol', 'error');
-        return;
-    }
-
-    setBtnLoading(true);
-
-    $.ajax({
-        type: 'POST',
-        url: 'UserManagement.aspx/CreateUser',
-        data: JSON.stringify({ email, username, roleId, omsIds }),
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        success: function (response) {
-            setBtnLoading(false);
-            const result = response.d;
-            if (result.Success) {
-                showToast(result.Message || getTranslation('common.success'), 'success');
-                closeModal();
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showToast(result.Message || getTranslation('common.error'), 'error');
-            }
-        },
-        error: function () {
-            setBtnLoading(false);
-            showToast(getTranslation('common.error'), 'error');
-        }
-    });
+function saveNewUser(roleId, omsIds, locationIds, departmentId) {
+    showToast('Alta de usuario en desarrollo', 'info');
 }
 
 // ============================================================

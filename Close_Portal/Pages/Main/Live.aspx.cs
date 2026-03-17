@@ -22,10 +22,14 @@ namespace Close_Portal.Pages.Main {
             System.Diagnostics.Debug.WriteLine("========================================");
         }
 
-        // ── DTO interno ──────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // DTOs INTERNOS
+        // ════════════════════════════════════════════════════════════════
+
         private class LocationDto {
             public int LocationId { get; set; }
             public string LocationName { get; set; }
+            public string LocationCode { get; set; }
             public string Status { get; set; } = "Active";
             public int? RequestId { get; set; }
             public string RequestedBy { get; set; } = "";
@@ -35,24 +39,30 @@ namespace Close_Portal.Pages.Main {
             public string ReviewNotes { get; set; } = "";
         }
 
-        // ── Guard DTO (evita anonymous type para no usar dynamic) ─
+        private class GuardSpotDto {
+            public string DeptCode { get; set; }
+            public string DeptName { get; set; }
+            public string Username { get; set; }
+        }
+
         private class GuardDto {
             public bool IsActive { get; set; }
             public int GuardId { get; set; }
             public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
-            public string OwnerName { get; set; }
-            public int OwnerId { get; set; }
+            public string StartedBy { get; set; }
+            public List<GuardSpotDto> Spots { get; set; } = new List<GuardSpotDto>();
         }
 
-        // ── WebMethod principal ──────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — GetDashboardData
+        // ════════════════════════════════════════════════════════════════
+
         [WebMethod(EnableSession = true)]
         public static object GetDashboardData() {
             var session = HttpContext.Current.Session;
             if (session["UserId"] == null)
                 return new { success = false, message = "Session expired" };
 
-            // Verificar rol mínimo (Regular = 1)
             SecurePage.CheckAccess(RoleLevel.Regular);
 
             int userId = Convert.ToInt32(session["UserId"]);
@@ -70,9 +80,7 @@ namespace Close_Portal.Pages.Main {
                     var locations = GetLocations(conn, userId, roleId);
 
                     // 3. Enriquecer con solicitudes desde el inicio de la guardia (o hoy)
-                    DateTime since = (guard != null)
-                        ? guard.StartTime
-                        : DateTime.Today;
+                    DateTime since = (guard != null) ? guard.StartTime : DateTime.Today;
 
                     if (locations.Count > 0)
                         EnrichWithRequests(conn, locations, since);
@@ -84,12 +92,13 @@ namespace Close_Portal.Pages.Main {
                     int rejected = locations.FindAll(l => l.Status == "Rejected").Count;
                     int approved = locations.FindAll(l => l.Status == "Approved").Count;
 
-                    // 5. Serializar
+                    // 5. Serializar locaciones
                     var locData = new List<object>();
                     foreach (var l in locations) {
                         locData.Add(new {
                             locationId = l.LocationId,
                             locationName = l.LocationName,
+                            locationCode = l.LocationCode,
                             status = l.Status,
                             requestId = l.RequestId,
                             requestedBy = l.RequestedBy,
@@ -100,14 +109,25 @@ namespace Close_Portal.Pages.Main {
                         });
                     }
 
-                    object guardData = guard == null ? null : (object)new {
-                        isActive = true,
-                        guardId = guard.GuardId,
-                        startTime = guard.StartTime.ToString("dd/MM/yyyy HH:mm"),
-                        endTime = guard.EndTime.ToString("dd/MM/yyyy HH:mm"),
-                        ownerName = guard.OwnerName,
-                        ownerId = guard.OwnerId
-                    };
+                    // 6. Serializar guardia
+                    object guardData = null;
+                    if (guard != null) {
+                        var spotList = new List<object>();
+                        foreach (var s in guard.Spots)
+                            spotList.Add(new {
+                                deptCode = s.DeptCode,
+                                deptName = s.DeptName,
+                                username = s.Username
+                            });
+
+                        guardData = new {
+                            isActive = true,
+                            guardId = guard.GuardId,
+                            startTime = guard.StartTime.ToString("dd/MM/yyyy HH:mm"),
+                            startedBy = guard.StartedBy,
+                            spots = spotList
+                        };
+                    }
 
                     return new {
                         success = true,
@@ -123,36 +143,167 @@ namespace Close_Portal.Pages.Main {
             }
         }
 
-        // ── Guardia activa ───────────────────────────────────────
-        private static GuardDto GetActiveGuard(SqlConnection conn) {
-            const string sql = @"
-                SELECT TOP 1
-                    gs.Guard_Id,
-                    gs.Start_Time,
-                    gs.End_Time,
-                    u.Username AS OwnerName,
-                    u.User_Id  AS OwnerId
-                FROM  Guard_Schedule gs
-                INNER JOIN Users u ON gs.User_Id = u.User_Id
-                WHERE GETDATE() BETWEEN gs.Start_Time AND gs.End_Time
-                ORDER BY gs.Start_Time DESC";
+        // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — TryCloseGuard
+        // Verifica si todas las locaciones activas tienen su última
+        // solicitud en Approved desde el inicio de la guardia.
+        // Si se cumple, cierra la guardia y dispara notificación.
+        // Llamado por live.js después de cada carga del dashboard.
+        // ════════════════════════════════════════════════════════════════
 
-            using (var cmd = new SqlCommand(sql, conn))
-            using (var dr = cmd.ExecuteReader()) {
-                if (!dr.Read()) return null;
+        [WebMethod(EnableSession = true)]
+        public static object TryCloseGuard() {
+            SecurePage.CheckAccess(RoleLevel.Regular);
 
-                return new GuardDto {
-                    IsActive = true,
-                    GuardId = dr.GetInt32(0),
-                    StartTime = dr.GetDateTime(1),
-                    EndTime = dr.GetDateTime(2),
-                    OwnerName = dr.GetString(3),
-                    OwnerId = dr.GetInt32(4)
-                };
+            string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+            try {
+                using (var conn = new SqlConnection(cs)) {
+                    conn.Open();
+
+                    // 1. Buscar guardia activa iniciada
+                    const string sqlGuard = @"
+                        SELECT TOP 1 Guard_Id, Start_Time
+                        FROM Guard_Schedule
+                        WHERE Start_Time IS NOT NULL
+                          AND End_Time   IS NULL
+                        ORDER BY Start_Time DESC";
+
+                    int guardId = 0;
+                    DateTime startTime = DateTime.MinValue;
+
+                    using (var cmd = new SqlCommand(sqlGuard, conn))
+                    using (var dr = cmd.ExecuteReader()) {
+                        if (!dr.Read())
+                            return new { success = true, closed = false, reason = "no_active_guard" };
+                        guardId = dr.GetInt32(0);
+                        startTime = dr.GetDateTime(1);
+                    }
+
+                    // 2. Contar locaciones activas totales
+                    int totalLocations;
+                    using (var cmd = new SqlCommand(
+                        "SELECT COUNT(*) FROM WMS_Location WHERE Active = 1", conn)) {
+                        totalLocations = (int)cmd.ExecuteScalar();
+                    }
+
+                    if (totalLocations == 0)
+                        return new { success = true, closed = false, reason = "no_locations" };
+
+                    // 3. Contar locaciones cuya última solicitud (desde inicio guardia) es Approved
+                    const string sqlApproved = @"
+                        WITH LatestReq AS (
+                            SELECT Location_Id, Status,
+                                   ROW_NUMBER() OVER (
+                                       PARTITION BY Location_Id ORDER BY Created_At DESC
+                                   ) AS rn
+                            FROM Closure_Requests
+                            WHERE Created_At >= @Since
+                        )
+                        SELECT COUNT(DISTINCT wl.Location_Id)
+                        FROM WMS_Location wl
+                        INNER JOIN LatestReq lr
+                               ON lr.Location_Id = wl.Location_Id AND lr.rn = 1
+                        WHERE wl.Active = 1
+                          AND lr.Status = 'Approved'";
+
+                    int approvedCount;
+                    using (var cmd = new SqlCommand(sqlApproved, conn)) {
+                        cmd.Parameters.AddWithValue("@Since", startTime);
+                        approvedCount = (int)cmd.ExecuteScalar();
+                    }
+
+                    if (approvedCount < totalLocations)
+                        return new {
+                            success = true,
+                            closed = false,
+                            reason = "pending",
+                            approved = approvedCount,
+                            total = totalLocations
+                        };
+
+                    // 4. Cerrar guardia
+                    var da = new DataAccess.GuardDataAccess();
+                    var result = da.CloseGuard(guardId);
+
+                    if (!result.Success)
+                        return new { success = false, message = result.Message };
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[TryCloseGuard] Guard {guardId} cerrada automáticamente ✓");
+
+                    // 5. Notificar (fire-and-forget)
+                    string closedBy = HttpContext.Current.Session["Email"]?.ToString();
+                    System.Threading.Tasks.Task.Run(() => {
+                        Services.EmailService.NotifyGuardClosed(
+                            closedAt: DateTime.Now,
+                            triggeredByEmail: closedBy
+                        );
+                    });
+
+                    return new { success = true, closed = true };
+                }
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[TryCloseGuard] ERROR: {ex.Message}");
+                return new { success = false, message = ex.Message };
             }
         }
 
-        // ── Locaciones según rol ─────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // HELPERS PRIVADOS
+        // ════════════════════════════════════════════════════════════════
+
+        // ── Guardia activa (iniciada, sin End_Time) ──────────────────────
+        private static GuardDto GetActiveGuard(SqlConnection conn) {
+            const string sqlGuard = @"
+                SELECT TOP 1
+                    gs.Guard_Id,
+                    gs.Start_Time,
+                    cb.Username AS StartedBy
+                FROM  Guard_Schedule gs
+                LEFT  JOIN Users cb ON cb.User_Id = gs.Created_By
+                WHERE gs.Start_Time IS NOT NULL
+                  AND gs.End_Time   IS NULL
+                ORDER BY gs.Start_Time DESC";
+
+            GuardDto guard = null;
+
+            using (var cmd = new SqlCommand(sqlGuard, conn))
+            using (var dr = cmd.ExecuteReader()) {
+                if (!dr.Read()) return null;
+                guard = new GuardDto {
+                    IsActive = true,
+                    GuardId = dr.GetInt32(0),
+                    StartTime = dr.GetDateTime(1),
+                    StartedBy = dr.IsDBNull(2) ? "" : dr.GetString(2)
+                };
+            }
+
+            // Cargar spots del guard
+            const string sqlSpots = @"
+                SELECT d.Department_Code, d.Department_Name, u.Username
+                FROM   Guard_Spots sp
+                INNER JOIN Departments d ON d.Department_Id = sp.Department_Id
+                LEFT  JOIN Users       u ON u.User_Id       = sp.User_Id
+                WHERE  sp.Guard_Id = @GuardId
+                ORDER BY d.Department_Code";
+
+            using (var cmd = new SqlCommand(sqlSpots, conn)) {
+                cmd.Parameters.AddWithValue("@GuardId", guard.GuardId);
+                using (var dr = cmd.ExecuteReader()) {
+                    while (dr.Read()) {
+                        guard.Spots.Add(new GuardSpotDto {
+                            DeptCode = dr.GetString(0),
+                            DeptName = dr.GetString(1),
+                            Username = dr.IsDBNull(2) ? null : dr.GetString(2)
+                        });
+                    }
+                }
+            }
+
+            return guard;
+        }
+
+        // ── Locaciones según rol ─────────────────────────────────────────
         private static List<LocationDto> GetLocations(SqlConnection conn, int userId, int roleId) {
             string sql;
 
@@ -194,7 +345,8 @@ namespace Close_Portal.Pages.Main {
                     while (dr.Read()) {
                         list.Add(new LocationDto {
                             LocationId = dr.GetInt32(0),
-                            LocationName = dr.GetString(1)
+                            LocationName = dr.GetString(1),
+                            LocationCode = ""   // columna no existe aún en WMS_Location
                         });
                     }
                 }
@@ -202,11 +354,12 @@ namespace Close_Portal.Pages.Main {
             return list;
         }
 
-        // ── Enriquecer con solicitudes (última por locación) ─────
+        // ── Enriquecer con solicitudes (última por locación) ─────────────
         private static void EnrichWithRequests(
             SqlConnection conn,
             List<LocationDto> locations,
             DateTime since) {
+
             var ids = new List<string>();
             foreach (var l in locations) ids.Add(l.LocationId.ToString());
             string inClause = string.Join(",", ids);
@@ -254,8 +407,7 @@ namespace Close_Portal.Pages.Main {
                     loc.Status = row["Status"].ToString();
                     loc.RequestId = Convert.ToInt32(row["Request_Id"]);
                     loc.RequestedBy = row["RequestedByName"].ToString();
-                    loc.RequestedAt = Convert.ToDateTime(row["Created_At"])
-                                        .ToString("dd/MM HH:mm");
+                    loc.RequestedAt = Convert.ToDateTime(row["Created_At"]).ToString("dd/MM HH:mm");
                     loc.ReviewedBy = row["ReviewedByName"] == DBNull.Value ? ""
                                         : row["ReviewedByName"].ToString();
                     loc.ReviewedAt = row["Reviewed_At"] == DBNull.Value ? ""

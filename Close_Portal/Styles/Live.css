@@ -129,6 +129,47 @@
     }
 }
 
+/* ─── GUARD SPOT PILLS (banner) ──────────────────────────── */
+.db-guard-spots {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.db-guard-spot-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.db-guard-dept {
+    display: inline-block;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.30);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+[data-theme="dark"] .db-guard-dept {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
 /* ─── STATS ROW ─────────────────────────────────────────── */
 .db-stats-row {
     display: grid;

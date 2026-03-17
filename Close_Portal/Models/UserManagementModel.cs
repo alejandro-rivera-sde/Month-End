@@ -14,6 +14,11 @@ namespace Close_Portal.Models {
         public bool Locked { get; set; }
         public string LoginType { get; set; }
 
+        // Department
+        public int? DepartmentId { get; set; }
+        public string DepartmentCode { get; set; }
+        public string DepartmentName { get; set; }
+
         // WMS - lista separada por coma para filtros JS
         public string WmsCodes { get; set; }      // "ELP,MTY"
         public string WmsTagsHtml { get; set; }   // "<span class='wms-tag'>ELP</span>..."

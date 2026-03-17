@@ -22,6 +22,7 @@ namespace Close_Portal.Pages.Admin {
                 LoadStats();
                 LoadWmsFilter();
                 LoadRoles();
+                LoadDepartments();
                 LoadUsers();
             }
         }
@@ -103,6 +104,29 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
+        // LOAD DEPARTMENTS
+        // ============================================================
+        private void LoadDepartments() {
+            try {
+                using (SqlConnection conn = new SqlConnection(_connStr)) {
+                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM Departments WHERE Active = 1 ORDER BY Department_Code";
+                    using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                        conn.Open();
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        rptDepartments.DataSource = dt;
+                        rptDepartments.DataBind();
+                        rptDepartmentsFilter.DataSource = dt;
+                        rptDepartmentsFilter.DataBind();
+                    }
+                }
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"ERROR LoadDepartments: {ex.Message}");
+            }
+        }
+
+        // ============================================================
         // LOAD USERS
         // ============================================================
         private void LoadUsers() {
@@ -114,9 +138,11 @@ namespace Close_Portal.Pages.Admin {
                         SELECT
                             u.User_Id, u.Email, u.Username,
                             u.Active, u.Locked, u.Login_Type,
-                            r.Role_Id, r.Role_Name
+                            r.Role_Id, r.Role_Name,
+                            d.Department_Id, d.Department_Code, d.Department_Name
                         FROM Users u
                         INNER JOIN Users_Roles r ON u.Role_Id = r.Role_Id
+                        LEFT  JOIN Departments d ON d.Department_Id = u.Department_Id
                         ORDER BY u.Role_Id DESC, u.Username";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
@@ -131,7 +157,10 @@ namespace Close_Portal.Pages.Admin {
                                     Locked = (bool)reader["Locked"],
                                     LoginType = reader["Login_Type"].ToString(),
                                     RoleId = (int)reader["Role_Id"],
-                                    RoleName = reader["Role_Name"].ToString()
+                                    RoleName = reader["Role_Name"].ToString(),
+                                    DepartmentId = reader["Department_Id"] != DBNull.Value ? (int?)reader["Department_Id"] : null,
+                                    DepartmentCode = reader["Department_Code"]?.ToString(),
+                                    DepartmentName = reader["Department_Name"]?.ToString()
                                 });
                             }
                         }
@@ -248,9 +277,11 @@ namespace Close_Portal.Pages.Admin {
                     // ── 1. Datos básicos del usuario ─────────────────────────
                     string sqlUser = @"
                         SELECT u.User_Id, u.Email, u.Username, u.Active, u.Locked,
-                               u.Login_Type, u.Role_Id, r.Role_Name
+                               u.Login_Type, u.Role_Id, r.Role_Name,
+                               d.Department_Id, d.Department_Code, d.Department_Name
                         FROM Users u
                         INNER JOIN Users_Roles r ON u.Role_Id = r.Role_Id
+                        LEFT  JOIN Departments d ON d.Department_Id = u.Department_Id
                         WHERE u.User_Id = @UserId";
 
                     UserManagementModel user = null;
@@ -266,7 +297,10 @@ namespace Close_Portal.Pages.Admin {
                                     Locked = (bool)r["Locked"],
                                     LoginType = r["Login_Type"].ToString(),
                                     RoleId = (int)r["Role_Id"],
-                                    RoleName = r["Role_Name"].ToString()
+                                    RoleName = r["Role_Name"].ToString(),
+                                    DepartmentId = r["Department_Id"] != DBNull.Value ? (int?)r["Department_Id"] : null,
+                                    DepartmentCode = r["Department_Code"]?.ToString(),
+                                    DepartmentName = r["Department_Name"]?.ToString()
                                 };
                             }
                         }
@@ -390,6 +424,9 @@ namespace Close_Portal.Pages.Admin {
                         RoleId = user.RoleId,
                         Active = user.Active,
                         Locked = user.Locked,
+                        DepartmentId = user.DepartmentId,
+                        DepartmentCode = user.DepartmentCode,
+                        DepartmentName = user.DepartmentName,
                         OmsList = omsList,
                         LocationList = locationList
                     };
@@ -535,6 +572,35 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
+        // WEBMETHOD — GetAllDepartments
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object GetAllDepartments() {
+            try {
+                var list = new List<object>();
+                using (SqlConnection conn = new SqlConnection(_connStr)) {
+                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM Departments WHERE Active = 1 ORDER BY Department_Code";
+                    using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                        conn.Open();
+                        using (SqlDataReader r = cmd.ExecuteReader()) {
+                            while (r.Read()) {
+                                list.Add(new {
+                                    DepartmentId = (int)r["Department_Id"],
+                                    DepartmentCode = r["Department_Code"].ToString(),
+                                    DepartmentName = r["Department_Name"].ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+                return new { Success = true, Data = list };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"ERROR GetAllDepartments: {ex.Message}");
+                return new { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ============================================================
         // WEBMETHOD — SaveUserChanges
         // Persiste en una sola transacción:
         //   1. UPDATE Users
@@ -547,7 +613,8 @@ namespace Close_Portal.Pages.Admin {
             int[] omsIds,
             int[] locationIds,
             string username,
-            string newPassword) {
+            string newPassword,
+            int departmentId) {
             try {
                 System.Diagnostics.Debug.WriteLine(
                     $"=== SaveUserChanges UserId:{userId} RoleId:{roleId} Active:{active} Locked:{locked} ===");
@@ -592,6 +659,7 @@ namespace Close_Portal.Pages.Admin {
                                         Locked        = @Locked,
                                         Lock_Date     = CASE WHEN @Locked = 1 THEN GETDATE() ELSE NULL END,
                                         Username      = @Username,
+                                        Department_Id = @DepartmentId,
                                         Password_Hash = @PasswordHash
                                     WHERE User_Id = @UserId";
                                 cmdUser = new SqlCommand(sqlUser, conn, tx);
@@ -599,11 +667,12 @@ namespace Close_Portal.Pages.Admin {
                             } else {
                                 sqlUser = @"
                                     UPDATE Users
-                                    SET Role_Id   = @RoleId,
-                                        Active    = @Active,
-                                        Locked    = @Locked,
-                                        Lock_Date = CASE WHEN @Locked = 1 THEN GETDATE() ELSE NULL END,
-                                        Username  = @Username
+                                    SET Role_Id       = @RoleId,
+                                        Active        = @Active,
+                                        Locked        = @Locked,
+                                        Lock_Date     = CASE WHEN @Locked = 1 THEN GETDATE() ELSE NULL END,
+                                        Username      = @Username,
+                                        Department_Id = @DepartmentId
                                     WHERE User_Id = @UserId";
                                 cmdUser = new SqlCommand(sqlUser, conn, tx);
                             }
@@ -613,6 +682,8 @@ namespace Close_Portal.Pages.Admin {
                             cmdUser.Parameters.AddWithValue("@Active", active);
                             cmdUser.Parameters.AddWithValue("@Locked", locked);
                             cmdUser.Parameters.AddWithValue("@Username", username.Trim());
+                            cmdUser.Parameters.AddWithValue("@DepartmentId",
+                                departmentId > 0 ? (object)departmentId : DBNull.Value);
                             cmdUser.ExecuteNonQuery();
 
                             // 2. Reemplazar Users_OMS (scope de visibilidad)
@@ -715,111 +786,6 @@ namespace Close_Portal.Pages.Admin {
                 return new { Success = true, Message = active ? "Usuario activado" : "Usuario desactivado" };
 
             } catch (Exception ex) {
-                return new { Success = false, Message = ex.Message };
-            }
-        }
-
-        // ============================================================
-        // WEBMETHOD — CreateUser
-        // Crea un nuevo usuario Google con rol y OMS asignados.
-        // Solo accesible para Owner (hereda RequiredRoleId de la página).
-        // ============================================================
-        [WebMethod(EnableSession = true)]
-        public static object CreateUser(string email, string username, int roleId, int[] omsIds) {
-            try {
-                SecurePage.CheckAccess(RoleLevel.Owner);
-
-                var session = System.Web.HttpContext.Current.Session;
-                string createdBy = session["Email"]?.ToString() ?? "Sistema";
-
-                // No se puede asignar rol Owner
-                if (roleId >= RoleLevel.Owner)
-                    return new { Success = false, Message = "No se puede crear un usuario con rol Owner" };
-
-                // Email requerido y dominio correcto
-                if (string.IsNullOrWhiteSpace(email) || !email.Trim().ToLower().EndsWith("@novamex.com"))
-                    return new { Success = false, Message = "El email debe ser @novamex.com" };
-
-                // Email duplicado
-                using (SqlConnection connCheck = new SqlConnection(_connStr)) {
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT COUNT(*) FROM Users WHERE Email = @Email", connCheck)) {
-                        cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
-                        connCheck.Open();
-                        if ((int)cmd.ExecuteScalar() > 0)
-                            return new { Success = false, Message = "Ya existe un usuario con ese email" };
-                    }
-                }
-
-                // Obtener nombre del rol para el correo
-                string roleName = "";
-                using (SqlConnection connRole = new SqlConnection(_connStr)) {
-                    using (SqlCommand cmd = new SqlCommand(
-                        "SELECT Role_Name FROM Users_Roles WHERE Role_Id = @RoleId", connRole)) {
-                        cmd.Parameters.AddWithValue("@RoleId", roleId);
-                        connRole.Open();
-                        roleName = cmd.ExecuteScalar()?.ToString() ?? "";
-                    }
-                }
-
-                int newUserId = -1;
-                string resolvedUsername = string.IsNullOrWhiteSpace(username)
-                    ? email.Trim().ToLower().Split('@')[0]
-                    : username.Trim();
-
-                using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    conn.Open();
-                    using (SqlTransaction tx = conn.BeginTransaction()) {
-                        try {
-                            // 1. INSERT Users
-                            using (SqlCommand cmd = new SqlCommand(@"
-                                INSERT INTO Users (Email, Username, Login_Type, Role_Id, Active, Locked)
-                                VALUES (@Email, @Username, 'Google', @RoleId, 1, 0);
-                                SELECT SCOPE_IDENTITY();", conn, tx)) {
-                                cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
-                                cmd.Parameters.AddWithValue("@Username", resolvedUsername);
-                                cmd.Parameters.AddWithValue("@RoleId", roleId);
-                                newUserId = Convert.ToInt32(cmd.ExecuteScalar());
-                            }
-
-                            // 2. INSERT Users_OMS (scope de visibilidad)
-                            if (omsIds != null && omsIds.Length > 0) {
-                                foreach (int omsId in omsIds) {
-                                    using (SqlCommand cmd = new SqlCommand(
-                                        "INSERT INTO Users_OMS (User_Id, OMS_Id) VALUES (@UserId, @OmsId)",
-                                        conn, tx)) {
-                                        cmd.Parameters.AddWithValue("@UserId", newUserId);
-                                        cmd.Parameters.AddWithValue("@OmsId", omsId);
-                                        cmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-
-                            tx.Commit();
-
-                        } catch (Exception ex) {
-                            tx.Rollback();
-                            System.Diagnostics.Debug.WriteLine($"[CreateUser] Rollback: {ex.Message}");
-                            return new { Success = false, Message = "Error al crear el usuario" };
-                        }
-                    }
-                }
-
-                System.Threading.Tasks.Task.Run(() =>
-                    EmailService.NotifyUserAdded(
-                        targetEmail: email,
-                        targetUsername: resolvedUsername,
-                        targetRole: roleName,
-                        performedByEmail: createdBy
-                    )
-                );
-
-                return new { Success = true, Message = "Usuario creado correctamente", UserId = newUserId };
-
-            } catch (UnauthorizedAccessException ex) {
-                return new { Success = false, Message = ex.Message };
-            } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[CreateUser] ERROR: {ex.Message}");
                 return new { Success = false, Message = ex.Message };
             }
         }

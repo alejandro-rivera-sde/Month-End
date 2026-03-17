@@ -58,6 +58,15 @@ namespace Close_Portal.Pages.Admin {
         protected global::System.Web.UI.WebControls.Repeater rptWmsFilter;
 
         /// <summary>
+        /// rptDepartmentsFilter control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptDepartmentsFilter;
+
+        /// <summary>
         /// rptUsers control.
         /// </summary>
         /// <remarks>
@@ -83,6 +92,15 @@ namespace Close_Portal.Pages.Admin {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Repeater rptRoles;
+
+        /// <summary>
+        /// rptDepartments control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptDepartments;
 
         /// <summary>
         /// hfUserId control.

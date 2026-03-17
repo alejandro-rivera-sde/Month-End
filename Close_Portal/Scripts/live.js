@@ -52,6 +52,9 @@ function loadDashboard() {
             renderStats(d.summary);
             db_allLocations = d.locations || [];
             filterLocations(db_currentFilter);
+
+            // Verificar cierre automático si guardia activa y todas las locaciones cerradas
+            checkAutoClose(d.guard, d.summary);
         },
         error: () => {
             grid.innerHTML = `<div class="db-empty">
@@ -80,19 +83,61 @@ function renderGuardBanner(guard) {
         return;
     }
 
-    const start = formatDateTime(guard.startTime);
-    const end = formatDateTime(guard.endTime);
+    // Construir pills de spots (depto → responsable)
+    const spotPills = (guard.spots || []).map(s =>
+        `<span class="db-guard-spot-pill">
+             <span class="db-guard-dept">${escDb(s.deptCode)}</span>
+             <span>${escDb(s.username || '—')}</span>
+         </span>`
+    ).join('');
 
     banner.className = 'db-guard-banner db-guard-active';
     banner.innerHTML = `
         <span class="material-icons">security</span>
         <div class="db-guard-info">
             <span class="db-guard-title">
-                ${dbT('db.guard.active')} <strong>${escDb(guard.ownerName)}</strong>
+                ${dbT('db.guard.active')}
+                <span class="db-guard-spots">${spotPills}</span>
             </span>
-            <span class="db-guard-sub">${start} → ${end}</span>
+            <span class="db-guard-sub">${dbT('db.guard.since')} ${escDb(guard.startTime)}</span>
         </div>
         <span class="db-guard-pill">${dbT('db.guard.live')}</span>`;
+}
+
+// ─── AUTO CLOSE ─────────────────────────────────────────────
+// Se dispara después de cada carga del dashboard.
+// Si la guardia está activa y todas las locaciones están Approved,
+// llama a TryCloseGuard para que el servidor la cierre.
+function checkAutoClose(guard, summary) {
+    if (!guard || !guard.isActive) return;
+    if (!summary || summary.total === 0) return;
+
+    // Todas las locaciones deben estar Approved (y ninguna Active/Pending/Rejected)
+    const allApproved = summary.approved > 0
+        && summary.active === 0
+        && summary.pending === 0
+        && summary.rejected === 0
+        && summary.approved === summary.total;
+
+    if (!allApproved) return;
+
+    $.ajax({
+        type: 'POST',
+        url: window.DashboardPageUrl + '/TryCloseGuard',
+        data: '{}',
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: (resp) => {
+            const d = resp.d !== undefined ? resp.d : resp;
+            if (d.success && d.closed) {
+                // Guardia cerrada — recargar para reflejar el nuevo estado
+                setTimeout(() => loadDashboard(), 800);
+            }
+        },
+        error: (xhr) => {
+            console.error('[live.js] TryCloseGuard error:', xhr.responseText);
+        }
+    });
 }
 
 // ─── STATS ──────────────────────────────────────────────────
@@ -178,12 +223,18 @@ function buildCard(loc) {
         </div>`;
     }
 
+    // Badge de código
+    const codeBadge = loc.locationCode
+        ? `<span class="db-card-code">${escDb(loc.locationCode)}</span>`
+        : '';
+
     return `
     <div class="db-location-card db-card-${loc.status.toLowerCase()}">
         <div class="db-card-header">
             <div class="db-card-name-row">
                 <span class="material-icons db-card-icon" style="color:${statusMeta.color}">${statusMeta.icon}</span>
                 <span class="db-card-name">${escDb(loc.locationName)}</span>
+                ${codeBadge}
             </div>
             <span class="db-status-pill db-pill-${loc.status.toLowerCase()}">${statusMeta.label}</span>
         </div>

@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Configuration;
-using System.Data.SqlClient;
+using System.Collections.Generic;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -22,10 +21,11 @@ namespace Close_Portal {
             System.Diagnostics.Debug.WriteLine($"=== ApplyRolePermissions - RoleId: {roleId} ===");
 
             // 4 = Owner     → Todo
-            // 3 = Admin     → Users + Validation + Warehouses
+            // 3 = Admin     → Guard + Users + Validation + Warehouses
             // 2 = Manager   → Validation + Warehouses
             // 1 = Regular   → Solo Warehouses
             sectionAdmin.Visible = (roleId == 4);
+            sectionGuard.Visible = (roleId == 4 || roleId == 3);
             sectionUsers.Visible = (roleId == 4 || roleId == 3);
             sectionValidation.Visible = (roleId == 4 || roleId == 3 || roleId == 2);
             sectionWarehouses.Visible = true;
@@ -63,28 +63,17 @@ namespace Close_Portal {
             litUserInitials.Text = initials;
         }
 
-        /// <summary>
-        /// Consulta WMS_Name directamente desde la BD usando el WMS_Code en sesión.
-        /// Si no encuentra el código o hay error, devuelve el código tal cual como fallback.
-        /// </summary>
         private string GetWmsFullName(string wmsCode) {
-            if (string.IsNullOrEmpty(wmsCode)) return "";
+            var wmsMap = new Dictionary<string, string> {
+                { "NVMCLX", "Calexico" },
+                { "NVMMES", "Dallas" },
+                { "NVMMSQ", "Mesquite" },
+                { "NVMMXL", "Mexicali" },
+                { "NVMLRD", "Nuevo Laredo" }
+            };
 
-            try {
-                string connStr = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
-                using (var conn = new SqlConnection(connStr)) {
-                    using (var cmd = new SqlCommand(
-                        "SELECT WMS_Name FROM WMS WHERE WMS_Code = @WmsCode AND Active = 1", conn)) {
-                        cmd.Parameters.AddWithValue("@WmsCode", wmsCode.ToUpper());
-                        conn.Open();
-                        object result = cmd.ExecuteScalar();
-                        return result?.ToString() ?? wmsCode;
-                    }
-                }
-            } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[GetWmsFullName] ERROR: {ex.Message}");
-                return wmsCode;   // fallback: mostrar el código si falla la BD
-            }
+            if (string.IsNullOrEmpty(wmsCode)) return "";
+            return wmsMap.ContainsKey(wmsCode.ToUpper()) ? wmsMap[wmsCode.ToUpper()] : wmsCode;
         }
 
         public string PageTitleText {

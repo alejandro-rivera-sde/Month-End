@@ -1,12 +1,11 @@
 ﻿/* =========================================================
-   Guardia.css  — Módulo de Gestión de Guardia
+   Guard.css  — Módulo de Gestión de Guardia
    Prefijo: gd-   (evita conflictos con Bootstrap 5 y Dashboard)
    Theme:   usa 100% variables de Variables.css  (dark/light)
+   Modelo:  1 guardia con N spots (uno por departamento)
    ========================================================= */
 
 /* ─── ACCENT LOCAL DEL MÓDULO ─────────────────────────── */
-/* El módulo Guardia usa ámbar como identidad propia,
-   independiente del --accent-color global (pink/indigo). */
 :root {
     --gd-accent: #f59e0b;
     --gd-accent-hover: #d97706;
@@ -14,11 +13,6 @@
 }
 
 /* ─── PAGE HEADER ─────────────────────────────────────── */
-.gd-header-badge {
-    margin-bottom: 10px;
-}
-/* Override: .page-title p usa --text-muted (#64748b en dark),
-   demasiado oscuro. Forzamos --text-secondary para mejor contraste. */
 .page-title p {
     color: var(--text-secondary);
 }
@@ -51,6 +45,12 @@
         color: var(--success-color);
     }
 
+    .gd-header-badge.pending {
+        background: var(--gd-accent-alpha);
+        border-color: var(--gd-accent);
+        color: var(--gd-accent);
+    }
+
     .gd-header-badge.inactive {
         background: var(--error-bg);
         border-color: var(--error-color);
@@ -61,54 +61,41 @@
         font-size: 18px;
     }
 
-/* ─── MAIN GRID ───────────────────────────────────────── */
-.gd-grid {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 24px;
-    align-items: start;
-}
-
-@media (max-width: 1024px) {
-    .gd-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* ─── PANEL ───────────────────────────────────────────── */
-.gd-panel {
+/* ─── SECTIONS ────────────────────────────────────────── */
+.gd-section {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    overflow: hidden;
+    padding: 28px;
+    margin-bottom: 24px;
     box-shadow: var(--shadow-md);
 }
 
-.gd-panel-header {
+.gd-history-section {
+    padding-bottom: 8px;
+}
+
+.gd-section-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 18px 24px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-primary);
 }
 
-    .gd-panel-header .material-icons {
+    .gd-section-header .material-icons {
         color: var(--gd-accent);
         font-size: 22px;
     }
 
-    .gd-panel-header h3 {
+    .gd-section-header h3 {
         margin: 0;
         font-size: 15px;
         font-weight: 700;
         color: var(--text-primary);
         flex: 1;
     }
-
-.gd-panel-body {
-    padding: 20px;
-}
 
 /* ─── COUNT BADGE ─────────────────────────────────────── */
 .gd-count-badge {
@@ -122,87 +109,331 @@
     text-align: center;
 }
 
-/* ─── SEARCH BOX ──────────────────────────────────────── */
-.gd-search-box {
+/* ─── EMPTY PANEL (sin guardia) ───────────────────────── */
+.gd-empty-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 56px 24px;
+    text-align: center;
+}
+
+    .gd-empty-panel p {
+        margin: 0;
+        font-size: 15px;
+        color: var(--text-secondary);
+    }
+
+.gd-empty-icon {
+    font-size: 56px !important;
+    color: var(--border-color) !important;
+}
+
+.gd-btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--gd-accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-create:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-create .material-icons {
+        font-size: 20px;
+    }
+
+/* ─── GUARD HEADER (cabecera de guardia activa) ───────── */
+.gd-guard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.gd-guard-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+    .gd-guard-meta .material-icons {
+        font-size: 16px;
+        color: var(--gd-accent);
+    }
+
+.gd-guard-actions {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s;
 }
 
-    .gd-search-box:focus-within {
-        border-color: var(--gd-accent);
+.gd-btn-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--success-color);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .gd-btn-start:hover {
+        opacity: 0.88;
     }
 
-    .gd-search-box .material-icons {
-        color: var(--text-secondary);
+    .gd-btn-start .material-icons {
+        font-size: 20px;
+    }
+
+.gd-btn-danger-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+    .gd-btn-danger-sm:hover {
+        background: var(--error-bg);
+    }
+
+    .gd-btn-danger-sm .material-icons {
         font-size: 18px;
     }
 
-    .gd-search-box input {
-        border: none;
-        background: transparent;
-        color: var(--text-primary);
-        font-size: 14px;
-        width: 100%;
-        outline: none;
-    }
-
-        .gd-search-box input::placeholder {
-            color: var(--text-secondary);
-        }
-
-/* ─── OWNERS LIST ─────────────────────────────────────── */
-.gd-owners-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 520px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-    .gd-owners-list::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .gd-owners-list::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .gd-owners-list::-webkit-scrollbar-thumb {
-        background: var(--border-color);
-        border-radius: 4px;
-    }
-
-/* ─── OWNER CARD ──────────────────────────────────────── */
-.gd-owner-card {
+/* ─── START STATUS BANNER ─────────────────────────────── */
+.gd-start-status {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--success-bg);
+    border: 1px solid var(--success-color);
+    border-radius: 10px;
+    color: var(--success-color);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+    .gd-start-status .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── SPOTS GRID ──────────────────────────────────────── */
+.gd-spots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+/* ─── SPOT CARD ───────────────────────────────────────── */
+.gd-spot-card {
     background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-    .gd-owner-card:hover {
+.gd-spot-filled {
+    border-color: var(--success-color);
+    background: var(--success-bg);
+}
+
+.gd-spot-pending {
+    border-color: var(--border-color);
+    border-style: dashed;
+}
+
+    .gd-spot-pending:hover {
         border-color: var(--gd-accent);
         box-shadow: 0 2px 12px var(--gd-accent-alpha);
+        border-style: solid;
     }
 
-    .gd-owner-card.gd-on-guard {
-        border-color: var(--success-color);
-        background: var(--success-bg);
+/* ─── DEPARTMENT BADGE ────────────────────────────────── */
+.gd-spot-dept {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gd-dept-badge {
+    display: inline-block;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.30);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .gd-dept-badge {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.gd-dept-badge-sm {
+    font-size: 10px;
+    padding: 2px 7px;
+}
+
+.gd-dept-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* ─── SPOT USER BLOCK ─────────────────────────────────── */
+.gd-spot-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.gd-spot-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gd-spot-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-spot-user-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-spot-empty-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 6px 0;
+}
+
+    .gd-spot-empty-user .material-icons {
+        font-size: 22px;
+        opacity: 0.45;
     }
 
-/* Avatar */
+/* ─── SPOT FOOTER ─────────────────────────────────────── */
+.gd-spot-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 34px;
+}
+
+.gd-spot-assigned-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gd-btn-spot-assign {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--gd-accent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gd-accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+    .gd-btn-spot-assign:hover {
+        background: var(--gd-accent);
+        color: #000;
+    }
+
+    .gd-btn-spot-assign .material-icons {
+        font-size: 16px;
+    }
+
+.gd-btn-spot-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+    .gd-btn-spot-clear:hover {
+        border-color: var(--error-color);
+        color: var(--error-color);
+        background: var(--error-bg);
+    }
+
+    .gd-btn-spot-clear .material-icons {
+        font-size: 17px;
+    }
+
+/* ─── AVATAR ──────────────────────────────────────────── */
 .gd-avatar {
     width: 42px;
     height: 42px;
@@ -217,102 +448,21 @@
     background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
 }
 
-.gd-owner-card.gd-on-guard .gd-avatar {
-    background: linear-gradient(135deg, #10b981, #059669);
-}
-
-/* Info */
-.gd-owner-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.gd-owner-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.gd-owner-email {
-    font-size: 12px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Status pill */
-.gd-guard-pill {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-    .gd-guard-pill.active {
-        background: var(--success-bg);
-        color: var(--success-color);
-        border: 1px solid var(--success-color);
-    }
-
-/* Assign button */
-.gd-btn-assign {
+.gd-avatar-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 7px 12px;
-    border: 1px solid var(--gd-accent);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--gd-accent);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.2s, color 0.2s;
-    white-space: nowrap;
-}
-
-    .gd-btn-assign:hover {
-        background: var(--gd-accent);
-        color: #000;
-    }
-
-    .gd-btn-assign .material-icons {
-        font-size: 16px;
-    }
-
-/* ─── LOADING ──────────────────────────────────────────── */
-.gd-loading {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--text-secondary);
-    font-size: 14px;
-    padding: 20px 0;
     justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
 }
 
-@keyframes gd-spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.gd-spin {
-    animation: gd-spin 1s linear infinite;
-}
-
-/* ─── EMPTY STATE ─────────────────────────────────────── */
+/* ─── HISTORY TABLE ───────────────────────────────────── */
 .gd-empty-schedule {
     display: flex;
     flex-direction: column;
@@ -332,7 +482,6 @@
         font-size: 14px;
     }
 
-/* ─── SCHEDULE TABLE ──────────────────────────────────── */
 .gd-table-wrapper {
     overflow-x: auto;
 }
@@ -368,122 +517,44 @@
             background: var(--divider-color);
         }
 
-        .gd-table tbody tr.gd-row-active {
-            background: var(--success-bg);
-        }
-
     .gd-table td {
-        padding: 14px 14px;
+        padding: 14px;
         color: var(--text-primary);
         vertical-align: middle;
     }
 
-/* Owner cell */
-.gd-table-user {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.gd-avatar-sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
-}
-
-.gd-table-user-name {
+.gd-datetime .gd-date {
     font-weight: 600;
+    color: var(--text-primary);
     font-size: 13px;
 }
 
-.gd-table-user-email {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-
-/* Datetime */
-.gd-datetime {
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-    .gd-datetime .gd-date {
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-
-    .gd-datetime .gd-time {
-        font-size: 11px;
-        color: var(--text-secondary);
-    }
-
-/* Status badges */
-.gd-status-active {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
-    background: var(--success-bg);
-    color: var(--success-color);
-    border: 1px solid var(--success-color);
-}
-
-.gd-status-upcoming {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-}
-
-    .gd-status-active .material-icons,
-    .gd-status-upcoming .material-icons {
-        font-size: 12px;
-    }
-
-/* Delete button */
-.gd-btn-delete {
+/* History spots column */
+.gd-hist-spots {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-    .gd-btn-delete:hover {
-        border-color: var(--error-color);
-        color: var(--error-color);
-        background: var(--error-bg);
-    }
+.gd-hist-spot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
 
-    .gd-btn-delete .material-icons {
-        font-size: 18px;
-    }
+.gd-hist-spot-empty {
+    opacity: 0.5;
+    font-style: italic;
+}
 
 /* ─── MODAL OVERLAY ────────────────────────────────────── */
-/* MODAL FIX: creado con insertAdjacentHTML en document.body */
 .gd-overlay {
     position: fixed;
     inset: 0;
@@ -571,69 +642,22 @@
 
 .gd-modal-body {
     padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
-/* Owner info dentro del modal */
-.gd-modal-owner-card {
+.gd-modal-dept-badge {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 12px 16px;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    margin-bottom: 20px;
+    border-radius: 10px;
 }
 
-/* Form fields */
-.gd-field-group {
-    margin-bottom: 18px;
-}
-
-    .gd-field-group label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .gd-field-group input[type="datetime-local"] {
-        width: 100%;
-        padding: 11px 14px;
-        background: var(--input-bg);
-        border: 1px solid var(--input-border);
-        border-radius: 10px;
-        color: var(--text-primary);
-        font-size: 14px;
-        outline: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        box-sizing: border-box;
-    }
-
-/* El color-scheme hace visible el icono de calendario en dark */
-[data-theme="dark"] .gd-field-group input[type="datetime-local"] {
-    color-scheme: dark;
-}
-
-.gd-field-group input[type="datetime-local"]:focus {
-    border-color: var(--gd-accent);
-    box-shadow: 0 0 0 3px var(--gd-accent-alpha);
-}
-
-/* Error inline */
-.gd-field-error {
-    display: none;
-    font-size: 12px;
-    color: var(--error-color);
-    margin-top: 6px;
-}
-
-/* Error general del modal */
 .gd-modal-error {
-    display: none;
     background: var(--error-bg);
     border: 1px solid var(--error-color);
     border-radius: 10px;
@@ -643,7 +667,84 @@
     margin-bottom: 16px;
 }
 
-/* Modal footer */
+/* ─── USER LIST (modal de asignación) ─────────────────── */
+.gd-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gd-user-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+    .gd-user-option:hover {
+        border-color: var(--gd-accent);
+        background: var(--gd-accent-alpha);
+    }
+
+.gd-user-option-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gd-owner-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-owner-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-user-option-arrow {
+    color: var(--text-muted);
+    font-size: 18px !important;
+    flex-shrink: 0;
+}
+
+/* ─── LOADING ──────────────────────────────────────────── */
+.gd-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 20px 0;
+    justify-content: center;
+}
+
+@keyframes gd-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.gd-spin {
+    animation: gd-spin 1s linear infinite;
+}
+
+/* ─── MODAL FOOTER ────────────────────────────────────── */
 .gd-modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -698,9 +799,9 @@
         font-size: 18px;
     }
 
-/* ─── CONFIRM DELETE MODAL ────────────────────────────── */
+/* ─── CONFIRM MODAL ───────────────────────────────────── */
 .gd-confirm-modal {
-    max-width: 380px;
+    max-width: 400px;
 }
 
 .gd-confirm-body {
@@ -744,6 +845,11 @@
         opacity: 0.88;
     }
 
+    .gd-btn-danger:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .gd-btn-danger .material-icons {
         font-size: 18px;
     }
@@ -776,4 +882,10 @@
         background: var(--error-bg);
         border: 1px solid var(--error-color);
         color: var(--error-color);
+    }
+
+    .gd-toast.info {
+        background: var(--gd-accent-alpha);
+        border: 1px solid var(--gd-accent);
+        color: var(--gd-accent);
     }
