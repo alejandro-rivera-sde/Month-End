@@ -8,23 +8,11 @@ using System.Web.UI;
 namespace Close_Portal.Pages {
     public partial class Login : Page {
 
-        // Leído de ?inv= en Page_Load, renderizado en el hidden field #pendingInvToken.
-        // login.js lo lee del DOM — no depende de window.location.search
-        // que Google OAuth puede alterar durante el flujo de autenticación.
-        protected string PendingInvToken { get; private set; } = "";
-
         protected void Page_Load(object sender, EventArgs e) {
             if (Session["UserId"] != null && !IsPostBack) {
                 System.Diagnostics.Debug.WriteLine("Ya hay sesión activa - Redirigiendo a Dashboard");
                 Response.Redirect("~/Pages/Main/Live.aspx");
                 return;
-            }
-
-            // Leer ?inv=TOKEN y exponerlo al DOM vía hidden field
-            string inv = Request.QueryString["inv"];
-            if (!string.IsNullOrWhiteSpace(inv)) {
-                PendingInvToken = inv;
-                System.Diagnostics.Debug.WriteLine($"[Login.Page_Load] PendingInvToken: {inv}");
             }
         }
 
@@ -33,9 +21,6 @@ namespace Close_Portal.Pages {
             try {
                 System.Diagnostics.Debug.WriteLine("========================================");
                 System.Diagnostics.Debug.WriteLine("===== WEBMETHOD GOOGLE INICIO =====");
-
-                if (!string.IsNullOrEmpty(request?.InvitationToken))
-                    System.Diagnostics.Debug.WriteLine($"[ValidarLoginGoogle] InvitationToken: {request.InvitationToken}");
 
                 LoginResult result = LoginController.ValidateGoogleLogin(request);
 

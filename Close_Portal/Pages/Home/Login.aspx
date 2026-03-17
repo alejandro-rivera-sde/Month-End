@@ -74,7 +74,6 @@
             </div>
         </div>
     </div>
-    <input type="hidden" id="pendingInvToken" value="<%= PendingInvToken %>" />
 </asp:Content>
 
 <asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">

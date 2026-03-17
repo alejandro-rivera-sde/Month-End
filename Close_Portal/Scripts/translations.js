@@ -45,8 +45,6 @@ const translations = {
         // Sidebar - Users
         "users.assign_roles": "Assign Roles",
         "users.registration": "User Registration",
-        "users.invitation": "Invitation Registration",
-
         // Sidebar - Validation
         "validation.request": "Validate Request",
 
@@ -226,37 +224,6 @@ const translations = {
         "gd.err.assign_failed": "Error assigning the shift.",
         "gd.err.remove_failed": "Error deleting the shift.",
         // Invitation Registration
-        "inv.title": "Invitation Registration",
-        "inv.subtitle": "Send an invitation link to register a new user",
-        "inv.form.title": "New invitation",
-        "inv.email.label": "Guest email",
-        "inv.email.placeholder": "user@novamex.com",
-        "inv.email.hint": "The user will receive the link at this email",
-        "inv.role.label": "Role to assign",
-        "inv.role.placeholder": "-- Select a role --",
-        "inv.oms.label": "OMS access",
-        "inv.oms.loading": "Loading OMS...",
-        "inv.btn.send": "Send invitation",
-        "inv.btn.sending": "Sending...",
-        "inv.list.title": "Sent invitations",
-        "inv.list.loading": "Loading invitations...",
-        "inv.list.empty": "No invitations found",
-        "inv.filter.all": "All",
-        "inv.filter.pending": "Pending",
-        "inv.filter.accepted": "Accepted",
-        "inv.filter.cancelled": "Cancelled",
-        "inv.status.pending": "Pending",
-        "inv.status.accepted": "Accepted",
-        "inv.status.cancelled": "Cancelled",
-        "inv.btn.cancel": "Cancel",
-        "inv.toast.sent": "Invitation sent successfully.",
-        "inv.toast.cancelled": "Invitation cancelled.",
-        "inv.toast.error": "Error sending invitation.",
-        "inv.err.email_required": "Email is required.",
-        "inv.err.email_invalid": "Please enter a valid @novamex.com email.",
-        "inv.err.role_required": "Please select a role.",
-        "inv.err.oms_required": "Please select at least one OMS.",
-
         // Validate Request
         "vr.title": "Validate Requests",
         "vr.subtitle": "Review and approve or reject closure requests for your locations",
@@ -394,8 +361,6 @@ const translations = {
         // Sidebar - Users
         "users.assign_roles": "Asignar Roles",
         "users.registration": "Alta Usuarios",
-        "users.invitation": "Alta con Invitación",
-
         // Sidebar - Validation
         "validation.request": "Validar Solicitud",
 
@@ -575,37 +540,6 @@ const translations = {
         "gd.err.assign_failed": "Error al asignar el turno.",
         "gd.err.remove_failed": "Error al eliminar el turno.",
         // Alta con Invitación
-        "inv.title": "Alta con Invitación",
-        "inv.subtitle": "Envía un link de invitación para registrar un nuevo usuario",
-        "inv.form.title": "Nueva invitación",
-        "inv.email.label": "Email del invitado",
-        "inv.email.placeholder": "usuario@novamex.com",
-        "inv.email.hint": "El usuario recibirá el link en este correo",
-        "inv.role.label": "Rol que tendrá",
-        "inv.role.placeholder": "-- Selecciona un rol --",
-        "inv.oms.label": "OMS que tendrá acceso",
-        "inv.oms.loading": "Cargando OMS...",
-        "inv.btn.send": "Enviar invitación",
-        "inv.btn.sending": "Enviando...",
-        "inv.list.title": "Invitaciones enviadas",
-        "inv.list.loading": "Cargando invitaciones...",
-        "inv.list.empty": "No se encontraron invitaciones",
-        "inv.filter.all": "Todas",
-        "inv.filter.pending": "Pendientes",
-        "inv.filter.accepted": "Aceptadas",
-        "inv.filter.cancelled": "Canceladas",
-        "inv.status.pending": "Pendiente",
-        "inv.status.accepted": "Aceptada",
-        "inv.status.cancelled": "Cancelada",
-        "inv.btn.cancel": "Cancelar",
-        "inv.toast.sent": "Invitación enviada correctamente.",
-        "inv.toast.cancelled": "Invitación cancelada.",
-        "inv.toast.error": "Error al enviar la invitación.",
-        "inv.err.email_required": "El email es requerido.",
-        "inv.err.email_invalid": "Ingresa un email válido @novamex.com.",
-        "inv.err.role_required": "Selecciona un rol.",
-        "inv.err.oms_required": "Selecciona al menos un OMS.",
-
         // Validar Solicitudes
         "vr.title": "Validar Solicitudes",
         "vr.subtitle": "Revisa y aprueba o rechaza las solicitudes de cierre de tus locaciones",

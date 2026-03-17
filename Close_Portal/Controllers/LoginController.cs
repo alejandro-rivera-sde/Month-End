@@ -19,8 +19,6 @@ namespace Close_Portal.Controllers {
 
             try {
                 // Ejecutar en Task.Run para evitar deadlock de ASP.NET sync context.
-                // request.InvitationToken ya fue leído de Session en el WebMethod
-                // y viaja aquí como propiedad del request — sin necesidad de HttpContext.
                 LoginResult result = Task.Run(async () => {
                     return await _googleAuthService.ValidateGoogleToken(request);
                 }).GetAwaiter().GetResult();

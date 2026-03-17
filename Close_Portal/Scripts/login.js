@@ -178,16 +178,9 @@ function validateGoogleLogin(idToken) {
     showLoading(true);
     hideMessages();
 
-    // Leer token del hidden field renderizado por el servidor en Page_Load.
-    // Más confiable que window.location.search: Google OAuth puede cambiar la URL.
-    const invEl = document.getElementById('pendingInvToken');
-    const invToken = (invEl && invEl.value) ? invEl.value.trim() : '';
-    if (invToken) console.log("[login.js] InvitationToken desde DOM:", invToken);
-
     const requestData = {
         request: {
-            IdToken: idToken,
-            InvitationToken: invToken
+            IdToken: idToken
         }
     };
 

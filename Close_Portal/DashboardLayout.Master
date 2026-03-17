@@ -80,12 +80,6 @@
                                 <span class="nav-text" data-translate-key="users.registration">Alta Usuarios</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Users/InvitationRegistration.aspx" runat="server">
-                                <span class="material-icons">mail_outline</span>
-                                <span class="nav-text" data-translate-key="users.invitation">Alta con Invitación</span>
-                            </a>
-                        </li>
                     </ul>
                 </div>
 

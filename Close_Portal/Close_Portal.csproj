@@ -100,11 +100,9 @@
     <Content Include="Pages\Admin\Guard.aspx" />
     <Content Include="Pages\Admin\UserManagement.aspx" />
     <Content Include="Pages\Admin\WarehouseManagement.aspx" />
-    <Content Include="Pages\Home\AcceptInvitation.aspx" />
     <Content Include="Pages\Home\Error.aspx" />
     <Content Include="Pages\Users\AssignRoles.aspx" />
     <Content Include="Pages\Main\Live.aspx" />
-    <Content Include="Pages\Users\InvitationRegistration.aspx" />
     <Content Include="Pages\Home\Login.aspx" />
     <Content Include="Pages\Home\Logout.aspx" />
     <Content Include="Pages\Warehouses\RequestClosure.aspx" />
@@ -114,7 +112,6 @@
     <Content Include="Scripts\dashboard_layout.js" />
     <Content Include="Scripts\live.js" />
     <Content Include="Scripts\guard.js" />
-    <Content Include="Scripts\invitation_registration.js" />
     <Content Include="Styles\Live.css" />
     <Content Include="Scripts\login.js" />
     <Content Include="Scripts\request_closure.js" />
@@ -124,13 +121,11 @@
     <Content Include="Scripts\user_registration.js" />
     <Content Include="Scripts\validate_request.js" />
     <Content Include="Scripts\warehouse_management.js" />
-    <Content Include="Styles\AcceptInvitation.css" />
     <Content Include="Styles\AssignRoles.css" />
     <Content Include="Styles\Components.css" />
     <Content Include="Styles\DashboardLayout.css" />
     <Content Include="Styles\Error.css" />
     <Content Include="Styles\Guard.css" />
-    <Content Include="Styles\InvitationRegistration.css" />
     <Content Include="Styles\Login.css" />
     <Content Include="Styles\RequestClosure.css" />
     <Content Include="Styles\Site.css" />
@@ -180,13 +175,6 @@
     <Compile Include="Pages\Admin\WarehouseManagement.aspx.designer.cs">
       <DependentUpon>WarehouseManagement.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Pages\Home\AcceptInvitation.aspx.cs">
-      <DependentUpon>AcceptInvitation.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Pages\Home\AcceptInvitation.aspx.designer.cs">
-      <DependentUpon>AcceptInvitation.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Pages\Home\Error.aspx.cs">
       <DependentUpon>Error.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -207,13 +195,6 @@
     </Compile>
     <Compile Include="Pages\Main\Live.aspx.designer.cs">
       <DependentUpon>Live.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Pages\Users\InvitationRegistration.aspx.cs">
-      <DependentUpon>InvitationRegistration.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Pages\Users\InvitationRegistration.aspx.designer.cs">
-      <DependentUpon>InvitationRegistration.aspx</DependentUpon>
     </Compile>
     <Compile Include="Pages\Home\Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>

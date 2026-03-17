@@ -83,62 +83,6 @@ namespace Close_Portal.Services {
         }
 
         // ════════════════════════════════════════════════════════════════
-        // NOTIFICACIÓN DE INVITACIÓN
-        // Se envía al email invitado con el link de aceptación
-        // ════════════════════════════════════════════════════════════════
-
-        public static void NotifyInvitationSent(string targetEmail, string roleName,
-                                                string inviterEmail, string acceptUrl) {
-            Send(
-                subject: "[Close Portal] Fuiste invitado a unirte",
-                body: BuildInvitationTemplate(roleName, inviterEmail, acceptUrl),
-                recipientList: targetEmail
-            );
-        }
-
-        private static string BuildInvitationTemplate(string roleName, string inviterEmail, string acceptUrl) {
-            return $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
-<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
-<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
-<table width='540' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
-
-  <tr><td style='background:#6366f1;padding:32px;text-align:center;'>
-    <div style='font-size:44px;color:#fff;margin-bottom:10px;'>&#128274;</div>
-    <h1 style='margin:0;color:#fff;font-size:22px;font-weight:700;'>Tienes una invitación</h1>
-    <p style='margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
-  </td></tr>
-
-  <tr><td style='padding:32px;'>
-    <p style='margin:0 0 20px;font-size:15px;color:#334155;'>
-      Fuiste invitado por <strong>{inviterEmail}</strong> a unirte a Close Portal con el rol de
-      <strong>{roleName}</strong>.
-    </p>
-    <p style='margin:0 0 28px;font-size:14px;color:#64748b;'>
-      Haz clic en el botón de abajo para aceptar la invitación. Necesitarás iniciar sesión con tu cuenta Google corporativa.
-    </p>
-    <table width='100%' cellpadding='0' cellspacing='0'>
-      <tr><td align='center'>
-        <a href='{acceptUrl}'
-           style='display:inline-block;padding:14px 36px;background:#6366f1;color:#fff;
-                  text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;'>
-          Aceptar invitación
-        </a>
-      </td></tr>
-    </table>
-    <p style='margin:24px 0 0;font-size:12px;color:#94a3b8;text-align:center;'>
-      O copia este link en tu navegador:<br/>
-      <span style='color:#6366f1;word-break:break-all;'>{acceptUrl}</span>
-    </p>
-  </td></tr>
-
-  <tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
-    <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal. Si no esperabas este correo, ignóralo.</p>
-  </td></tr>
-
-</table></td></tr></table></body></html>";
-        }
-
-        // ════════════════════════════════════════════════════════════════
         // NOTIFICACIÓN DE SOLICITUD DE CIERRE
         // Se envía al Manager cuando un Regular solicita cierre de bodega
         // ════════════════════════════════════════════════════════════════
