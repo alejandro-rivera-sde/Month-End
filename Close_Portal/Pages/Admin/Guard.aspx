@@ -48,11 +48,6 @@
                     <span id="gdCreatedInfo"></span>
                 </div>
                 <div class="gd-guard-actions">
-                    <button type="button" class="gd-btn-start" id="gdBtnStart"
-                            onclick="startGuard()" style="display:none;">
-                        <span class="material-icons">play_circle_outline</span>
-                        <span data-translate-key="gd.btn.start">Declarar inicio</span>
-                    </button>
                     <button type="button" class="gd-btn-danger-sm" id="gdBtnRemove"
                             onclick="confirmRemoveGuard()" style="display:none;">
                         <span class="material-icons">delete_outline</span>
@@ -61,14 +56,14 @@
                 </div>
             </div>
 
-            <!-- Banner de inicio activo -->
+            <!-- Banner de inicio programado -->
             <div class="gd-start-status" id="gdStartStatus" style="display:none;">
                 <span class="material-icons">schedule</span>
                 <span id="gdStartStatusText"></span>
             </div>
 
             <!-- Slots por departamento -->
-            <div class="gd-slots-grid" id="gdSlotsGrid">
+            <div class="gd-spots-grid" id="gdSpotsGrid">
                 <!-- Llenado por guard.js -->
             </div>
 

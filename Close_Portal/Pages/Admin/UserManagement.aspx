@@ -304,7 +304,7 @@
                             <label data-translate-key="um.modal.new_password">Nueva Contraseña</label>
                             <div class="pw-input-wrap">
                                 <input type="password" id="editPassword1"
-                                       autocomplete="new-password"
+                                       autocomplete="off"
                                        placeholder="Nueva contraseña"
                                        maxlength="128"
                                        onkeypress="return validatePwChar(event)"
@@ -326,7 +326,7 @@
                             <label data-translate-key="um.modal.confirm_password">Confirmar Contraseña</label>
                             <div class="pw-input-wrap">
                                 <input type="password" id="editPassword2"
-                                       autocomplete="new-password"
+                                       autocomplete="off"
                                        placeholder="Repite la contraseña"
                                        maxlength="128"
                                        onkeypress="return validatePwChar(event)"

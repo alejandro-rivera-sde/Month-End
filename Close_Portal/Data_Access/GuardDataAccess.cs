@@ -303,13 +303,13 @@ namespace Close_Portal.DataAccess {
         // ────────────────────────────────────────────────────────────────
         // CREATE GUARD — crea Guard_Schedule + un spot por cada depto activo
         // ────────────────────────────────────────────────────────────────
-        public GuardResult CreateGuard(int createdBy) {
-            Debug.WriteLine($"[CreateGuard] CreatedBy={createdBy}");
+        public GuardResult CreateGuard(int createdBy, DateTime startTime) {
+            Debug.WriteLine($"[CreateGuard] CreatedBy={createdBy} StartTime={startTime:G}");
             try {
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // Verificar que no haya guardia activa/pendiente
+                    // Verificar que no haya guardia abierta (sin End_Time)
                     using (var cmd = new SqlCommand(
                         "SELECT COUNT(*) FROM Guard_Schedule WHERE End_Time IS NULL", conn)) {
                         int open = (int)cmd.ExecuteScalar();
@@ -317,14 +317,18 @@ namespace Close_Portal.DataAccess {
                             return new GuardResult { Success = false, Message = "Ya existe una guardia abierta. Ciérrala antes de crear una nueva." };
                     }
 
+                    if (startTime < DateTime.Now.AddMinutes(-5))
+                        return new GuardResult { Success = false, Message = "La fecha de inicio no puede estar en el pasado." };
+
                     using (var tx = conn.BeginTransaction()) {
                         try {
-                            // Insertar guardia (Start/End null — no ha iniciado)
+                            // Insertar guardia con Start_Time definido desde el inicio
                             int guardId;
                             using (var cmd = new SqlCommand(@"
-                                INSERT INTO Guard_Schedule (Created_By, Created_At)
+                                INSERT INTO Guard_Schedule (Start_Time, Created_By, Created_At)
                                 OUTPUT INSERTED.Guard_Id
-                                VALUES (@CreatedBy, GETDATE())", conn, tx)) {
+                                VALUES (@StartTime, @CreatedBy, GETDATE())", conn, tx)) {
+                                cmd.Parameters.AddWithValue("@StartTime", startTime);
                                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
                                 guardId = (int)cmd.ExecuteScalar();
                             }
@@ -427,52 +431,6 @@ namespace Close_Portal.DataAccess {
         }
 
         // ────────────────────────────────────────────────────────────────
-        // START GUARD — setea Start_Time = NOW()
-        // Solo permitido si todos los spots tienen usuario asignado
-        // ────────────────────────────────────────────────────────────────
-        public GuardResult StartGuard(int guardId) {
-            Debug.WriteLine($"[StartGuard] GuardId={guardId}");
-            try {
-                using (var conn = new SqlConnection(_connStr)) {
-                    conn.Open();
-
-                    // Verificar que todos los spots están llenos
-                    string sqlCheck = @"
-                        SELECT COUNT(*) FROM Guard_Spots
-                        WHERE Guard_Id = @GuardId AND User_Id IS NULL";
-                    using (var cmd = new SqlCommand(sqlCheck, conn)) {
-                        cmd.Parameters.AddWithValue("@GuardId", guardId);
-                        int empty = (int)cmd.ExecuteScalar();
-                        if (empty > 0)
-                            return new GuardResult { Success = false, Message = "Todos los departamentos deben tener un responsable asignado antes de iniciar la guardia." };
-                    }
-
-                    // Verificar que no esté ya iniciada
-                    string sqlStarted = "SELECT Start_Time FROM Guard_Schedule WHERE Guard_Id = @GuardId";
-                    using (var cmd = new SqlCommand(sqlStarted, conn)) {
-                        cmd.Parameters.AddWithValue("@GuardId", guardId);
-                        var val = cmd.ExecuteScalar();
-                        if (val != null && val != DBNull.Value)
-                            return new GuardResult { Success = false, Message = "La guardia ya fue iniciada." };
-                    }
-
-                    using (var cmd = new SqlCommand(@"
-                        UPDATE Guard_Schedule SET Start_Time = GETDATE()
-                        WHERE Guard_Id = @GuardId", conn)) {
-                        cmd.Parameters.AddWithValue("@GuardId", guardId);
-                        cmd.ExecuteNonQuery();
-                    }
-
-                    Debug.WriteLine($"[StartGuard] Guard {guardId} iniciada ✓");
-                    return new GuardResult { Success = true, GuardId = guardId };
-                }
-            } catch (Exception ex) {
-                Debug.WriteLine($"[StartGuard] ERROR: {ex.Message}");
-                return new GuardResult { Success = false, Message = ex.Message };
-            }
-        }
-
-        // ────────────────────────────────────────────────────────────────
         // CLOSE GUARD — setea End_Time = NOW()
         // Llamado por el sistema cuando todas las locaciones cierran
         // ────────────────────────────────────────────────────────────────
@@ -509,13 +467,13 @@ namespace Close_Portal.DataAccess {
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // Solo se puede eliminar si no ha iniciado
-                    string sqlCheck = "SELECT Start_Time FROM Guard_Schedule WHERE Guard_Id = @GuardId";
+                    // Solo se puede eliminar si la guardia no ha cerrado
+                    string sqlCheck = "SELECT End_Time FROM Guard_Schedule WHERE Guard_Id = @GuardId";
                     using (var cmd = new SqlCommand(sqlCheck, conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         var val = cmd.ExecuteScalar();
                         if (val != null && val != DBNull.Value)
-                            return new GuardResult { Success = false, Message = "No se puede eliminar una guardia que ya fue iniciada." };
+                            return new GuardResult { Success = false, Message = "No se puede eliminar una guardia ya cerrada." };
                     }
 
                     string sql = "DELETE FROM Guard_Schedule WHERE Guard_Id = @GuardId";

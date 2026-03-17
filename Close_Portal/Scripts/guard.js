@@ -69,22 +69,20 @@ function renderGuardPanel() {
     document.getElementById('gdCreatedInfo').textContent =
         `${t('gd.created_by', 'Creada por')} ${escapeHtml(gd_guard.createdBy)} — ${gd_guard.createdAtFmt}`;
 
-    // Botón Iniciar: visible si todos llenos y no ha iniciado
-    const btnStart = document.getElementById('gdBtnStart');
-    btnStart.style.display = (gd_guard.allSpotsFilled && !gd_guard.isStarted) ? 'inline-flex' : 'none';
-
-    // Botón Eliminar: visible solo si no ha iniciado
+    // Botón Eliminar: visible mientras la guardia no haya cerrado
     const btnRemove = document.getElementById('gdBtnRemove');
-    btnRemove.style.display = !gd_guard.isStarted ? 'inline-flex' : 'none';
+    btnRemove.style.display = !gd_guard.isFinished ? 'inline-flex' : 'none';
 
-    // Banner de inicio
+    // Banner de inicio programado (si el inicio es en el futuro)
     const startStatus = document.getElementById('gdStartStatus');
-    if (gd_guard.isStarted) {
-        startStatus.style.display = 'flex';
-        document.getElementById('gdStartStatusText').textContent =
-            `${t('gd.started_at', 'Guardia iniciada:')} ${gd_guard.startTimeFmt}`;
-    } else {
-        startStatus.style.display = 'none';
+    if (startStatus) {
+        if (gd_guard.startTime && !gd_guard.isStarted) {
+            startStatus.style.display = 'flex';
+            document.getElementById('gdStartStatusText').textContent =
+                `${t('gd.scheduled_at', 'Inicio programado:')} ${gd_guard.startTimeFmt}`;
+        } else {
+            startStatus.style.display = 'none';
+        }
     }
 
     // Spots
@@ -116,7 +114,7 @@ function renderSpots(spots) {
                    <span>${t('gd.spot.pending', 'Sin asignar')}</span>
                </div>`;
 
-        const actionBtn = gd_guard.isStarted
+        const actionBtn = gd_guard.isFinished
             ? ''   // guardia iniciada — no se puede modificar spots
             : filled
                 ? `<button type="button" class="gd-btn-spot-clear"
@@ -166,14 +164,76 @@ function updateHeaderBadge() {
     }
 }
 
-// ─── CREATE GUARD ──────────────────────────────────────────
+// ─── CREATE GUARD (modal con fecha/hora) ───────────────────
 function createGuard() {
-    gdCall('CreateGuard', {}, (resp) => {
+    closeGdModal();
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    const minDt = toLocalISOString(now);
+
+    document.body.insertAdjacentHTML('beforeend', `
+    <div class="gd-overlay" id="gdOverlay" onclick="onOverlayClick(event)">
+        <div class="gd-modal" id="gdModal">
+            <div class="gd-modal-header">
+                <span class="material-icons">add_circle_outline</span>
+                <h3>${t('gd.modal.create_title', 'Nueva guardia')}</h3>
+                <button type="button" class="gd-modal-close" onclick="closeGdModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="gd-modal-body">
+                <div class="gd-modal-error" id="gdModalError" style="display:none;"></div>
+                <div class="gd-field-group">
+                    <label>${t('gd.modal.start_label', 'Inicio de la guardia')}</label>
+                    <input type="datetime-local" id="gdCreateStartTime"
+                           min="${minDt}" value="${minDt}" />
+                    <div class="gd-field-error" id="gdStartError" style="display:none;">
+                        ${t('gd.err.start_required', 'Fecha de inicio requerida.')}
+                    </div>
+                </div>
+            </div>
+            <div class="gd-modal-footer">
+                <button type="button" class="gd-btn-cancel" onclick="closeGdModal()">
+                    ${t('common.cancel', 'Cancelar')}
+                </button>
+                <button type="button" class="gd-btn-confirm" id="gdBtnConfirmCreate"
+                        onclick="submitCreateGuard()">
+                    <span class="material-icons">check</span>
+                    ${t('gd.modal.confirm_create', 'Crear guardia')}
+                </button>
+            </div>
+        </div>
+    </div>`);
+}
+
+function submitCreateGuard() {
+    const startVal = document.getElementById('gdCreateStartTime').value;
+    const errEl = document.getElementById('gdStartError');
+
+    if (!startVal) {
+        errEl.style.display = 'block';
+        return;
+    }
+    errEl.style.display = 'none';
+
+    const btn = document.getElementById('gdBtnConfirmCreate');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span> ${t('gd.modal.saving', 'Procesando...')}`;
+
+    gdCall('CreateGuard', { startTime: startVal }, (resp) => {
         if (resp.success) {
+            closeGdModal();
             showToast(t('gd.toast.created', 'Guardia creada. Asigna los responsables.'), 'success');
             loadGuardStatus();
         } else {
-            showToast(resp.message || t('gd.toast.error', 'Error al crear la guardia.'), 'error');
+            const modalErr = document.getElementById('gdModalError');
+            if (modalErr) {
+                modalErr.style.display = 'block';
+                modalErr.textContent = resp.message || t('gd.toast.error', 'Error al crear la guardia.');
+            }
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-icons">check</span> ${t('gd.modal.confirm_create', 'Crear guardia')}`;
         }
     });
 }
@@ -296,55 +356,6 @@ function submitUnassignSpot(spotId) {
             loadGuardStatus();
         } else {
             showToast(resp.message || t('gd.toast.error', 'Error.'), 'error');
-        }
-    });
-}
-
-// ─── START GUARD ───────────────────────────────────────────
-function startGuard() {
-    if (!gd_guard) return;
-
-    closeGdModal();
-    document.body.insertAdjacentHTML('beforeend', `
-    <div class="gd-overlay" id="gdOverlay" onclick="onOverlayClick(event)">
-        <div class="gd-modal gd-confirm-modal" id="gdModal">
-            <div class="gd-modal-header">
-                <span class="material-icons" style="color:var(--success-color)">play_circle_outline</span>
-                <h3>${t('gd.modal.start_title', 'Declarar inicio de guardia')}</h3>
-                <button type="button" class="gd-modal-close" onclick="closeGdModal()">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="gd-confirm-body">
-                <div class="gd-confirm-icon material-icons" style="color:var(--success-color)">shield</div>
-                <p>${t('gd.modal.start_msg', 'Se registrará el inicio de la guardia con el horario actual. Esta acción no se puede deshacer.')}</p>
-            </div>
-            <div class="gd-modal-footer">
-                <button type="button" class="gd-btn-cancel" onclick="closeGdModal()">
-                    ${t('common.cancel', 'Cancelar')}
-                </button>
-                <button type="button" class="gd-btn-confirm" id="gdBtnConfirmStart"
-                        onclick="submitStartGuard(${gd_guard.guardId})">
-                    <span class="material-icons">check</span>
-                    ${t('gd.modal.confirm_start', 'Confirmar inicio')}
-                </button>
-            </div>
-        </div>
-    </div>`);
-}
-
-function submitStartGuard(guardId) {
-    const btn = document.getElementById('gdBtnConfirmStart');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span> ${t('gd.modal.saving', 'Procesando...')}`;
-
-    gdCall('StartGuard', { guardId }, (resp) => {
-        closeGdModal();
-        if (resp.success) {
-            showToast(t('gd.toast.started', 'Guardia iniciada correctamente.'), 'success');
-            loadGuardStatus();
-        } else {
-            showToast(resp.message || t('gd.toast.error', 'Error al iniciar.'), 'error');
         }
     });
 }
@@ -482,4 +493,11 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+/** Date → string "yyyy-MM-ddTHH:mm" (input datetime-local) */
+function toLocalISOString(date) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+        `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }

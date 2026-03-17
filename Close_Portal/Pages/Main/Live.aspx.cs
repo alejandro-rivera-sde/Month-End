@@ -262,6 +262,7 @@ namespace Close_Portal.Pages.Main {
                 FROM  Guard_Schedule gs
                 LEFT  JOIN Users cb ON cb.User_Id = gs.Created_By
                 WHERE gs.Start_Time IS NOT NULL
+                  AND gs.Start_Time <= GETDATE()
                   AND gs.End_Time   IS NULL
                 ORDER BY gs.Start_Time DESC";
 

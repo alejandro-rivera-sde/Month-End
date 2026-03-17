@@ -115,14 +115,17 @@ namespace Close_Portal.Pages.Admin {
         // CREATE GUARD — crea guardia + spots vacíos por departamento
         // ============================================================
         [WebMethod(EnableSession = true)]
-        public static object CreateGuard() {
+        public static object CreateGuard(string startTime) {
             try {
                 SecurePage.CheckAccess(RoleLevel.Administrador);
+
+                if (!DateTime.TryParse(startTime, out DateTime start))
+                    return new { success = false, message = "Fecha de inicio inválida." };
 
                 int createdBy = (int)System.Web.HttpContext.Current.Session["UserId"];
 
                 var da = new GuardDataAccess();
-                var result = da.CreateGuard(createdBy);
+                var result = da.CreateGuard(createdBy, start);
 
                 if (!result.Success)
                     return new { success = false, message = result.Message };
@@ -181,49 +184,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // START GUARD — declara inicio (requiere todos los spots llenos)
-        // ============================================================
-        [WebMethod(EnableSession = true)]
-        public static object StartGuard(int guardId) {
-            try {
-                SecurePage.CheckAccess(RoleLevel.Administrador);
-
-                var da = new GuardDataAccess();
-                var result = da.StartGuard(guardId);
-
-                if (!result.Success)
-                    return new { success = false, message = result.Message };
-
-                System.Diagnostics.Debug.WriteLine($"[StartGuard] Guard {guardId} iniciada ✓");
-
-                // Notificar a todos los responsables (fire-and-forget)
-                var guard = da.GetCurrentGuard();
-                if (guard != null && guard.StartTime.HasValue) {
-                    string startedBy = System.Web.HttpContext.Current.Session["Email"]?.ToString();
-                    var spots = new System.Collections.Generic.List<(string, string, string, string)>();
-                    foreach (var s in guard.Spots)
-                        if (s.IsFilled)
-                            spots.Add((s.DepartmentCode, s.DepartmentName, s.Username, s.Email));
-
-                    System.Threading.Tasks.Task.Run(() => {
-                        EmailService.NotifyGuardStarted(
-                            startTime: guard.StartTime.Value,
-                            startedByEmail: startedBy,
-                            spots: spots
-                        );
-                    });
-                }
-
-                return new { success = true };
-
-            } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[StartGuard] ERROR: {ex.Message}");
-                return new { success = false, message = ex.Message };
-            }
-        }
-
-        // ============================================================
-        // REMOVE GUARD — elimina guardia no iniciada
+        // REMOVE GUARD — elimina guardia no cerrada
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object RemoveGuard(int guardId) {
