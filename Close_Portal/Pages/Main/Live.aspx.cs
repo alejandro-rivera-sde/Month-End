@@ -314,18 +314,8 @@ namespace Close_Portal.Pages.Main {
                     FROM   WMS_Location
                     WHERE  Active = 1
                     ORDER BY Location_Name";
-            } else if (roleId == RoleLevel.Administrador || roleId == RoleLevel.Manager) {
-                sql = @"
-                    SELECT DISTINCT
-                        wl.Location_Id,
-                        wl.Location_Name
-                    FROM  WMS_Location  wl
-                    INNER JOIN Location_OMS lo ON wl.Location_Id = lo.Location_Id
-                    INNER JOIN Users_OMS    uo ON lo.OMS_Id      = uo.OMS_Id
-                    WHERE wl.Active  = 1
-                      AND uo.User_Id = @userId
-                    ORDER BY wl.Location_Name";
             } else {
+                // Manager, Admin y Regular — solo las locaciones asignadas directamente
                 sql = @"
                     SELECT
                         wl.Location_Id,

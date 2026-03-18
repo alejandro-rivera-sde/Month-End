@@ -9,6 +9,10 @@ using Close_Portal.DataAccess;
 namespace Close_Portal.Services {
     public static class EmailService {
 
+        // ── Deshabilitar todas las notificaciones temporalmente ──────────
+        // Cambiar a true para reactivar el envío de correos.
+        private static readonly bool NOTIFICATIONS_ENABLED = false;
+
         private static readonly string SmtpHost = ConfigurationManager.AppSettings["Smtp_Host"];
         private static readonly int SmtpPort = int.Parse(ConfigurationManager.AppSettings["Smtp_Port"] ?? "587");
         private static readonly string SmtpUser = ConfigurationManager.AppSettings["Smtp_User"];
@@ -270,6 +274,10 @@ namespace Close_Portal.Services {
         }
 
         private static void Send(string subject, string body, string recipientList = null) {
+            if (!NOTIFICATIONS_ENABLED) {
+                Debug.WriteLine($"[EmailService] Notificaciones deshabilitadas. Omitido: {subject}");
+                return;
+            }
             var targets = recipientList ?? AdminEmails;
 
             if (string.IsNullOrWhiteSpace(targets)) {

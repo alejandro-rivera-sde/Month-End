@@ -354,65 +354,33 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
-                    // ── 3. Locaciones visibles al admin, con Assigned del target
-                    //    Visibilidad: locaciones con al menos un OMS del admin en Users_OMS
-                    //    Cada ítem incluye OmsIds[] para que JS filtre por OMS seleccionados
+                    // ── 3. Todas las locaciones activas, con Assigned del target
                     string sqlLoc = @"
                         SELECT
                             wl.Location_Id,
                             wl.Location_Name,
-                            lo.OMS_Id,
-                            o.OMS_Code,
                             CASE WHEN ul.User_Id IS NOT NULL THEN 1 ELSE 0 END AS Assigned
                         FROM WMS_Location wl
-                        LEFT JOIN Location_OMS   lo ON lo.Location_Id = wl.Location_Id
-                        LEFT JOIN OMS            o  ON o.OMS_Id       = lo.OMS_Id
                         LEFT JOIN Users_Location ul ON ul.Location_Id = wl.Location_Id
                                                    AND ul.User_Id     = @UserId
                         WHERE wl.Active = 1
-                        " + (isOwner ? "" : @"
-                          AND EXISTS (
-                              SELECT 1
-                              FROM Location_OMS lo2
-                              INNER JOIN Users_OMS uo ON uo.OMS_Id  = lo2.OMS_Id
-                                                     AND uo.User_Id = @CurrentUserId
-                              WHERE lo2.Location_Id = wl.Location_Id
-                          )") + @"
-                        ORDER BY wl.Location_Name, o.OMS_Code";
+                        ORDER BY wl.Location_Name";
 
-                    var locMap = new Dictionary<int, (string Name, bool Assigned, List<int> OmsIds, List<string> OmsCodes)>();
+                    var locationList = new List<object>();
 
                     using (SqlCommand cmd = new SqlCommand(sqlLoc, conn)) {
                         cmd.Parameters.AddWithValue("@UserId", userId);
-                        if (!isOwner)
-                            cmd.Parameters.AddWithValue("@CurrentUserId", currentUserId);
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             while (r.Read()) {
-                                int locId = (int)r["Location_Id"];
-                                if (!locMap.ContainsKey(locId))
-                                    locMap[locId] = (r["Location_Name"].ToString(),
-                                                     (int)r["Assigned"] == 1,
-                                                     new List<int>(),
-                                                     new List<string>());
-                                if (r["OMS_Id"] != DBNull.Value) {
-                                    locMap[locId].OmsIds.Add((int)r["OMS_Id"]);
-                                    locMap[locId].OmsCodes.Add(r["OMS_Code"].ToString());
-                                }
+                                locationList.Add(new {
+                                    LocationId = (int)r["Location_Id"],
+                                    LocationName = r["Location_Name"].ToString(),
+                                    OmsIds = new int[0],
+                                    OmsLabel = "—",
+                                    Assigned = (int)r["Assigned"] == 1
+                                });
                             }
                         }
-                    }
-
-                    var locationList = new List<object>();
-                    foreach (var kv in locMap) {
-                        locationList.Add(new {
-                            LocationId = kv.Key,
-                            LocationName = kv.Value.Name,
-                            OmsIds = kv.Value.OmsIds.ToArray(),
-                            OmsLabel = kv.Value.OmsCodes.Count > 0
-                                           ? string.Join(", ", kv.Value.OmsCodes)
-                                           : "—",
-                            Assigned = kv.Value.Assigned
-                        });
                     }
 
                     return new {
@@ -499,69 +467,34 @@ namespace Close_Portal.Pages.Admin {
 
         // ============================================================
         // WEBMETHOD — GetAllLocations
-        // Para el modal de nuevo usuario. Visibilidad via Users_OMS del admin.
-        // Devuelve OmsIds[] para que JS filtre dinámicamente.
+        // Devuelve todas las locaciones activas. Sin filtro por OMS del admin.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetAllLocations() {
             try {
-                var session = System.Web.HttpContext.Current.Session;
-                int currentRoleId = session["RoleId"] != null ? (int)session["RoleId"] : -1;
-                int currentUserId = session["UserId"] != null ? (int)session["UserId"] : -1;
-                bool isOwner = currentRoleId >= RoleLevel.Owner;
-
-                string sql = @"
-                    SELECT
-                        wl.Location_Id,
-                        wl.Location_Name,
-                        lo.OMS_Id,
-                        o.OMS_Code
-                    FROM WMS_Location wl
-                    LEFT JOIN Location_OMS lo ON lo.Location_Id = wl.Location_Id
-                    LEFT JOIN OMS          o  ON o.OMS_Id       = lo.OMS_Id
-                    WHERE wl.Active = 1
-                    " + (isOwner ? "" : @"
-                      AND EXISTS (
-                          SELECT 1
-                          FROM Location_OMS lo2
-                          INNER JOIN Users_OMS uo ON uo.OMS_Id  = lo2.OMS_Id
-                                                 AND uo.User_Id = @CurrentUserId
-                          WHERE lo2.Location_Id = wl.Location_Id
-                      )") + @"
-                    ORDER BY wl.Location_Name, o.OMS_Code";
-
-                var locMap = new Dictionary<int, (string Name, List<int> OmsIds, List<string> OmsCodes)>();
+                var list = new List<object>();
 
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
+                    string sql = @"
+                        SELECT Location_Id, Location_Name
+                        FROM WMS_Location
+                        WHERE Active = 1
+                        ORDER BY Location_Name";
+
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
-                        if (!isOwner)
-                            cmd.Parameters.AddWithValue("@CurrentUserId", currentUserId);
                         conn.Open();
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             while (r.Read()) {
-                                int locId = (int)r["Location_Id"];
-                                if (!locMap.ContainsKey(locId))
-                                    locMap[locId] = (r["Location_Name"].ToString(), new List<int>(), new List<string>());
-                                if (r["OMS_Id"] != DBNull.Value) {
-                                    locMap[locId].OmsIds.Add((int)r["OMS_Id"]);
-                                    locMap[locId].OmsCodes.Add(r["OMS_Code"].ToString());
-                                }
+                                list.Add(new {
+                                    LocationId = (int)r["Location_Id"],
+                                    LocationName = r["Location_Name"].ToString(),
+                                    OmsIds = new int[0],
+                                    OmsLabel = "—",
+                                    Assigned = false
+                                });
                             }
                         }
                     }
-                }
-
-                var list = new List<object>();
-                foreach (var kv in locMap) {
-                    list.Add(new {
-                        LocationId = kv.Key,
-                        LocationName = kv.Value.Name,
-                        OmsIds = kv.Value.OmsIds.ToArray(),
-                        OmsLabel = kv.Value.OmsCodes.Count > 0
-                                       ? string.Join(", ", kv.Value.OmsCodes)
-                                       : "—",
-                        Assigned = false
-                    });
                 }
 
                 return new { Success = true, Data = list };
