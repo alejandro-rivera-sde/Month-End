@@ -11,6 +11,7 @@ let db_currentFilter = 'all';
 // ─── INIT ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
+    initSignalR();
 
     // Stat cards también actúan como filtro
     document.querySelectorAll('.db-stat-card').forEach(card => {
@@ -19,6 +20,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// ─── SIGNALR ────────────────────────────────────────────────
+function initSignalR() {
+    try {
+        const hub = $.connection.locationHub;
+
+        // Evento recibido cuando una locación cambia de estado
+        hub.client.locationUpdated = function (data) {
+            console.log('[SignalR] locationUpdated:', data);
+            loadDashboard();
+        };
+
+        $.connection.hub.start()
+            .done(function () {
+                console.log('[SignalR] Conectado. ConnectionId:', $.connection.hub.id);
+                hub.server.joinLive();
+            })
+            .fail(function (err) {
+                console.warn('[SignalR] Error al conectar:', err);
+            });
+
+        // Reconexión automática
+        $.connection.hub.disconnected(function () {
+            setTimeout(function () {
+                $.connection.hub.start()
+                    .done(function () { hub.server.joinLive(); });
+            }, 5000);
+        });
+
+    } catch (err) {
+        console.warn('[SignalR] No disponible:', err);
+    }
+}
 
 // ─── LOAD ───────────────────────────────────────────────────
 function loadDashboard() {

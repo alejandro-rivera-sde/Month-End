@@ -1,4 +1,5 @@
 ﻿using Close_Portal.Core;
+using Close_Portal.Hubs;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -202,6 +203,16 @@ namespace Close_Portal.Pages {
 
                     System.Diagnostics.Debug.WriteLine(
                         $"[ValidateRequest.ReviewRequest] RequestId={requestId} → {action} by UserId={reviewerId}");
+
+                    // Notificar en tiempo real a todos los clientes en Live.aspx
+                    string reviewerName = session["Username"]?.ToString() ?? session["Email"]?.ToString() ?? "";
+                    string locName = "";
+                    using (var cmd = new SqlCommand(
+                        "SELECT Location_Name FROM WMS_Location WHERE Location_Id = @LocationId", conn)) {
+                        cmd.Parameters.AddWithValue("@LocationId", locationId);
+                        locName = cmd.ExecuteScalar()?.ToString() ?? "";
+                    }
+                    LocationHub.NotifyLocationUpdated(locationId, locName, action, reviewerName);
                 }
 
                 string label = action == "Approved" ? "aprobada" : "rechazada";
