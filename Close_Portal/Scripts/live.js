@@ -51,13 +51,7 @@ function initSignalR() {
             .fail(function (err) {
                 console.warn('[SignalR] Error al conectar:', err);
             });
-
-        // Reconexión automática
-        $.connection.hub.disconnected(function () {
-            setTimeout(function () {
-                $.connection.hub.start();
-            }, 5000);
-        });
+        // Reconexión manejada por dashboard_layout.js
 
     } catch (err) {
         console.warn('[SignalR] No disponible:', err);

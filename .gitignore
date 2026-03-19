@@ -10,11 +10,16 @@
 # Raíz del repositorio
 !.gitignore
 !Close_Portal.sln
+!Startup.cs
 
 # Proyecto principal
 !Close_Portal/
 !Close_Portal/Close_Portal.csproj
 !Close_Portal/packages.config
+
+!Close_Portal/Hubs/
+Close_Portal/Hubs/*
+!Close_Portal/Hubs/*.cs
 
 # Masters
 !Close_Portal/DashboardLayout.Master

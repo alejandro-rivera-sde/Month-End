@@ -235,6 +235,24 @@ namespace Close_Portal.Pages {
                     System.Diagnostics.Debug.WriteLine(
                         $"[RequestClosure.SubmitRequest] RequestId={requestId} Location={locationName} by UserId={requestedBy}");
 
+                    // Marcar como leídas notificaciones de respuestas anteriores
+                    // de esta misma locación — el nuevo request implica que el usuario
+                    // ya vio el resultado anterior.
+                    using (var cmd = new SqlCommand(@"
+                        UPDATE Notifications
+                        SET Is_Read = 1
+                        WHERE User_Id  = @UserId
+                          AND Type     = 'request_reviewed'
+                          AND Is_Read  = 0
+                          AND Reference_Id IN (
+                              SELECT Request_Id FROM Closure_Requests
+                              WHERE Location_Id = @LocationId
+                          )", conn)) {
+                        cmd.Parameters.AddWithValue("@UserId", requestedBy);
+                        cmd.Parameters.AddWithValue("@LocationId", locationId);
+                        cmd.ExecuteNonQuery();
+                    }
+
                     // Notificar en tiempo real a managers en ValidateRequest
                     LocationHub.NotifyNewRequest(managerId, requestId, locationName, requesterName);
 

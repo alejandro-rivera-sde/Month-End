@@ -263,7 +263,15 @@ function submitReview(requestId, action) {
             if (d.success) {
                 closeReviewModal();
                 loadRequests();
-                refreshBadge();
+                // Marcar notificación de esta solicitud como leída
+                $.ajax({
+                    type: 'POST',
+                    url: '/Pages/Main/Live.aspx/MarkAsRead',
+                    data: JSON.stringify({ referenceId: requestId, type: 'new_request' }),
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json',
+                    complete: function () { refreshBadge(); }
+                });
             } else {
                 btnConf.disabled = false;
                 var isApprove = action === 'Approved';
@@ -298,4 +306,14 @@ function escHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-// SignalR: handlers y suscripción gestionados por dashboard_layout.js
+// SignalR: suscripción gestionada por dashboard_layout.js.
+// Extendemos newRequest para recargar la lista en esta página.
+(function () {
+    if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
+    var hub = $.connection.locationHub;
+    var _base = hub.client.newRequest;
+    hub.client.newRequest = function (data) {
+        if (_base) _base(data);  // OS notif + badge (dashboard_layout.js)
+        loadRequests();           // recargar lista específica de esta página
+    };
+})();

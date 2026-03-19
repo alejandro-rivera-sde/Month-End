@@ -316,6 +316,37 @@ namespace Close_Portal.Pages.Main {
         }
 
         // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — MarkAsRead
+        // Marca como leídas las notificaciones de un tipo+referencia específica
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object MarkAsRead(int referenceId, string type) {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                using (var conn = new SqlConnection(cs))
+                using (var cmd = new SqlCommand(@"
+                    UPDATE Notifications SET Is_Read = 1
+                    WHERE User_Id     = @UserId
+                      AND Reference_Id = @RefId
+                      AND Type         = @Type
+                      AND Is_Read      = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@RefId", referenceId);
+                    cmd.Parameters.AddWithValue("@Type", type);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                return new { success = true };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[MarkAsRead] ERROR: {ex.Message}");
+                return new { success = false };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
         // WEBMETHOD — MarkAllRead
         // ════════════════════════════════════════════════════════════════
         [WebMethod(EnableSession = true)]

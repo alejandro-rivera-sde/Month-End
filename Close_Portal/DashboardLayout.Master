@@ -159,7 +159,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <!-- Notifications -->
                     <div class="position-relative">
-                        <button class="btn btn-link p-2" id="notifBtn" onclick="toggleNotifPanel()">
+                        <button type="button" class="btn btn-link p-2" id="notifBtn" onclick="toggleNotifPanel()">
                             <span class="material-icons">notifications_active</span>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
                                   id="notifBadge" style="display:none;">

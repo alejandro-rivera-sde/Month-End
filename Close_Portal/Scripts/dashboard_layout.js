@@ -331,9 +331,16 @@ function subscribeToNotifGroup() {
         if (change.newState === 1) joinGroups();
     });
 
+    // Reconexión automática al desconectarse
+    $.connection.hub.disconnected(function () {
+        setTimeout(function () {
+            $.connection.hub.start().done(joinGroups);
+        }, 5000);
+    });
+
     if ($.connection.hub.state === 1) {
         joinGroups();
-    } else if ($.connection.hub.state === 0) {
+    } else {
         $.connection.hub.start().done(joinGroups);
     }
 }
