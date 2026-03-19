@@ -159,12 +159,27 @@
                 <div class="d-flex align-items-center gap-3">
                     <!-- Notifications -->
                     <div class="position-relative">
-                        <button class="btn btn-link p-2">
+                        <button class="btn btn-link p-2" id="notifBtn" onclick="toggleNotifPanel()">
                             <span class="material-icons">notifications_active</span>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                3
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="notifBadge" style="display:none;">
+                                0
                             </span>
                         </button>
+                        <!-- Panel de notificaciones -->
+                        <div id="notifPanel" class="notif-panel" style="display:none;">
+                            <div class="notif-panel-header">
+                                <span class="notif-panel-title">Notificaciones</span>
+                                <button type="button" class="notif-mark-read" onclick="markAllRead()">
+                                    Marcar como leídas
+                                </button>
+                            </div>
+                            <div id="notifList" class="notif-list">
+                                <div class="notif-loading">
+                                    <span class="material-icons notif-spin">autorenew</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- User Dropdown -->
@@ -245,13 +260,19 @@
 
     <!-- Translations ANTES de dashboard_layout.js -->
     <script src='<%= ResolveUrl("~/Scripts/translations.js") %>'></script>
-    
-    <!-- Dashboard JS -->
-    <script src='<%= ResolveUrl("~/Scripts/dashboard_layout.js") %>'></script>
-    
-    <!-- SignalR — disponible para todas las páginas hijas -->
+
+    <!-- SignalR ANTES de dashboard_layout.js para que los handlers se registren a tiempo -->
     <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>'></script>
     <script src="/signalr/hubs"></script>
+
+    <!-- Exponer rol y userId del usuario para SignalR handlers -->
+    <script>
+        window.CurrentRoleId = <%= Session["RoleId"] ?? "0" %>;
+        window.CurrentUserId = '<%= Session["UserId"] ?? "0" %>';
+    </script>
+
+    <!-- Dashboard JS -->
+    <script src='<%= ResolveUrl("~/Scripts/dashboard_layout.js") %>'></script>
 
     <!-- Content Placeholder para scripts adicionales de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalScripts" runat="server">

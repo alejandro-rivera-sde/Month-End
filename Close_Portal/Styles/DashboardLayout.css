@@ -707,3 +707,122 @@
     color: rgba(255, 255, 255, 0.95);
     letter-spacing: 0.3px;
 }
+
+/* ── NOTIFICATION PANEL ─────────────────────────────────── */
+.notif-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: var(--shadow-xl);
+    z-index: 1050;
+    overflow: hidden;
+}
+
+.notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.notif-panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.notif-mark-read {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0;
+}
+
+    .notif-mark-read:hover {
+        text-decoration: underline;
+    }
+
+.notif-list {
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.notif-loading {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-muted);
+}
+
+.notif-empty {
+    text-align: center;
+    padding: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--divider-color);
+    transition: background 0.15s;
+}
+
+    .notif-item:last-child {
+        border-bottom: none;
+    }
+
+    .notif-item:hover {
+        background: var(--divider-color);
+    }
+
+.notif-item-unread {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.notif-item-icon {
+    font-size: 20px;
+    color: var(--primary-color);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notif-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-item-msg {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.notif-item-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+@keyframes notif-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.notif-spin {
+    animation: notif-spin 1s linear infinite;
+}

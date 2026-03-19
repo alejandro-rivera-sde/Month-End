@@ -247,3 +247,16 @@ function escHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+// ─── SIGNALR ────────────────────────────────────────────────
+// dashboard_layout.js gestiona OS notification, badge y suscripción al grupo.
+// Aquí solo extendemos el handler para recargar el historial en esta página.
+(function () {
+    if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
+    var hub = $.connection.locationHub;
+    var _base = hub.client.requestReviewed;
+    hub.client.requestReviewed = function (data) {
+        if (_base) _base(data);  // ejecutar handler base (OS notif + badge)
+        loadHistory();            // recargar historial específico de esta página
+    };
+})();

@@ -61,10 +61,9 @@ namespace Close_Portal.Pages {
                         LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
                         WHERE EXISTS (
                             SELECT 1
-                            FROM Location_OMS lo
-                            INNER JOIN Users_OMS uo ON uo.OMS_Id = lo.OMS_Id
-                            WHERE lo.Location_Id = cr.Location_Id
-                              AND uo.User_Id     = @UserId
+                            FROM Users_Location ul
+                            WHERE ul.Location_Id = cr.Location_Id
+                              AND ul.User_Id     = @UserId
                         )
                         ORDER BY
                             CASE cr.Status WHEN 'Pending' THEN 0 ELSE 1 END,
@@ -169,14 +168,13 @@ namespace Close_Portal.Pages {
                         }
                     }
 
-                    // 2. Manager: verificar que comparte OMS con la locación
+                    // 2. Manager: verificar que tiene la locación asignada en Users_Location
                     if (roleId == RoleLevel.Manager) {
                         using (var cmd = new SqlCommand(@"
                             SELECT COUNT(*)
-                            FROM Location_OMS lo
-                            INNER JOIN Users_OMS uo ON uo.OMS_Id   = lo.OMS_Id
-                            WHERE lo.Location_Id = @LocationId
-                              AND uo.User_Id     = @UserId", conn)) {
+                            FROM Users_Location
+                            WHERE Location_Id = @LocationId
+                              AND User_Id     = @UserId", conn)) {
                             cmd.Parameters.AddWithValue("@LocationId", locationId);
                             cmd.Parameters.AddWithValue("@UserId", reviewerId);
                             if ((int)cmd.ExecuteScalar() == 0)
@@ -213,6 +211,15 @@ namespace Close_Portal.Pages {
                         locName = cmd.ExecuteScalar()?.ToString() ?? "";
                     }
                     LocationHub.NotifyLocationUpdated(locationId, locName, action, reviewerName);
+
+                    // Notificar al solicitante específico
+                    int requestedByUserId;
+                    using (var cmd = new SqlCommand(
+                        "SELECT Requested_By FROM Closure_Requests WHERE Request_Id = @RequestId", conn)) {
+                        cmd.Parameters.AddWithValue("@RequestId", requestId);
+                        requestedByUserId = (int)cmd.ExecuteScalar();
+                    }
+                    LocationHub.NotifyRequestReviewed(requestedByUserId, requestId, locName, action, reviewerName);
                 }
 
                 string label = action == "Approved" ? "aprobada" : "rechazada";

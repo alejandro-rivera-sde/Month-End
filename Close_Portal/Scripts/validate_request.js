@@ -263,6 +263,7 @@ function submitReview(requestId, action) {
             if (d.success) {
                 closeReviewModal();
                 loadRequests();
+                refreshBadge();
             } else {
                 btnConf.disabled = false;
                 var isApprove = action === 'Approved';
@@ -296,3 +297,5 @@ function escHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+// SignalR: handlers y suscripción gestionados por dashboard_layout.js

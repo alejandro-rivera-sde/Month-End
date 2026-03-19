@@ -30,14 +30,12 @@ namespace Close_Portal {
             sectionValidation.Visible = (roleId == 4 || roleId == 3 || roleId == 2);
             sectionWarehouses.Visible = true;
 
-            // Clase por rol
             string roleKey = roleId == 4 ? "owner"
                            : roleId == 3 ? "admin"
                            : roleId == 2 ? "manager"
                            : "regular";
 
             dashboardHeader.Attributes["class"] = $"dashboard-header header-role-{roleKey}";
-
             System.Diagnostics.Debug.WriteLine($"=== Role key: {roleKey} ===");
         }
 
@@ -66,13 +64,12 @@ namespace Close_Portal {
         private string GetWmsFullName(string wmsCode) {
             var wmsMap = new Dictionary<string, string> {
                 { "NVMCLX", "Calexico" },
-                { "NVMMES", "Dallas" },
+                { "NVMMES", "Dallas"   },
                 { "NVMMSQ", "Mesquite" },
                 { "NVMMXL", "Mexicali" },
                 { "NVMLRD", "Nuevo Laredo" }
             };
-
-            if (string.IsNullOrEmpty(wmsCode)) return "";
+            if (string.IsNullOrEmpty(wmsCode)) return "N/A";
             return wmsMap.ContainsKey(wmsCode.ToUpper()) ? wmsMap[wmsCode.ToUpper()] : wmsCode;
         }
 

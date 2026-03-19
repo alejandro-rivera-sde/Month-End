@@ -1,4 +1,5 @@
 ﻿using Close_Portal.Core;
+using Close_Portal.Hubs;
 using Close_Portal.Services;
 using System;
 using System.Collections.Generic;
@@ -83,10 +84,8 @@ namespace Close_Portal.Pages {
 
         // ============================================================
         // GET MANAGER FOR LOCATION
-        // Busca el Manager (RoleId = 2) que comparte al menos un OMS
-        // con la locación seleccionada, via:
-        //   Location_OMS → OMS → Users_OMS → Users
-        // Si hay varios, devuelve el primero activo (ORDER BY Username).
+        // Busca el Manager (RoleId = 2) que tiene la locación asignada
+        // directamente en Users_Location.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetManagerForLocation(int locationId) {
@@ -99,9 +98,8 @@ namespace Close_Portal.Pages {
                         u.Username,
                         u.Email
                     FROM Users u
-                    INNER JOIN Users_OMS   uo ON uo.User_Id   = u.User_Id
-                    INNER JOIN Location_OMS lo ON lo.OMS_Id   = uo.OMS_Id
-                    WHERE lo.Location_Id = @LocationId
+                    INNER JOIN Users_Location ul ON ul.User_Id     = u.User_Id
+                    WHERE ul.Location_Id = @LocationId
                       AND u.Role_Id      = @ManagerRole
                       AND u.Active       = 1
                     ORDER BY u.Username";
@@ -113,7 +111,7 @@ namespace Close_Portal.Pages {
                         conn.Open();
                         using (var r = cmd.ExecuteReader()) {
                             if (!r.Read())
-                                return new { success = true, data = (object)null }; // sin manager
+                                return new { success = true, data = (object)null };
 
                             return new {
                                 success = true,
@@ -194,7 +192,7 @@ namespace Close_Portal.Pages {
                         }
                     }
 
-                    // 4. Buscar Manager de la locación
+                    // 4. Buscar Manager de la locación via Users_Location
                     int managerId = 0;
                     string managerEmail = "";
                     string managerName = "";
@@ -202,9 +200,8 @@ namespace Close_Portal.Pages {
                         SELECT TOP 1
                             u.User_Id, u.Email, u.Username
                         FROM Users u
-                        INNER JOIN Users_OMS    uo ON uo.User_Id   = u.User_Id
-                        INNER JOIN Location_OMS lo ON lo.OMS_Id    = uo.OMS_Id
-                        WHERE lo.Location_Id = @LocationId
+                        INNER JOIN Users_Location ul ON ul.User_Id     = u.User_Id
+                        WHERE ul.Location_Id = @LocationId
                           AND u.Role_Id      = @ManagerRole
                           AND u.Active       = 1
                         ORDER BY u.Username", conn)) {
@@ -238,7 +235,10 @@ namespace Close_Portal.Pages {
                     System.Diagnostics.Debug.WriteLine(
                         $"[RequestClosure.SubmitRequest] RequestId={requestId} Location={locationName} by UserId={requestedBy}");
 
-                    // 6. Notificar al Manager — fuera de transacción
+                    // Notificar en tiempo real a managers en ValidateRequest
+                    LocationHub.NotifyNewRequest(managerId, requestId, locationName, requesterName);
+
+                    // 6. Notificar al Manager por correo
                     System.Threading.Tasks.Task.Run(() => {
                         EmailService.NotifyClosureRequest(
                             managerEmail: managerEmail,

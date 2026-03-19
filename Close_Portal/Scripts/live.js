@@ -8,6 +8,15 @@
 let db_allLocations = [];
 let db_currentFilter = 'all';
 
+// ─── SIGNALR — handlers registrados antes de start() ────────
+(function () {
+    if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
+    $.connection.locationHub.client.locationUpdated = function (data) {
+        console.log('[SignalR] locationUpdated:', data);
+        loadDashboard();
+    };
+})();
+
 // ─── INIT ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
@@ -26,16 +35,18 @@ function initSignalR() {
     try {
         const hub = $.connection.locationHub;
 
-        // Evento recibido cuando una locación cambia de estado
-        hub.client.locationUpdated = function (data) {
-            console.log('[SignalR] locationUpdated:', data);
-            loadDashboard();
-        };
+        function subscribeToGroup() {
+            hub.server.joinLive();
+        }
+
+        $.connection.hub.stateChanged(function (change) {
+            if (change.newState === 1) subscribeToGroup();
+        });
 
         $.connection.hub.start()
             .done(function () {
                 console.log('[SignalR] Conectado. ConnectionId:', $.connection.hub.id);
-                hub.server.joinLive();
+                subscribeToGroup();
             })
             .fail(function (err) {
                 console.warn('[SignalR] Error al conectar:', err);
@@ -44,8 +55,7 @@ function initSignalR() {
         // Reconexión automática
         $.connection.hub.disconnected(function () {
             setTimeout(function () {
-                $.connection.hub.start()
-                    .done(function () { hub.server.joinLive(); });
+                $.connection.hub.start();
             }, 5000);
         });
 

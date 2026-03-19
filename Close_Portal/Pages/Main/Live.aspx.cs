@@ -249,6 +249,97 @@ namespace Close_Portal.Pages.Main {
         }
 
         // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — GetUnreadCount
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object GetUnreadCount() {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false, count = 0 };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                int count = 0;
+                using (var conn = new SqlConnection(cs))
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(*) FROM Notifications WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    count = (int)cmd.ExecuteScalar();
+                }
+                return new { success = true, count };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[GetUnreadCount] ERROR: {ex.Message}");
+                return new { success = false, count = 0 };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — GetNotifications
+        // Devuelve las últimas 20 notificaciones del usuario (leídas y no)
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object GetNotifications() {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                var list = new System.Collections.Generic.List<object>();
+                using (var conn = new SqlConnection(cs))
+                using (var cmd = new SqlCommand(@"
+                    SELECT TOP 20
+                        Notification_Id, Type, Reference_Id, Message, Is_Read,
+                        Created_At
+                    FROM Notifications
+                    WHERE User_Id = @UserId
+                    ORDER BY Created_At DESC", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        while (r.Read()) {
+                            list.Add(new {
+                                notificationId = (int)r["Notification_Id"],
+                                type = r["Type"].ToString(),
+                                referenceId = r["Reference_Id"] as int?,
+                                message = r["Message"].ToString(),
+                                isRead = (bool)r["Is_Read"],
+                                createdAt = ((DateTime)r["Created_At"]).ToString("dd/MM HH:mm")
+                            });
+                        }
+                    }
+                }
+                return new { success = true, data = list };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[GetNotifications] ERROR: {ex.Message}");
+                return new { success = false };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — MarkAllRead
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object MarkAllRead() {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                using (var conn = new SqlConnection(cs))
+                using (var cmd = new SqlCommand(
+                    "UPDATE Notifications SET Is_Read = 1 WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                return new { success = true };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[MarkAllRead] ERROR: {ex.Message}");
+                return new { success = false };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
         // HELPERS PRIVADOS
         // ════════════════════════════════════════════════════════════════
 
