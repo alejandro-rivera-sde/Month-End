@@ -115,6 +115,7 @@ function sendRequest() {
                 document.getElementById('rcNoManager').style.display = 'none';
                 btn.disabled = true;
                 rc_managerId = 0;
+                loadMyLocations(); // quitar la locación enviada del dropdown en tiempo real
                 loadHistory();
             } else {
                 showFormMsg(d.message || 'Error al enviar la solicitud.', 'error');
@@ -258,5 +259,6 @@ function escHtml(str) {
     hub.client.requestReviewed = function (data) {
         if (_base) _base(data);  // ejecutar handler base (OS notif + badge)
         loadHistory();            // recargar historial específico de esta página
+        loadMyLocations();        // re-mostrar locaciones aprobadas/rechazadas en el dropdown
     };
 })();

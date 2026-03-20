@@ -44,6 +44,12 @@ namespace Close_Portal.Pages {
                     LEFT  JOIN OMS             o  ON o.OMS_Id       = lo.OMS_Id
                     WHERE ul.User_Id = @UserId
                       AND wl.Active  = 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM Closure_Requests cr
+                          WHERE cr.Location_Id  = wl.Location_Id
+                            AND cr.Requested_By = @UserId
+                            AND cr.Status       = 'Pending'
+                      )
                     ORDER BY wl.Location_Name, o.OMS_Code";
 
                 var locMap = new Dictionary<int, (string Name, List<string> Codes)>();
