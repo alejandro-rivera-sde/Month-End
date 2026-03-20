@@ -292,7 +292,7 @@
    Forzamos --text-secondary globalmente para todas las páginas.
    Guard.css puede eliminar su override local de .page-title p. */
 .page-header {
-    margin-bottom: 24px;
+    margin-bottom: 15px;
 }
 
 .page-title h2 {

@@ -21,7 +21,7 @@
         </div>
         <div class="gd-header-badge" id="guardStatusBadge">
             <span class="material-icons">shield</span>
-            <span id="guardStatusText" data-translate-key="gd.badge.loading">Cargando...</span>
+            <span id="guardStatusText"></span>
         </div>
     </div>
 
@@ -48,6 +48,12 @@
                     <span id="gdCreatedInfo"></span>
                 </div>
                 <div class="gd-guard-actions">
+                    <!-- Paso 3: visible solo en borrador con locaciones seleccionadas -->
+                    <button type="button" class="gd-btn-confirm-guard" id="gdBtnConfirmGuard"
+                            onclick="submitConfirmGuard()" style="display:none;">
+                        <span class="material-icons">rocket_launch</span>
+                        <span data-translate-key="gd.btn.confirm_guard">Crear guardia</span>
+                    </button>
                     <button type="button" class="gd-btn-danger-sm" id="gdBtnRemove"
                             onclick="confirmRemoveGuard()" style="display:none;">
                         <span class="material-icons">delete_outline</span>
@@ -62,6 +68,12 @@
                 <span id="gdStartStatusText"></span>
             </div>
 
+            <!-- Banner de cierre estimado (informativo, no afecta el cierre real) -->
+            <div class="gd-est-end-status" id="gdEstEndStatus" style="display:none;">
+                <span class="material-icons">event_available</span>
+                <span id="gdEstEndStatusText"></span>
+            </div>
+
             <!-- Slots por departamento -->
             <div class="gd-spots-grid" id="gdSpotsGrid">
                 <!-- Llenado por guard.js -->
@@ -69,6 +81,25 @@
 
         </div>
 
+    </div>
+
+    <!-- ========== LOCACIONES INVOLUCRADAS ========== -->
+    <div class="gd-section" id="gdLocSection" style="display:none;">
+        <div class="gd-section-header">
+            <span class="material-icons">warehouse</span>
+            <h3 data-translate-key="gd.loc.title">Locaciones en operación</h3>
+            <span class="gd-count-badge" id="gdLocCount">—</span>
+        </div>
+        <p class="gd-loc-subtitle" data-translate-key="gd.loc.subtitle">
+            Locaciones definidas al crear esta guardia como parte del cierre programado.
+        </p>
+
+        <div class="gd-loc-empty" id="gdLocEmpty" style="display:none;">
+            <span class="material-icons">inventory_2</span>
+            <p data-translate-key="gd.loc.empty">Sin movimientos registrados aún.</p>
+        </div>
+
+        <div class="gd-loc-grid" id="gdLocGrid"></div>
     </div>
 
     <!-- ========== HISTORIAL ========== -->

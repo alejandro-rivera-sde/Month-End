@@ -58,25 +58,51 @@ namespace Close_Portal.DataAccess {
         public int GuardId { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
+        public DateTime? EstimatedEndTime { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsConfirmed { get; set; }
+        public int LocationCount { get; set; }
         public List<GuardSpotViewModel> Spots { get; set; } = new List<GuardSpotViewModel>();
 
-        // Estado derivado de los spots y tiempos
         public bool AllSpotsFilled => Spots.TrueForAll(s => s.IsFilled);
-        public bool IsStarted => StartTime.HasValue;
+        public bool IsStarted => StartTime.HasValue && StartTime.Value <= DateTime.Now;
         public bool IsFinished => EndTime.HasValue;
+        public bool HasLocations => LocationCount > 0;
+        // Borrador = existe pero aún no confirmado (paso 1 o paso 2 en curso)
+        public bool IsDraft => !IsConfirmed;
 
         public string StartTimeFmt => StartTime.HasValue ? StartTime.Value.ToString("dd/MM/yyyy HH:mm") : "—";
         public string EndTimeFmt => EndTime.HasValue ? EndTime.Value.ToString("dd/MM/yyyy HH:mm") : "—";
+        public string EstimatedEndTimeFmt => EstimatedEndTime.HasValue ? EstimatedEndTime.Value.ToString("dd/MM/yyyy HH:mm") : null;
         public string StartTimeIso => StartTime.HasValue ? StartTime.Value.ToString("yyyy-MM-ddTHH:mm:ss") : null;
         public string EndTimeIso => EndTime.HasValue ? EndTime.Value.ToString("yyyy-MM-ddTHH:mm:ss") : null;
+        public string EstimatedEndTimeIso => EstimatedEndTime.HasValue ? EstimatedEndTime.Value.ToString("yyyy-MM-ddTHH:mm:ss") : null;
     }
 
     public class GuardResult {
         public bool Success { get; set; }
         public string Message { get; set; }
         public int GuardId { get; set; }
+    }
+
+    // Locación activa para el picker del modal de creación
+    public class ActiveLocationViewModel {
+        public int LocationId { get; set; }
+        public string LocationName { get; set; }
+    }
+
+    // Locación involucrada en la guardia actual (enriquecida con última solicitud)
+    public class GuardLocationViewModel {
+        public int LocationId { get; set; }
+        public string LocationName { get; set; }
+        public int? RequestId { get; set; }
+        public string Status { get; set; }  // "NoRequest" si aún no tiene solicitud
+        public string RequestedBy { get; set; }
+        public string RequestedAt { get; set; }
+        public string ReviewedBy { get; set; }
+        public string ReviewedAt { get; set; }
+        public string ReviewNotes { get; set; }
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -123,6 +149,68 @@ namespace Close_Portal.DataAccess {
                 Debug.WriteLine($"[GetDepartments] ERROR: {ex.Message}");
             }
             return list;
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // GET USER DEPARTMENT ID — departamento asignado al usuario
+        // ────────────────────────────────────────────────────────────────
+        public int GetUserDepartmentId(int userId) {
+            try {
+                string sql = "SELECT Department_Id FROM Users WHERE User_Id = @UserId";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value ? (int)val : -1;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetUserDepartmentId] ERROR: {ex.Message}");
+                return -1;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // GET USER DEPARTMENT CODE — código del departamento del usuario
+        // Usado para validar permiso de creación de guardia (solo AR)
+        // ────────────────────────────────────────────────────────────────
+        public string GetUserDepartmentCode(int userId) {
+            try {
+                string sql = @"
+                    SELECT d.Department_Code
+                    FROM Users u
+                    INNER JOIN Departments d ON d.Department_Id = u.Department_Id
+                    WHERE u.User_Id = @UserId";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value ? val.ToString() : null;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetUserDepartmentCode] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // GET SPOT DEPARTMENT ID — departamento al que pertenece un spot
+        // ────────────────────────────────────────────────────────────────
+        public int GetSpotDepartmentId(int spotId) {
+            try {
+                string sql = "SELECT Department_Id FROM Guard_Spots WHERE Spot_Id = @SpotId";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@SpotId", spotId);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value ? (int)val : -1;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetSpotDepartmentId] ERROR: {ex.Message}");
+                return -1;
+            }
         }
 
         // ────────────────────────────────────────────────────────────────
@@ -176,8 +264,11 @@ namespace Close_Portal.DataAccess {
                         gs.Guard_Id,
                         gs.Start_Time,
                         gs.End_Time,
+                        gs.Estimated_End_Time,
                         gs.Created_At,
-                        cb.Username AS CreatedBy
+                        gs.Is_Confirmed,
+                        cb.Username AS CreatedBy,
+                        (SELECT COUNT(*) FROM Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocationCount
                     FROM Guard_Schedule gs
                     LEFT JOIN Users cb ON cb.User_Id = gs.Created_By
                     WHERE gs.End_Time IS NULL
@@ -195,8 +286,11 @@ namespace Close_Portal.DataAccess {
                                 GuardId = (int)r["Guard_Id"],
                                 StartTime = r["Start_Time"] as DateTime?,
                                 EndTime = r["End_Time"] as DateTime?,
+                                EstimatedEndTime = r["Estimated_End_Time"] as DateTime?,
                                 CreatedBy = r["CreatedBy"]?.ToString(),
-                                CreatedAt = (DateTime)r["Created_At"]
+                                CreatedAt = (DateTime)r["Created_At"],
+                                IsConfirmed = (bool)r["Is_Confirmed"],
+                                LocationCount = (int)r["LocationCount"]
                             };
                         }
                     }
@@ -223,6 +317,7 @@ namespace Close_Portal.DataAccess {
                         gs.Guard_Id,
                         gs.Start_Time,
                         gs.End_Time,
+                        gs.Estimated_End_Time,
                         gs.Created_At,
                         cb.Username AS CreatedBy
                     FROM Guard_Schedule gs
@@ -239,6 +334,7 @@ namespace Close_Portal.DataAccess {
                                 GuardId = (int)r["Guard_Id"],
                                 StartTime = r["Start_Time"] as DateTime?,
                                 EndTime = r["End_Time"] as DateTime?,
+                                EstimatedEndTime = r["Estimated_End_Time"] as DateTime?,
                                 CreatedBy = r["CreatedBy"]?.ToString(),
                                 CreatedAt = (DateTime)r["Created_At"]
                             });
@@ -301,39 +397,43 @@ namespace Close_Portal.DataAccess {
         }
 
         // ────────────────────────────────────────────────────────────────
-        // CREATE GUARD — crea Guard_Schedule + un spot por cada depto activo
+        // RESERVE DATES — Paso 1: crea borrador de guardia (sin spots, sin locaciones)
         // ────────────────────────────────────────────────────────────────
-        public GuardResult CreateGuard(int createdBy, DateTime startTime) {
-            Debug.WriteLine($"[CreateGuard] CreatedBy={createdBy} StartTime={startTime:G}");
+        public GuardResult ReserveDates(int createdBy, DateTime startTime, DateTime? estimatedEndTime = null) {
+            Debug.WriteLine($"[ReserveDates] CreatedBy={createdBy} StartTime={startTime:G}");
             try {
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // Verificar que no haya guardia abierta (sin End_Time)
                     using (var cmd = new SqlCommand(
                         "SELECT COUNT(*) FROM Guard_Schedule WHERE End_Time IS NULL", conn)) {
-                        int open = (int)cmd.ExecuteScalar();
-                        if (open > 0)
-                            return new GuardResult { Success = false, Message = "Ya existe una guardia abierta. Ciérrala antes de crear una nueva." };
+                        if ((int)cmd.ExecuteScalar() > 0)
+                            return new GuardResult { Success = false, Message = "Ya existe una guardia abierta. Ciérrala antes de reservar una nueva fecha." };
                     }
 
                     if (startTime < DateTime.Now.AddMinutes(-5))
                         return new GuardResult { Success = false, Message = "La fecha de inicio no puede estar en el pasado." };
 
+                    if (estimatedEndTime.HasValue && estimatedEndTime.Value <= startTime)
+                        return new GuardResult { Success = false, Message = "La fecha estimada debe ser posterior al inicio." };
+
                     using (var tx = conn.BeginTransaction()) {
                         try {
-                            // Insertar guardia con Start_Time definido desde el inicio
+                            // 1. Insertar guardia como borrador
                             int guardId;
                             using (var cmd = new SqlCommand(@"
-                                INSERT INTO Guard_Schedule (Start_Time, Created_By, Created_At)
+                                INSERT INTO Guard_Schedule
+                                    (Start_Time, Estimated_End_Time, Created_By, Created_At, Is_Confirmed)
                                 OUTPUT INSERTED.Guard_Id
-                                VALUES (@StartTime, @CreatedBy, GETDATE())", conn, tx)) {
+                                VALUES (@StartTime, @EstEnd, @CreatedBy, GETDATE(), 0)", conn, tx)) {
                                 cmd.Parameters.AddWithValue("@StartTime", startTime);
+                                cmd.Parameters.AddWithValue("@EstEnd",
+                                    estimatedEndTime.HasValue ? (object)estimatedEndTime.Value : DBNull.Value);
                                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
                                 guardId = (int)cmd.ExecuteScalar();
                             }
 
-                            // Insertar un spot por cada departamento activo
+                            // 2. Crear spots por departamento activo inmediatamente
                             using (var cmd = new SqlCommand(@"
                                 INSERT INTO Guard_Spots (Guard_Id, Department_Id)
                                 SELECT @GuardId, Department_Id
@@ -344,17 +444,112 @@ namespace Close_Portal.DataAccess {
                             }
 
                             tx.Commit();
-                            Debug.WriteLine($"[CreateGuard] Guard_Id={guardId} creado ✓");
+                            Debug.WriteLine($"[ReserveDates] Guard_Id={guardId} (borrador con spots) ✓");
                             return new GuardResult { Success = true, GuardId = guardId };
 
-                        } catch {
-                            tx.Rollback();
-                            throw;
-                        }
+                        } catch { tx.Rollback(); throw; }
                     }
                 }
             } catch (Exception ex) {
-                Debug.WriteLine($"[CreateGuard] ERROR: {ex.Message}");
+                Debug.WriteLine($"[ReserveDates] ERROR: {ex.Message}");
+                return new GuardResult { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // SAVE GUARD LOCATIONS — Paso 2: guarda locaciones seleccionadas
+        // Reemplaza cualquier selección previa del mismo borrador
+        // ────────────────────────────────────────────────────────────────
+        public GuardResult SaveGuardLocations(int guardId, List<int> locationIds) {
+            Debug.WriteLine($"[SaveGuardLocations] GuardId={guardId} Locations={locationIds.Count}");
+            if (locationIds == null || locationIds.Count == 0)
+                return new GuardResult { Success = false, Message = "Debes seleccionar al menos una locación." };
+            try {
+                using (var conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+
+                    // Verificar que la guardia existe, no está confirmada y no ha cerrado
+                    using (var cmd = new SqlCommand(
+                        "SELECT Is_Confirmed FROM Guard_Schedule WHERE Guard_Id = @GuardId AND End_Time IS NULL", conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
+                        var val = cmd.ExecuteScalar();
+                        if (val == null)
+                            return new GuardResult { Success = false, Message = "Guardia no encontrada o ya cerrada." };
+                        if ((bool)val)
+                            return new GuardResult { Success = false, Message = "La guardia ya está confirmada." };
+                    }
+
+                    using (var tx = conn.BeginTransaction()) {
+                        try {
+                            // Limpiar selección previa
+                            using (var cmd = new SqlCommand(
+                                "DELETE FROM Guard_Locations WHERE Guard_Id = @GuardId", conn, tx)) {
+                                cmd.Parameters.AddWithValue("@GuardId", guardId);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            // Insertar nueva selección
+                            foreach (int locId in locationIds) {
+                                using (var cmd = new SqlCommand(@"
+                                    INSERT INTO Guard_Locations (Guard_Id, Location_Id)
+                                    VALUES (@GuardId, @LocationId)", conn, tx)) {
+                                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                                    cmd.Parameters.AddWithValue("@LocationId", locId);
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+
+                            tx.Commit();
+                        } catch { tx.Rollback(); throw; }
+                    }
+
+                    Debug.WriteLine($"[SaveGuardLocations] {locationIds.Count} locaciones guardadas ✓");
+                    return new GuardResult { Success = true, GuardId = guardId };
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[SaveGuardLocations] ERROR: {ex.Message}");
+                return new GuardResult { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // CONFIRM GUARD — Paso 3: confirma la guardia, crea spots por depto
+        // ────────────────────────────────────────────────────────────────
+        public GuardResult ConfirmGuard(int guardId) {
+            Debug.WriteLine($"[ConfirmGuard] GuardId={guardId}");
+            try {
+                using (var conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+
+                    // Verificar estado y que tenga locaciones seleccionadas
+                    using (var cmd = new SqlCommand(@"
+                        SELECT gs.Is_Confirmed,
+                               (SELECT COUNT(*) FROM Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocCount
+                        FROM Guard_Schedule gs
+                        WHERE gs.Guard_Id = @GuardId AND gs.End_Time IS NULL", conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
+                        using (var r = cmd.ExecuteReader()) {
+                            if (!r.Read())
+                                return new GuardResult { Success = false, Message = "Guardia no encontrada." };
+                            if ((bool)r["Is_Confirmed"])
+                                return new GuardResult { Success = false, Message = "La guardia ya está confirmada." };
+                            if ((int)r["LocCount"] == 0)
+                                return new GuardResult { Success = false, Message = "Confirma las locaciones antes de crear la guardia." };
+                        }
+                    }
+
+                    // Solo marcar como confirmada — spots ya existen desde ReserveDates
+                    using (var cmd = new SqlCommand(
+                        "UPDATE Guard_Schedule SET Is_Confirmed = 1 WHERE Guard_Id = @GuardId", conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    Debug.WriteLine($"[ConfirmGuard] Guard_Id={guardId} confirmada ✓");
+                    return new GuardResult { Success = true, GuardId = guardId };
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[ConfirmGuard] ERROR: {ex.Message}");
                 return new GuardResult { Success = false, Message = ex.Message };
             }
         }
@@ -489,6 +684,126 @@ namespace Close_Portal.DataAccess {
                 Debug.WriteLine($"[RemoveGuard] ERROR: {ex.Message}");
                 return new GuardResult { Success = false, Message = ex.Message };
             }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del modal
+        // ────────────────────────────────────────────────────────────────
+        public List<ActiveLocationViewModel> GetAllActiveLocations() {
+            var list = new List<ActiveLocationViewModel>();
+            try {
+                string sql = @"
+                    SELECT Location_Id, Location_Name
+                    FROM   WMS_Location
+                    WHERE  Active = 1
+                    ORDER BY Location_Name";
+
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        while (r.Read()) {
+                            list.Add(new ActiveLocationViewModel {
+                                LocationId = (int)r["Location_Id"],
+                                LocationName = r["Location_Name"].ToString()
+                            });
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetAllActiveLocations] ERROR: {ex.Message}");
+            }
+            return list;
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // GET ACTIVE GUARD LOCATIONS — locaciones pre-definidas en la guardia
+        // enriquecidas con la última solicitud de cierre (si existe)
+        // ────────────────────────────────────────────────────────────────
+        public List<GuardLocationViewModel> GetActiveGuardLocations() {
+            var list = new List<GuardLocationViewModel>();
+            try {
+                string sql = @"
+                    DECLARE @GuardId   INT;
+                    DECLARE @GuardStart DATETIME;
+
+                    SELECT TOP 1
+                        @GuardId    = Guard_Id,
+                        @GuardStart = Start_Time
+                    FROM Guard_Schedule
+                    WHERE End_Time IS NULL
+                    ORDER BY Created_At DESC;
+
+                    IF @GuardId IS NULL RETURN;
+
+                    WITH LatestReq AS (
+                        SELECT
+                            cr.Location_Id,
+                            cr.Request_Id,
+                            cr.Status,
+                            cr.Created_At        AS RequestedAt,
+                            cr.Reviewed_At,
+                            cr.Review_Notes,
+                            u.Username           AS RequestedBy,
+                            ru.Username          AS ReviewedBy,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY cr.Location_Id
+                                ORDER BY cr.Created_At DESC
+                            ) AS rn
+                        FROM  Closure_Requests cr
+                        INNER JOIN Users u  ON cr.Requested_By = u.User_Id
+                        LEFT  JOIN Users ru ON cr.Reviewed_By  = ru.User_Id
+                        WHERE cr.Created_At >= ISNULL(@GuardStart, '1900-01-01')
+                    )
+                    SELECT
+                        wl.Location_Id,
+                        wl.Location_Name,
+                        lr.Request_Id,
+                        ISNULL(lr.Status, 'NoRequest') AS Status,
+                        lr.RequestedBy,
+                        lr.RequestedAt,
+                        lr.ReviewedBy,
+                        lr.Reviewed_At,
+                        lr.Review_Notes
+                    FROM  Guard_Locations gl
+                    INNER JOIN WMS_Location wl ON wl.Location_Id = gl.Location_Id
+                    LEFT  JOIN LatestReq   lr  ON lr.Location_Id = gl.Location_Id AND lr.rn = 1
+                    WHERE gl.Guard_Id = @GuardId
+                    ORDER BY
+                        CASE ISNULL(lr.Status, 'NoRequest')
+                            WHEN 'Pending'   THEN 1
+                            WHEN 'Rejected'  THEN 2
+                            WHEN 'NoRequest' THEN 3
+                            WHEN 'Approved'  THEN 4
+                            ELSE 5
+                        END,
+                        wl.Location_Name";
+
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        while (r.Read()) {
+                            list.Add(new GuardLocationViewModel {
+                                LocationId = (int)r["Location_Id"],
+                                LocationName = r["Location_Name"].ToString(),
+                                RequestId = r["Request_Id"] as int?,
+                                Status = r["Status"].ToString(),
+                                RequestedBy = r["RequestedBy"] as string ?? "",
+                                RequestedAt = r["RequestedAt"] is DateTime ra
+                                                   ? ra.ToString("dd/MM HH:mm") : "",
+                                ReviewedBy = r["ReviewedBy"] as string ?? "",
+                                ReviewedAt = r["Reviewed_At"] is DateTime rv
+                                                   ? rv.ToString("dd/MM HH:mm") : "",
+                                ReviewNotes = r["Review_Notes"] as string ?? ""
+                            });
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetActiveGuardLocations] ERROR: {ex.Message}");
+            }
+            return list;
         }
 
         // ────────────────────────────────────────────────────────────────

@@ -115,6 +115,11 @@
 
             translatePage(lang);
 
+            // Notificar a módulos que el idioma cambió para que re-rendericen contenido dinámico
+            if (typeof window.onLanguageChange === 'function') {
+                window.onLanguageChange(lang);
+            }
+
             if (typeof window.updateThemeToggleText === 'function') {
                 window.updateThemeToggleText();
             }

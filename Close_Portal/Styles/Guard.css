@@ -36,7 +36,7 @@
     border: 2px solid var(--border-color);
     color: var(--text-secondary);
     transition: all 0.3s ease;
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
     .gd-header-badge.active {
@@ -49,6 +49,12 @@
         background: var(--gd-accent-alpha);
         border-color: var(--gd-accent);
         color: var(--gd-accent);
+    }
+
+    .gd-header-badge.draft {
+        background: rgba(99, 102, 241, 0.12);
+        border-color: #6366f1;
+        color: #818cf8;
     }
 
     .gd-header-badge.inactive {
@@ -586,7 +592,7 @@
     box-shadow: var(--shadow-xl);
     animation: gd-slideIn 0.2s ease;
     z-index: 9999;
-    overflow: hidden;
+    /* overflow:hidden removido — cortaba el calendario nativo del datetime-local */
 }
 
 @keyframes gd-slideIn {
@@ -608,6 +614,7 @@
     padding: 20px 24px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-primary);
+    border-radius: 16px 16px 0 0;
 }
 
     .gd-modal-header .material-icons {
@@ -642,8 +649,7 @@
 
 .gd-modal-body {
     padding: 24px;
-    max-height: 60vh;
-    overflow-y: auto;
+    /* max-height/overflow-y removidos — impedían expandir el picker nativo */
 }
 
 .gd-modal-dept-badge {
@@ -846,13 +852,421 @@
     }
 
     .gd-btn-danger:disabled {
-        opacity: 0.5;
+        opacity: 0.45;
         cursor: not-allowed;
+        background: var(--error-color);
+        filter: grayscale(0.3);
     }
 
     .gd-btn-danger .material-icons {
         font-size: 18px;
     }
+
+/* Draft badge inline en cabecera */
+.gd-draft-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: var(--gd-accent-alpha);
+    color: var(--gd-accent);
+    border: 1px solid var(--gd-accent);
+    margin-left: 10px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+/* Botón Crear guardia (paso 3) en gd-guard-actions */
+.gd-btn-confirm-guard {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    background: var(--success-color);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-confirm-guard:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-confirm-guard:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .gd-btn-confirm-guard .material-icons {
+        font-size: 18px;
+    }
+
+/* Picker inline dentro de la sección de locaciones */
+.gd-loc-picker-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gd-loc-picker-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ─── MODAL FORM FIELDS ────────────────────────────────── */
+.gd-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+    .gd-field-group + .gd-field-group {
+        margin-top: 16px;
+    }
+
+    .gd-field-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+/* Input + botón calendario en un solo row */
+.gd-datetime-row {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .gd-datetime-row:focus-within {
+        border-color: var(--gd-accent);
+        box-shadow: 0 0 0 3px var(--gd-accent-alpha);
+    }
+
+    .gd-datetime-row input[type="datetime-local"] {
+        flex: 1;
+        padding: 10px 14px;
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        min-width: 0;
+        color-scheme: light; /* light mode: picker con fondo blanco */
+    }
+
+[data-theme="dark"] .gd-datetime-row input[type="datetime-local"] {
+    color-scheme: dark; /* dark mode: picker con fondo oscuro */
+}
+
+/* Ícono de calendario nativo — visible en ambos modos */
+.gd-datetime-row input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin-right: 6px;
+    /* Light mode: fuerza el ícono a negro/gris oscuro */
+    filter: brightness(0) opacity(0.5);
+}
+
+[data-theme="dark"] .gd-datetime-row input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    /* Dark mode: invierte a blanco */
+    filter: brightness(0) invert(1) opacity(0.65);
+}
+
+.gd-field-error {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--error-color);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gd-field-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ─── ESTIMATED END TIME BANNER ────────────────────────── */
+.gd-est-end-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--gd-accent-alpha);
+    border: 1px solid var(--gd-accent);
+    border-radius: 10px;
+    color: var(--gd-accent);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+    .gd-est-end-status .material-icons {
+        font-size: 18px;
+    }
+
+/* Modal de creación (más ancho para albergar la lista de locaciones) */
+.gd-create-modal {
+    max-width: 560px;
+}
+
+/* ─── LOCATION PICKER (dentro del modal de creación) ───── */
+.gd-loc-picker-section {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+}
+
+.gd-loc-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+    .gd-loc-picker-header .material-icons {
+        font-size: 17px;
+        color: var(--gd-accent);
+    }
+
+.gd-loc-toggle-all {
+    margin-left: auto;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+    .gd-loc-toggle-all:first-of-type {
+        margin-left: auto;
+    }
+
+    .gd-loc-toggle-all:hover {
+        border-color: var(--gd-accent);
+        color: var(--gd-accent);
+    }
+
+.gd-loc-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.gd-loc-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+    .gd-loc-check-item:hover {
+        border-color: var(--gd-accent);
+        background: var(--gd-accent-alpha);
+    }
+
+    .gd-loc-check-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--gd-accent);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+.gd-loc-check-name {
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── LOCACIONES EN OPERACIÓN ─────────────────────────────── */
+.gd-loc-subtitle {
+    margin: -8px 0 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.gd-loc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 36px 24px;
+    color: var(--text-muted);
+}
+
+    .gd-loc-empty .material-icons {
+        font-size: 40px;
+        opacity: 0.4;
+    }
+
+    .gd-loc-empty p {
+        margin: 0;
+        font-size: 13px;
+    }
+
+.gd-loc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.gd-loc-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+}
+
+    .gd-loc-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+.gd-loc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.gd-loc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.gd-loc-card-body {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gd-loc-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.gd-loc-row-icon {
+    font-size: 14px !important;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.gd-loc-notes {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* Status badges */
+.gd-loc-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+    .gd-loc-status-badge .material-icons {
+        font-size: 13px;
+    }
+
+/* Pending */
+.gd-loc-pending {
+    border-left: 3px solid var(--gd-accent);
+}
+
+.gd-loc-pending-badge {
+    background: var(--gd-accent-alpha);
+    color: var(--gd-accent);
+}
+
+/* Approved */
+.gd-loc-approved {
+    border-left: 3px solid var(--success-color);
+}
+
+.gd-loc-approved-badge {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+/* Rejected */
+.gd-loc-rejected {
+    border-left: 3px solid var(--error-color);
+}
+
+.gd-loc-rejected-badge {
+    background: var(--error-bg);
+    color: var(--error-color);
+}
+
+/* NoRequest — esperando actividad */
+.gd-loc-norequest {
+    border-left: 3px solid var(--text-muted);
+}
+
+.gd-loc-norequest-badge {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-secondary);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
 
 /* ─── TOAST ────────────────────────────────────────────── */
 .gd-toast {

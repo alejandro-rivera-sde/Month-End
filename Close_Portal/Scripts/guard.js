@@ -5,13 +5,22 @@
    ========================================================= */
 
 // ─── Estado global ─────────────────────────────────────────
-let gd_guard = null;       // guardia actual (o null)
-let gd_pendingSpot = null; // spot seleccionado para asignar usuario
+let gd_guard = null;           // guardia actual (o null)
+let gd_pendingSpot = null;     // spot seleccionado para asignar usuario
+let gd_myDepartmentId = -1;    // departamento del usuario en sesión (-1 = sin restricción)
+let gd_isOwner = false;        // true = Owner, puede gestionar cualquier spot
+let gd_canCreateGuard = false; // true = AR o Owner, puede crear/eliminar guardias
 
 // ─── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadGuardStatus();
     loadHistory();
+
+    // Re-renderizar contenido dinámico al cambiar idioma
+    window.onLanguageChange = () => {
+        loadGuardStatus();
+        loadHistory();
+    };
 });
 
 // ─── TRADUCCIÓN ────────────────────────────────────────────
@@ -46,8 +55,13 @@ function loadGuardStatus() {
             return;
         }
         gd_guard = resp.guard || null;
+        gd_myDepartmentId = resp.myDepartmentId ?? -1;
+        gd_isOwner = resp.isOwner ?? false;
+        gd_canCreateGuard = resp.canCreateGuard ?? false;
         renderGuardPanel();
         updateHeaderBadge();
+        // Cargar sección de locaciones después de conocer el estado de la guardia
+        loadActiveLocations();
     });
 }
 
@@ -59,6 +73,8 @@ function renderGuardPanel() {
     if (!gd_guard) {
         noGuard.style.display = 'flex';
         activePanel.style.display = 'none';
+        const btnCreate = noGuard.querySelector('.gd-btn-create');
+        if (btnCreate) btnCreate.style.display = gd_canCreateGuard ? 'inline-flex' : 'none';
         return;
     }
 
@@ -66,14 +82,23 @@ function renderGuardPanel() {
     activePanel.style.display = 'block';
 
     // Cabecera
-    document.getElementById('gdCreatedInfo').textContent =
-        `${t('gd.created_by', 'Creada por')} ${escapeHtml(gd_guard.createdBy)} — ${gd_guard.createdAtFmt}`;
+    const draftLabel = gd_guard.isDraft
+        ? ` <span class="gd-draft-badge">${t('gd.draft', 'Borrador')}</span>` : '';
+    document.getElementById('gdCreatedInfo').innerHTML =
+        `${t('gd.created_by', 'Creada por')} ${escapeHtml(gd_guard.createdBy)} — ${gd_guard.createdAtFmt}${draftLabel}`;
 
-    // Botón Eliminar: visible mientras la guardia no haya cerrado
+    // Botón "Crear guardia" — solo visible en borrador + locaciones asignadas + AR/Owner
+    const btnConfirm = document.getElementById('gdBtnConfirmGuard');
+    if (btnConfirm) {
+        const showConfirm = gd_canCreateGuard && gd_guard.isDraft && gd_guard.hasLocations && !gd_guard.isFinished;
+        btnConfirm.style.display = showConfirm ? 'inline-flex' : 'none';
+    }
+
+    // Botón Eliminar
     const btnRemove = document.getElementById('gdBtnRemove');
-    btnRemove.style.display = !gd_guard.isFinished ? 'inline-flex' : 'none';
+    btnRemove.style.display = (!gd_guard.isFinished && gd_canCreateGuard) ? 'inline-flex' : 'none';
 
-    // Banner de inicio programado (si el inicio es en el futuro)
+    // Banner de inicio programado
     const startStatus = document.getElementById('gdStartStatus');
     if (startStatus) {
         if (gd_guard.startTime && !gd_guard.isStarted) {
@@ -85,8 +110,20 @@ function renderGuardPanel() {
         }
     }
 
+    // Banner de cierre estimado
+    const estEndStatus = document.getElementById('gdEstEndStatus');
+    if (estEndStatus) {
+        if (gd_guard.estimatedEndTimeFmt && !gd_guard.isFinished) {
+            estEndStatus.style.display = 'flex';
+            document.getElementById('gdEstEndStatusText').textContent =
+                `${t('gd.estimated_end', 'Cierre estimado:')} ${gd_guard.estimatedEndTimeFmt}`;
+        } else {
+            estEndStatus.style.display = 'none';
+        }
+    }
+
     // Spots
-    renderSpots(gd_guard.spots);
+    renderSpots(gd_guard.spots || []);
 }
 
 // ─── RENDER SPOTS ──────────────────────────────────────────
@@ -114,8 +151,11 @@ function renderSpots(spots) {
                    <span>${t('gd.spot.pending', 'Sin asignar')}</span>
                </div>`;
 
-        const actionBtn = gd_guard.isFinished
-            ? ''   // guardia iniciada — no se puede modificar spots
+        // Owners gestionan cualquier spot; Admins solo el de su departamento
+        const canManageThisSpot = gd_isOwner || spot.departmentId === gd_myDepartmentId;
+
+        const actionBtn = gd_guard.isFinished || !canManageThisSpot
+            ? ''
             : filled
                 ? `<button type="button" class="gd-btn-spot-clear"
                            onclick="confirmUnassignSpot(${spot.spotId})"
@@ -153,6 +193,15 @@ function updateHeaderBadge() {
     if (!gd_guard) {
         badge.className = 'gd-header-badge inactive';
         text.textContent = t('gd.badge.none', 'Sin guardia activa');
+    } else if (gd_guard.isFinished) {
+        badge.className = 'gd-header-badge inactive';
+        text.textContent = t('gd.badge.finished', 'Guardia finalizada');
+    } else if (gd_guard.isDraft) {
+        badge.className = 'gd-header-badge draft';
+        const step = gd_guard.hasLocations
+            ? t('gd.badge.draft_ready', 'Borrador — listo para confirmar')
+            : t('gd.badge.draft_locs', 'Borrador — selecciona locaciones');
+        text.textContent = step;
     } else if (gd_guard.isStarted) {
         badge.className = 'gd-header-badge active';
         text.textContent = t('gd.badge.active', 'Guardia activa');
@@ -164,20 +213,24 @@ function updateHeaderBadge() {
     }
 }
 
-// ─── CREATE GUARD (modal con fecha/hora) ───────────────────
+// ─── STEP 1: RESERVE DATES (modal solo con fechas) ─────────
 function createGuard() {
+    if (!gd_canCreateGuard) {
+        showToast(t('gd.toast.no_permission_create', 'Solo el departamento AR puede crear guardias.'), 'error');
+        return;
+    }
     closeGdModal();
 
     const now = new Date();
     now.setMinutes(now.getMinutes() + 1);
-    const minDt = toLocalISOString(now);
+    const defaultDt = toLocalISOString(now);
 
     document.body.insertAdjacentHTML('beforeend', `
     <div class="gd-overlay" id="gdOverlay" onclick="onOverlayClick(event)">
         <div class="gd-modal" id="gdModal">
             <div class="gd-modal-header">
-                <span class="material-icons">add_circle_outline</span>
-                <h3>${t('gd.modal.create_title', 'Nueva guardia')}</h3>
+                <span class="material-icons">event</span>
+                <h3>${t('gd.modal.reserve_title', 'Reservar fecha de guardia')}</h3>
                 <button type="button" class="gd-modal-close" onclick="closeGdModal()">
                     <span class="material-icons">close</span>
                 </button>
@@ -186,10 +239,26 @@ function createGuard() {
                 <div class="gd-modal-error" id="gdModalError" style="display:none;"></div>
                 <div class="gd-field-group">
                     <label>${t('gd.modal.start_label', 'Inicio de la guardia')}</label>
-                    <input type="datetime-local" id="gdCreateStartTime"
-                           min="${minDt}" value="${minDt}" />
+                    <div class="gd-datetime-row">
+                        <input type="datetime-local" id="gdCreateStartTime" value="${defaultDt}" />
+                    </div>
                     <div class="gd-field-error" id="gdStartError" style="display:none;">
                         ${t('gd.err.start_required', 'Fecha de inicio requerida.')}
+                    </div>
+                </div>
+                <div class="gd-field-group">
+                    <label>
+                        ${t('gd.modal.est_end_label', 'Cierre estimado')}
+                        <span class="gd-field-hint">(${t('gd.modal.optional', 'opcional')})</span>
+                    </label>
+                    <div class="gd-datetime-row">
+                        <input type="datetime-local" id="gdCreateEstEndTime" />
+                    </div>
+                    <span class="gd-field-hint">
+                        ${t('gd.modal.est_end_hint', 'Referencia informativa. El cierre real ocurre cuando todas las locaciones involucradas cierran.')}
+                    </span>
+                    <div class="gd-field-error" id="gdEstEndError" style="display:none;">
+                        ${t('gd.err.est_end_invalid', 'La fecha estimada debe ser posterior al inicio.')}
                     </div>
                 </div>
             </div>
@@ -198,42 +267,64 @@ function createGuard() {
                     ${t('common.cancel', 'Cancelar')}
                 </button>
                 <button type="button" class="gd-btn-confirm" id="gdBtnConfirmCreate"
-                        onclick="submitCreateGuard()">
-                    <span class="material-icons">check</span>
-                    ${t('gd.modal.confirm_create', 'Crear guardia')}
+                        onclick="submitReserveDates()">
+                    <span class="material-icons">event_available</span>
+                    ${t('gd.modal.confirm_reserve', 'Reservar fecha')}
                 </button>
             </div>
         </div>
     </div>`);
 }
 
-function submitCreateGuard() {
+function submitReserveDates() {
     const startVal = document.getElementById('gdCreateStartTime').value;
+    const estEndVal = document.getElementById('gdCreateEstEndTime')?.value || '';
     const errEl = document.getElementById('gdStartError');
+    const estErrEl = document.getElementById('gdEstEndError');
 
-    if (!startVal) {
-        errEl.style.display = 'block';
-        return;
-    }
+    if (!startVal) { errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
+
+    if (estEndVal && new Date(estEndVal) <= new Date(startVal)) {
+        estErrEl.style.display = 'block'; return;
+    }
+    if (estErrEl) estErrEl.style.display = 'none';
 
     const btn = document.getElementById('gdBtnConfirmCreate');
     btn.disabled = true;
     btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span> ${t('gd.modal.saving', 'Procesando...')}`;
 
-    gdCall('CreateGuard', { startTime: startVal }, (resp) => {
+    gdCall('ReserveDates', { startTime: startVal, estimatedEndTime: estEndVal }, (resp) => {
         if (resp.success) {
             closeGdModal();
-            showToast(t('gd.toast.created', 'Guardia creada. Asigna los responsables.'), 'success');
+            showToast(t('gd.toast.reserved', 'Fecha reservada. Ahora selecciona las locaciones.'), 'success');
             loadGuardStatus();
         } else {
             const modalErr = document.getElementById('gdModalError');
-            if (modalErr) {
-                modalErr.style.display = 'block';
-                modalErr.textContent = resp.message || t('gd.toast.error', 'Error al crear la guardia.');
-            }
+            if (modalErr) { modalErr.style.display = 'block'; modalErr.textContent = resp.message; }
             btn.disabled = false;
-            btn.innerHTML = `<span class="material-icons">check</span> ${t('gd.modal.confirm_create', 'Crear guardia')}`;
+            btn.innerHTML = `<span class="material-icons">event_available</span> ${t('gd.modal.confirm_reserve', 'Reservar fecha')}`;
+        }
+    });
+}
+
+// ─── STEP 3: CONFIRM GUARD ─────────────────────────────────
+function submitConfirmGuard() {
+    if (!gd_guard) return;
+    const guardId = gd_guard.guardId;
+
+    const btn = document.getElementById('gdBtnConfirmGuard');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span> ${t('gd.modal.saving', 'Procesando...')}`;
+
+    gdCall('ConfirmGuard', { guardId }, (resp) => {
+        if (resp.success) {
+            showToast(t('gd.toast.confirmed', 'Guardia creada. Asigna los responsables.'), 'success');
+            loadGuardStatus();
+        } else {
+            showToast(resp.message || t('gd.toast.error', 'Error.'), 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-icons">rocket_launch</span> ${t('gd.btn.confirm_guard', 'Crear guardia')}`;
         }
     });
 }
@@ -384,14 +475,31 @@ function confirmRemoveGuard() {
                 <button type="button" class="gd-btn-cancel" onclick="closeGdModal()">
                     ${t('common.cancel', 'Cancelar')}
                 </button>
-                <button type="button" class="gd-btn-danger" id="gdBtnDanger"
-                        onclick="submitRemoveGuard(${gd_guard.guardId})">
-                    <span class="material-icons">delete</span>
-                    ${t('gd.modal.delete', 'Eliminar')}
+                <button type="button" class="gd-btn-danger" id="gdBtnDanger" disabled>
+                    <span class="material-icons">timer</span>
+                    <span id="gdBtnDangerLabel">${t('gd.modal.delete_cooldown', 'Eliminar')} (3)</span>
                 </button>
             </div>
         </div>
     </div>`);
+
+    // Captura el guardId antes del intervalo
+    const guardId = gd_guard.guardId;
+    let remaining = 3;
+    const label = document.getElementById('gdBtnDangerLabel');
+    const btn = document.getElementById('gdBtnDanger');
+
+    const tick = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(tick);
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-icons">delete</span> ${t('gd.modal.delete', 'Eliminar')}`;
+            btn.onclick = () => submitRemoveGuard(guardId);
+        } else {
+            label.textContent = `${t('gd.modal.delete_cooldown', 'Eliminar')} (${remaining})`;
+        }
+    }, 1000);
 }
 
 function submitRemoveGuard(guardId) {
@@ -409,6 +517,184 @@ function submitRemoveGuard(guardId) {
             showToast(resp.message || t('gd.toast.error', 'Error al eliminar.'), 'error');
         }
     });
+}
+
+// ─── STEP 2: LOAD / RENDER ACTIVE LOCATIONS SECTION ────────
+function loadActiveLocations() {
+    gdCall('GetAllActiveLocations', {}, (resp) => {
+        const section = document.getElementById('gdLocSection');
+        const countEl = document.getElementById('gdLocCount');
+        const emptyEl = document.getElementById('gdLocEmpty');
+        const gridEl = document.getElementById('gdLocGrid');
+
+        if (!resp.success || !resp.data || resp.data.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+
+        // Si la guardia es un borrador → mostrar picker editable
+        if (gd_guard && gd_guard.isDraft) {
+            emptyEl.style.display = 'none';
+            countEl.textContent = resp.data.length;
+            renderLocationPicker(gridEl, resp.data);
+            return;
+        }
+
+        // Si está confirmada → mostrar estado de solicitudes
+        if (gd_guard && gd_guard.isConfirmed) {
+            gdCall('GetActiveGuardLocations', {}, (locResp) => {
+                const items = locResp.success ? (locResp.data || []) : [];
+                countEl.textContent = items.length;
+                if (items.length === 0) {
+                    emptyEl.style.display = 'flex';
+                    gridEl.innerHTML = '';
+                } else {
+                    emptyEl.style.display = 'none';
+                    gridEl.innerHTML = items.map(loc => renderLocationCard(loc)).join('');
+                }
+            });
+            return;
+        }
+
+        // Sin guardia → ocultar
+        section.style.display = 'none';
+    });
+}
+
+function renderLocationPicker(gridEl, allLocations) {
+    // Cargar las ya guardadas para marcar solo esas
+    gdCall('GetActiveGuardLocations', {}, (savedResp) => {
+        const savedIds = new Set(
+            (savedResp.success && savedResp.data && savedResp.data.length > 0)
+                ? savedResp.data.map(l => l.locationId)
+                : []
+        );
+        const defaultAll = savedIds.size === 0;
+        const checkedCount = defaultAll ? allLocations.length : savedIds.size;
+
+        gridEl.innerHTML = `
+            <div class="gd-loc-picker-inline">
+                <div class="gd-loc-picker-header">
+                    <span class="material-icons">warehouse</span>
+                    <span id="gdLocPickerCount">${t('gd.modal.loc_title', 'Locaciones involucradas')} (${checkedCount}/${allLocations.length})</span>
+                    <button type="button" class="gd-loc-toggle-all" onclick="gdToggleAllLocations(true)">${t('gd.modal.select_all', 'Todas')}</button>
+                    <button type="button" class="gd-loc-toggle-all" onclick="gdToggleAllLocations(false)">${t('gd.modal.deselect_all', 'Ninguna')}</button>
+                </div>
+                <p class="gd-field-hint" style="margin:4px 0 12px;">
+                    ${t('gd.modal.loc_hint', 'Desmarca las locaciones que no tendrán operaciones en este cierre.')}
+                </p>
+                <div class="gd-field-error" id="gdLocError" style="display:none;">
+                    ${t('gd.err.loc_required', 'Selecciona al menos una locación.')}
+                </div>
+                <div class="gd-loc-picker-list">
+                    ${allLocations.map(loc => {
+            const isChecked = defaultAll || savedIds.has(loc.locationId);
+            return `<label class="gd-loc-check-item">
+                            <input type="checkbox" class="gd-loc-checkbox"
+                                   value="${loc.locationId}" ${isChecked ? 'checked' : ''}
+                                   onchange="gdUpdateLocCount()" />
+                            <span class="gd-loc-check-name">${escapeHtml(loc.locationName)}</span>
+                        </label>`;
+        }).join('')}
+                </div>
+                <div class="gd-loc-picker-footer">
+                    <button type="button" class="gd-btn-confirm" id="gdBtnSaveLocs"
+                            onclick="submitSaveLocations()">
+                        <span class="material-icons">check</span>
+                        ${t('gd.loc.save_btn', 'Confirmar locaciones')}
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+function gdToggleAllLocations(checked) {
+    document.querySelectorAll('.gd-loc-checkbox').forEach(cb => cb.checked = checked);
+    gdUpdateLocCount();
+}
+
+function gdUpdateLocCount() {
+    const total = document.querySelectorAll('.gd-loc-checkbox').length;
+    const checked = document.querySelectorAll('.gd-loc-checkbox:checked').length;
+    const lbl = document.getElementById('gdLocPickerCount');
+    if (lbl) lbl.textContent = `${t('gd.modal.loc_title', 'Locaciones involucradas')} (${checked}/${total})`;
+    const errEl = document.getElementById('gdLocError');
+    if (errEl) errEl.style.display = checked === 0 ? 'block' : 'none';
+}
+
+// ─── STEP 2 SUBMIT: SAVE LOCATIONS ─────────────────────────
+function submitSaveLocations() {
+    if (!gd_guard) return;
+    const guardId = gd_guard.guardId;
+    const checked = [...document.querySelectorAll('.gd-loc-checkbox:checked')].map(cb => parseInt(cb.value));
+
+    const errEl = document.getElementById('gdLocError');
+    if (checked.length === 0) {
+        if (errEl) errEl.style.display = 'block';
+        return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    const btn = document.getElementById('gdBtnSaveLocs');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span> ${t('gd.modal.saving', 'Guardando...')}`;
+
+    gdCall('SaveGuardLocations', { guardId, locationIds: checked }, (resp) => {
+        if (resp.success) {
+            showToast(t('gd.toast.locs_saved', 'Locaciones guardadas. Ya puedes crear la guardia.'), 'success');
+            loadGuardStatus();
+        } else {
+            showToast(resp.message || t('gd.toast.error', 'Error.'), 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-icons">check</span> ${t('gd.loc.save_btn', 'Confirmar locaciones')}`;
+        }
+    });
+}
+
+function renderLocationCard(loc) {
+    const statusMeta = {
+        'Pending': { cls: 'gd-loc-pending', icon: 'pending', label: t('gd.loc.status.pending', 'Pendiente') },
+        'Approved': { cls: 'gd-loc-approved', icon: 'check_circle', label: t('gd.loc.status.approved', 'Aprobado') },
+        'Rejected': { cls: 'gd-loc-rejected', icon: 'cancel', label: t('gd.loc.status.rejected', 'Rechazado') },
+        'NoRequest': { cls: 'gd-loc-norequest', icon: 'hourglass_empty', label: t('gd.loc.status.norequest', 'Sin solicitud aún') }
+    };
+    const meta = statusMeta[loc.status] || statusMeta['NoRequest'];
+
+    const reviewRow = (loc.status !== 'Pending' && loc.status !== 'NoRequest' && loc.reviewedBy)
+        ? `<div class="gd-loc-row">
+               <span class="material-icons gd-loc-row-icon">rate_review</span>
+               <span>${escapeHtml(loc.reviewedBy)} · ${escapeHtml(loc.reviewedAt)}</span>
+           </div>`
+        : '';
+
+    const requestRow = loc.requestedBy
+        ? `<div class="gd-loc-row">
+               <span class="material-icons gd-loc-row-icon">person</span>
+               <span>${escapeHtml(loc.requestedBy)} · ${escapeHtml(loc.requestedAt)}</span>
+           </div>`
+        : '';
+
+    const notesRow = loc.reviewNotes
+        ? `<div class="gd-loc-notes">${escapeHtml(loc.reviewNotes)}</div>`
+        : '';
+
+    return `
+    <div class="gd-loc-card ${meta.cls}">
+        <div class="gd-loc-card-header">
+            <span class="gd-loc-name">${escapeHtml(loc.locationName)}</span>
+            <span class="gd-loc-status-badge ${meta.cls}-badge">
+                <span class="material-icons">${meta.icon}</span>
+                ${meta.label}
+            </span>
+        </div>
+        <div class="gd-loc-card-body">
+            ${requestRow}
+            ${reviewRow}
+            ${notesRow}
+        </div>
+    </div>`;
 }
 
 // ─── LOAD HISTORY ──────────────────────────────────────────
