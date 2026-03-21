@@ -45,10 +45,19 @@ namespace Close_Portal.Pages {
                     WHERE ul.User_Id = @UserId
                       AND wl.Active  = 1
                       AND NOT EXISTS (
-                          SELECT 1 FROM Closure_Requests cr
+                          -- Bloquear solo si la solicitud MÁS RECIENTE del usuario
+                          -- para esa locación está en Pending o Approved
+                          SELECT 1
+                          FROM Closure_Requests cr
                           WHERE cr.Location_Id  = wl.Location_Id
                             AND cr.Requested_By = @UserId
-                            AND cr.Status       = 'Pending'
+                            AND cr.Status       IN ('Pending', 'Approved')
+                            AND cr.Created_At   = (
+                                SELECT MAX(cr2.Created_At)
+                                FROM Closure_Requests cr2
+                                WHERE cr2.Location_Id  = wl.Location_Id
+                                  AND cr2.Requested_By = @UserId
+                            )
                       )
                     ORDER BY wl.Location_Name, o.OMS_Code";
 

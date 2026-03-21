@@ -329,7 +329,7 @@ function subscribeToNotifGroup() {
 
     function joinGroups() {
         if (roleId === 2) hub.server.joinValidate();
-        if (roleId === 1 && userId) hub.server.joinAsRequester(String(userId));
+        if (userId) hub.server.joinAsRequester(String(userId));
     }
 
     $.connection.hub.stateChanged(function (change) {

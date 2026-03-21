@@ -2,11 +2,11 @@
 // request_closure.js
 // ============================================================================
 
-let rc_allHistory = [];
-let rc_histFilter = 'all';
-let rc_managerId = 0;    // Manager activo de la locación seleccionada
+var rc_allHistory = [];
+var rc_histFilter = 'all';
+var rc_managerId = 0;
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     loadMyLocations();
     loadHistory();
@@ -21,7 +21,7 @@ function loadMyLocations() {
         success: function (resp) {
             var d = resp.d;
             var sel = document.getElementById('rcLocation');
-            sel.innerHTML = '<option value="">-- Selecciona una locación --</option>';
+            sel.innerHTML = '<option value="">-- Selecciona una locacion --</option>';
 
             if (d.success && d.data && d.data.length > 0) {
                 d.data.forEach(function (loc) {
@@ -42,7 +42,7 @@ function loadMyLocations() {
     });
 }
 
-// ── Cambio de locación seleccionada ───────────────────────────────────────────
+// ── Cambio de locacion seleccionada ──────────────────────────────────────────
 function onLocationChange(locationId) {
     var card = document.getElementById('rcManagerCard');
     var noMgr = document.getElementById('rcNoManager');
@@ -83,11 +83,11 @@ function sendRequest() {
     var notes = document.getElementById('rcNotes').value.trim();
 
     if (!locationId) {
-        showFormMsg('Selecciona una locación primero.', 'error');
+        showFormMsg('Selecciona una locacion primero.', 'error');
         return;
     }
     if (!rc_managerId) {
-        showFormMsg('Esta locación no tiene un Manager asignado.', 'error');
+        showFormMsg('Esta locacion no tiene un Manager asignado.', 'error');
         return;
     }
 
@@ -107,7 +107,6 @@ function sendRequest() {
 
             if (d.success) {
                 showFormMsg(d.message, 'success');
-                // Reset form
                 document.getElementById('rcLocation').value = '';
                 document.getElementById('rcNotes').value = '';
                 document.getElementById('rcCharCount').textContent = '0';
@@ -115,7 +114,7 @@ function sendRequest() {
                 document.getElementById('rcNoManager').style.display = 'none';
                 btn.disabled = true;
                 rc_managerId = 0;
-                loadMyLocations(); // quitar la locación enviada del dropdown en tiempo real
+                loadMyLocations();
                 loadHistory();
             } else {
                 showFormMsg(d.message || 'Error al enviar la solicitud.', 'error');
@@ -124,7 +123,7 @@ function sendRequest() {
         error: function () {
             btn.disabled = false;
             btn.innerHTML = '<span class="material-icons">send</span> Enviar solicitud';
-            showFormMsg('Error de comunicación. Intenta nuevamente.', 'error');
+            showFormMsg('Error de comunicacion. Intenta nuevamente.', 'error');
         }
     });
 }
@@ -183,13 +182,12 @@ function renderHistory() {
 
             var reviewHtml = (r.reviewNotes || r.reviewedByName)
                 ? '<div class="rc-review-notes"><strong>' + escHtml(r.reviewedByName || 'Manager') + ':</strong> ' +
-                escHtml(r.reviewNotes || '—') +
-                (r.reviewedAt ? ' <span style="color:var(--text-muted)">· ' + r.reviewedAt + '</span>' : '') +
+                escHtml(r.reviewNotes || '-') +
+                (r.reviewedAt ? ' <span style="color:var(--text-muted)">- ' + r.reviewedAt + '</span>' : '') +
                 '</div>'
                 : '';
 
-            // OMS label como pills
-            var omsHtml = r.omsLabel && r.omsLabel !== '—'
+            var omsHtml = r.omsLabel && r.omsLabel !== '-'
                 ? r.omsLabel.split(',').map(function (c) {
                     return '<span class="rc-oms-pill">' + escHtml(c.trim()) + '</span>';
                 }).join('')
@@ -249,16 +247,24 @@ function escHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-// ─── SIGNALR ────────────────────────────────────────────────
-// dashboard_layout.js gestiona OS notification, badge y suscripción al grupo.
-// Aquí solo extendemos el handler para recargar el historial en esta página.
+// ── SignalR ───────────────────────────────────────────────────────────────────
+// Registrar ANTES de que dashboard_layout.js llame a hub.start()
 (function () {
-    if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
+    if (typeof $.connection === 'undefined') return;
+    if (typeof $.connection.locationHub === 'undefined') return;
+
     var hub = $.connection.locationHub;
-    var _base = hub.client.requestReviewed;
+
     hub.client.requestReviewed = function (data) {
-        if (_base) _base(data);  // ejecutar handler base (OS notif + badge)
-        loadHistory();            // recargar historial específico de esta página
-        loadMyLocations();        // re-mostrar locaciones aprobadas/rechazadas en el dropdown
+        var statusMap = { Approved: 'aprobada', Rejected: 'rechazada', Reopened: 'reabierta' };
+        var label = statusMap[data.newStatus] || data.newStatus;
+        if (typeof showOsNotification === 'function') {
+            showOsNotification('Solicitud ' + label, data.locationName + ' - por ' + data.reviewedBy);
+        }
+        if (typeof refreshBadge === 'function') {
+            refreshBadge();
+        }
+        loadHistory();
+        loadMyLocations();
     };
-})();
+}());

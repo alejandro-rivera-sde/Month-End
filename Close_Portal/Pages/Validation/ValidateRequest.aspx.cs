@@ -230,5 +230,95 @@ namespace Close_Portal.Pages {
                 return new { success = false, message = ex.Message };
             }
         }
+        // ============================================================
+        // REOPEN REQUEST
+        // Revierte una solicitud Approved a Pending para corrección.
+        // Solo Manager de la locación o Admin/Owner.
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object ReopenRequest(int requestId, string reason) {
+            try {
+                CheckAccess(RoleLevel.Manager);
+                var session = System.Web.HttpContext.Current.Session;
+                int reviewerId = (int)session["UserId"];
+                int roleId = (int)session["RoleId"];
+
+                if (string.IsNullOrWhiteSpace(reason))
+                    return new { success = false, message = "Debes indicar el motivo de reapertura." };
+
+                using (var conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+
+                    // Verificar que existe y está Approved
+                    int locationId;
+                    using (var cmd = new SqlCommand(@"
+                        SELECT Location_Id, Status FROM Closure_Requests
+                        WHERE Request_Id = @RequestId", conn)) {
+                        cmd.Parameters.AddWithValue("@RequestId", requestId);
+                        using (var r = cmd.ExecuteReader()) {
+                            if (!r.Read())
+                                return new { success = false, message = "Solicitud no encontrada." };
+                            if (r["Status"].ToString() != "Approved")
+                                return new { success = false, message = "Solo se pueden reabrir solicitudes aprobadas." };
+                            locationId = (int)r["Location_Id"];
+                        }
+                    }
+
+                    // Manager: verificar que tiene la locación asignada
+                    if (roleId == RoleLevel.Manager) {
+                        using (var cmd = new SqlCommand(@"
+                            SELECT COUNT(*) FROM Users_Location
+                            WHERE Location_Id = @LocationId AND User_Id = @UserId", conn)) {
+                            cmd.Parameters.AddWithValue("@LocationId", locationId);
+                            cmd.Parameters.AddWithValue("@UserId", reviewerId);
+                            if ((int)cmd.ExecuteScalar() == 0)
+                                return new { success = false, message = "No tienes permiso para reabrir esta solicitud." };
+                        }
+                    }
+
+                    // Revertir a Pending y limpiar revisión
+                    using (var cmd = new SqlCommand(@"
+                        UPDATE Closure_Requests SET
+                            Status       = 'Pending',
+                            Reviewed_By  = NULL,
+                            Reviewed_At  = NULL,
+                            Review_Notes = @Reason
+                        WHERE Request_Id = @RequestId", conn)) {
+                        cmd.Parameters.AddWithValue("@Reason", reason.Trim());
+                        cmd.Parameters.AddWithValue("@RequestId", requestId);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ValidateRequest.ReopenRequest] RequestId={requestId} reabierto por UserId={reviewerId}");
+
+                    // Notificar al solicitante
+                    int requestedBy;
+                    string locName;
+                    using (var cmd = new SqlCommand(@"
+                        SELECT cr.Requested_By, wl.Location_Name
+                        FROM Closure_Requests cr
+                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
+                        WHERE cr.Request_Id = @RequestId", conn)) {
+                        cmd.Parameters.AddWithValue("@RequestId", requestId);
+                        using (var r = cmd.ExecuteReader()) {
+                            r.Read();
+                            requestedBy = (int)r["Requested_By"];
+                            locName = r["Location_Name"].ToString();
+                        }
+                    }
+
+                    string reviewerName = session["Username"]?.ToString() ?? "";
+                    LocationHub.NotifyRequestReviewed(requestedBy, requestId, locName, "Reopened", reviewerName);
+                    LocationHub.NotifyLocationUpdated(locationId, locName, "Pending", reviewerName);
+                }
+
+                return new { success = true, message = $"Solicitud #{requestId} reabierta correctamente." };
+
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[ValidateRequest.ReopenRequest] ERROR: {ex.Message}");
+                return new { success = false, message = ex.Message };
+            }
+        }
     }
 }

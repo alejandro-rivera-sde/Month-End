@@ -154,7 +154,13 @@ function renderRequestItem(r) {
         '    <span class="material-icons">cancel</span>Rechazar' +
         '  </button>' +
         '</div>'
-        : '';
+        : r.status === 'Approved'
+            ? '<div class="vr-request-actions">' +
+            '  <button type="button" class="vr-btn-reopen" onclick="openReopenModal(' + r.requestId + ')">' +
+            '    <span class="material-icons">lock_open</span>Reabrir' +
+            '  </button>' +
+            '</div>'
+            : '';
 
     return '<div class="vr-request-item" id="vr-item-' + r.requestId + '">' +
         '<div class="vr-request-info">' +
@@ -213,10 +219,15 @@ function openReviewModal(requestId, action) {
         (req.notes ? '<br/><strong>Notas:</strong> ' + escHtml(req.notes) : '') +
         '</div>' +
         '<label class="vr-modal-label">' +
-        'Comentarios de revisión <span>(opcional)</span>' +
+        'Comentarios de revisión ' +
+        (isApprove
+            ? '<span>(opcional)</span>'
+            : '<span class="vr-required">* requerido al rechazar</span>') +
         '</label>' +
         '<textarea id="vrReviewNotes" class="vr-modal-textarea" rows="3" maxlength="500" ' +
-        'placeholder="Agrega observaciones o instrucciones para el solicitante..."></textarea>' +
+        'placeholder="' + (isApprove
+            ? 'Agrega observaciones o instrucciones para el solicitante...'
+            : 'Indica el motivo del rechazo...') + '"></textarea>' +
         '</div>' +
         '<div class="vr-modal-footer">' +
         '<span class="vr-modal-msg" id="vrModalMsg"></span>' +
@@ -248,6 +259,15 @@ function submitReview(requestId, action) {
     var notes = document.getElementById('vrReviewNotes').value.trim();
     var btnConf = document.getElementById('vrBtnConfirm');
     var msgEl = document.getElementById('vrModalMsg');
+
+    // Motivo obligatorio al rechazar
+    if (action === 'Rejected' && !notes) {
+        msgEl.textContent = 'Debes escribir el motivo del rechazo.';
+        msgEl.className = 'vr-modal-msg error';
+        msgEl.style.display = 'block';
+        document.getElementById('vrReviewNotes').focus();
+        return;
+    }
 
     btnConf.disabled = true;
     btnConf.innerHTML = '<span class="material-icons vr-spin">autorenew</span> Procesando...';
@@ -285,6 +305,91 @@ function submitReview(requestId, action) {
         },
         error: function () {
             btnConf.disabled = false;
+            msgEl.textContent = 'Error de comunicación. Intenta nuevamente.';
+            msgEl.className = 'vr-modal-msg error';
+            msgEl.style.display = 'block';
+        }
+    });
+}
+
+// ── Modal de reapertura ───────────────────────────────────────────────────────
+function openReopenModal(requestId) {
+    var req = vr_allRequests.find(function (r) { return r.requestId === requestId; });
+    if (!req) return;
+
+    var html =
+        '<div class="vr-overlay" id="vrOverlay" onclick="closeReviewModalOnBg(event)">' +
+        '<div class="vr-modal">' +
+        '<div class="vr-modal-header reopen">' +
+        '<span class="material-icons">lock_open</span>' +
+        '<span class="vr-modal-title">Reabrir solicitud</span>' +
+        '<button type="button" class="vr-modal-close" onclick="closeReviewModal()">' +
+        '<span class="material-icons">close</span>' +
+        '</button>' +
+        '</div>' +
+        '<div class="vr-modal-body">' +
+        '<div class="vr-modal-summary">' +
+        '<strong>Solicitud #' + req.requestId + '</strong><br/>' +
+        '<strong>Locación:</strong> ' + escHtml(req.locationName) + '<br/>' +
+        '<strong>Solicitante:</strong> ' + escHtml(req.requesterName) +
+        '</div>' +
+        '<p class="vr-reopen-hint">Esta acción revertirá la aprobación y colocará la solicitud en estado <strong>Pendiente</strong> nuevamente.</p>' +
+        '<label class="vr-modal-label">Motivo de reapertura <span class="vr-required">* requerido</span></label>' +
+        '<textarea id="vrReopenReason" class="vr-modal-textarea" rows="3" maxlength="500" ' +
+        'placeholder="Indica el motivo por el que se revierte la aprobación..."></textarea>' +
+        '</div>' +
+        '<div class="vr-modal-footer">' +
+        '<span class="vr-modal-msg" id="vrModalMsg"></span>' +
+        '<button type="button" class="vr-btn-cancel" onclick="closeReviewModal()">Cancelar</button>' +
+        '<button type="button" class="vr-btn-confirm reopen" id="vrBtnConfirm" ' +
+        'onclick="submitReopen(' + requestId + ')">' +
+        '<span class="material-icons">lock_open</span>Confirmar reapertura' +
+        '</button>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById('vrReopenReason').focus();
+}
+
+function submitReopen(requestId) {
+    var reason = document.getElementById('vrReopenReason').value.trim();
+    var btnConf = document.getElementById('vrBtnConfirm');
+    var msgEl = document.getElementById('vrModalMsg');
+
+    if (!reason) {
+        msgEl.textContent = 'Debes indicar el motivo de reapertura.';
+        msgEl.className = 'vr-modal-msg error';
+        msgEl.style.display = 'block';
+        document.getElementById('vrReopenReason').focus();
+        return;
+    }
+
+    btnConf.disabled = true;
+    btnConf.innerHTML = '<span class="material-icons vr-spin">autorenew</span> Procesando...';
+    msgEl.style.display = 'none';
+
+    $.ajax({
+        type: 'POST', url: 'ValidateRequest.aspx/ReopenRequest',
+        data: JSON.stringify({ requestId: requestId, reason: reason }),
+        contentType: 'application/json; charset=utf-8', dataType: 'json',
+        success: function (resp) {
+            var d = resp.d;
+            if (d.success) {
+                closeReviewModal();
+                loadRequests();
+            } else {
+                btnConf.disabled = false;
+                btnConf.innerHTML = '<span class="material-icons">lock_open</span>Confirmar reapertura';
+                msgEl.textContent = d.message || 'Error al reabrir.';
+                msgEl.className = 'vr-modal-msg error';
+                msgEl.style.display = 'block';
+            }
+        },
+        error: function () {
+            btnConf.disabled = false;
+            btnConf.innerHTML = '<span class="material-icons">lock_open</span>Confirmar reapertura';
             msgEl.textContent = 'Error de comunicación. Intenta nuevamente.';
             msgEl.className = 'vr-modal-msg error';
             msgEl.style.display = 'block';
