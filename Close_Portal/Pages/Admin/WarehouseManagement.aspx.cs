@@ -22,7 +22,7 @@ namespace Close_Portal.Pages.Admin {
     }
 
     public partial class WarehouseManagement : SecurePage {
-        protected override int RequiredRoleId => RoleLevel.Owner;
+        protected override int RequiredRoleId => RoleLevel.Administrador;
 
         private static readonly string _connStr =
             ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;

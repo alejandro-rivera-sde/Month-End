@@ -85,6 +85,24 @@ namespace Close_Portal.Pages.Admin {
         protected global::System.Web.UI.WebControls.Panel pnlEmpty;
 
         /// <summary>
+        /// rptRolesNew control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptRolesNew;
+
+        /// <summary>
+        /// rptDepartmentsNew control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptDepartmentsNew;
+
+        /// <summary>
         /// rptRoles control.
         /// </summary>
         /// <remarks>

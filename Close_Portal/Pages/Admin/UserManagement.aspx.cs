@@ -12,7 +12,7 @@ using System.Web.UI;
 
 namespace Close_Portal.Pages.Admin {
     public partial class UserManagement : SecurePage {
-        protected override int RequiredRoleId => RoleLevel.Owner;
+        protected override int RequiredRoleId => RoleLevel.Administrador;
 
         private static readonly string _connStr =
             ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
@@ -96,6 +96,11 @@ namespace Close_Portal.Pages.Admin {
                         da.Fill(dt);
                         rptRoles.DataSource = dt;
                         rptRoles.DataBind();
+                        // New user form: never allow creating Owners (Role_Id = 4)
+                        dt.DefaultView.RowFilter = "Role_Id < 4";
+                        rptRolesNew.DataSource = dt.DefaultView.ToTable();
+                        rptRolesNew.DataBind();
+                        dt.DefaultView.RowFilter = "";
                     }
                 }
             } catch (Exception ex) {
@@ -119,6 +124,8 @@ namespace Close_Portal.Pages.Admin {
                         rptDepartments.DataBind();
                         rptDepartmentsFilter.DataSource = dt;
                         rptDepartmentsFilter.DataBind();
+                        rptDepartmentsNew.DataSource = dt;
+                        rptDepartmentsNew.DataBind();
                     }
                 }
             } catch (Exception ex) {

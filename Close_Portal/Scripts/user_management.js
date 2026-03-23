@@ -9,6 +9,21 @@ function getTranslation(key) {
         : key;
 }
 
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tabName) {
+    document.querySelectorAll('.um-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === tabName));
+    document.querySelectorAll('.um-tab-panel').forEach(p =>
+        p.classList.toggle('active', p.id === 'tab-' + tabName));
+    // Reset location search when leaving/entering that tab
+    if (tabName !== 'locations') {
+        const s = document.getElementById('locSearch');
+        if (s) { s.value = ''; filterLocationChecklist(''); }
+    }
+}
+
 function createModal() {
     const overlay = document.getElementById('modalOverlay');
     if (!overlay || overlay.dataset.initialized) return;
@@ -25,27 +40,28 @@ function showOverlay() {
 function closeModal() {
     const overlay = document.getElementById('modalOverlay');
     if (overlay) overlay.classList.remove('active');
+    switchTab('general');
 }
 
 function filterTable() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const filterRole = document.getElementById('filterRole').value.toLowerCase();
-    const filterStat = document.getElementById('filterStatus').value;
-    const filterWms = document.getElementById('filterWms').value.toUpperCase();
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filterRole = document.getElementById('filterRole').value.trim();
+    const filterStat = document.getElementById('filterStatus').value.trim();
+    const filterWms = document.getElementById('filterWms').value.toUpperCase().trim();
     const filterDeptEl = document.getElementById('filterDepartment');
-    const filterDept = filterDeptEl ? filterDeptEl.value.toUpperCase() : '';
+    const filterDept = filterDeptEl ? filterDeptEl.value.toUpperCase().trim() : '';
 
     document.querySelectorAll('#usersTable tbody tr').forEach(row => {
         const text = row.innerText.toLowerCase();
-        const role = (row.dataset.role || '').toLowerCase();
-        const status = (row.dataset.status || '');
+        const roleId = parseInt(row.dataset.roleid || '0');
+        const status = (row.dataset.status || '').trim();
         const wms = (row.dataset.wms || '').toUpperCase();
-        const dept = (row.dataset.department || '').toUpperCase();
+        const dept = (row.dataset.department || '').toUpperCase().trim();
 
         const matchSearch = !search || text.includes(search);
-        const matchRole = !filterRole || role === filterRole;
+        const matchRole = !filterRole || roleId === parseInt(filterRole);
         const matchStatus = !filterStat || status === filterStat;
-        const matchWms = !filterWms || wms.split(',').includes(filterWms);
+        const matchWms = !filterWms || wms.split(',').map(s => s.trim()).includes(filterWms);
         const matchDept = !filterDept || dept === filterDept;
 
         row.style.display = (matchSearch && matchRole && matchStatus && matchWms && matchDept) ? '' : 'none';
@@ -57,20 +73,20 @@ function filterTable() {
 // ============================================================
 function openModalEdit(userId) {
     createModal();
+    switchTab('general');
 
-    document.getElementById('modalTitle').innerText = getTranslation('um.modal.edit_title');
-    document.getElementById('newUserFields').style.display = 'none';
-    document.getElementById('statusToggles').style.display = 'block';
+    document.getElementById('modalTitle').style.display = 'none';
     document.getElementById('userInfoCard').style.display = 'flex';
-    document.getElementById('editExtraFields').style.display = 'flex';
-
-    const loadingHtml = `<div style="color:var(--text-muted);font-size:13px;padding:8px">${getTranslation('common.loading')}</div>`;
-    document.getElementById('omsChecklist').innerHTML = loadingHtml;
-    document.getElementById('locationsChecklist').innerHTML = loadingHtml;
+    document.getElementById('newUserFields').style.display = 'none';
+    document.getElementById('editModeFields').style.display = 'block';
 
     document.getElementById('editPassword1').value = '';
     document.getElementById('editPassword2').value = '';
     document.getElementById('pwMatchMsg').style.display = 'none';
+
+    const loadingHtml = `<div style="color:var(--text-muted);font-size:13px;padding:8px">${getTranslation('common.loading')}</div>`;
+    document.getElementById('omsChecklist').innerHTML = loadingHtml;
+    document.getElementById('locationsChecklist').innerHTML = loadingHtml;
 
     showOverlay();
 
@@ -82,37 +98,31 @@ function openModalEdit(userId) {
         dataType: 'json',
         success: function (response) {
             const data = response.d;
-            if (!data.Success) {
-                showToast(getTranslation('common.error'), 'error');
-                closeModal();
-                return;
-            }
+            if (!data.Success) { showToast(getTranslation('common.error'), 'error'); closeModal(); return; }
             populateModal(data);
         },
         error: function () { showToast(getTranslation('common.error'), 'error'); closeModal(); }
     });
 }
 
-// ============================================================
-// ABRIR MODAL NUEVO USUARIO
-// ============================================================
 function openModalNew() {
     createModal();
+    switchTab('general');
 
-    document.getElementById('modalTitle').innerText = getTranslation('um.modal.new_title');
-    document.getElementById('newUserFields').style.display = 'block';
-    document.getElementById('statusToggles').style.display = 'none';
+    const titleEl = document.getElementById('modalTitle');
+    titleEl.style.display = 'flex';
+    titleEl.innerText = getTranslation('um.modal.new_title');
     document.getElementById('userInfoCard').style.display = 'none';
-    document.getElementById('editExtraFields').style.display = 'none';
+    document.getElementById('newUserFields').style.display = 'block';
+    document.getElementById('editModeFields').style.display = 'none';
 
     document.getElementById('newEmail').value = '';
     document.getElementById('newUsername').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('modalActive').checked = true;
-    document.getElementById('modalLocked').checked = false;
 
-    const deptNew = document.getElementById('modalDepartment');
-    if (deptNew) deptNew.selectedIndex = 0;
+    const newRole = document.getElementById('newModalRole');
+    if (newRole) newRole.selectedIndex = 0;
+    const newDept = document.getElementById('newModalDepartment');
+    if (newDept) newDept.selectedIndex = 0;
 
     document.getElementById('modalOverlay').dataset.mode = 'new';
     document.getElementById('modalOverlay').dataset.userId = '0';
@@ -138,7 +148,6 @@ function populateModal(data) {
     document.getElementById('modalUserName').innerText = data.Username;
     document.getElementById('modalUserEmail').innerText = data.Email;
     document.getElementById('editUsername').value = data.Username || '';
-
     const roleSelect = document.getElementById('modalRole');
     for (let i = 0; i < roleSelect.options.length; i++) {
         if (parseInt(roleSelect.options[i].value) === data.RoleId) {
@@ -302,6 +311,67 @@ function loadAllOms() {
     });
 }
 
+function loadAllOmsForNew() {
+    $.ajax({
+        type: 'POST',
+        url: 'UserManagement.aspx/GetAllOms',
+        data: JSON.stringify({}),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function (response) {
+            const result = response.d;
+            if (result && result.Success) {
+                buildOmsChecklistInto('omsChecklistNew', result.Data, []);
+            } else {
+                document.getElementById('omsChecklistNew').innerHTML =
+                    `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin OMS disponibles</div>`;
+            }
+        },
+        error: function () {
+            document.getElementById('omsChecklistNew').innerHTML =
+                `<div style="color:var(--text-muted);font-size:13px;padding:8px">Error al cargar OMS</div>`;
+        }
+    });
+}
+
+// Generic OMS checklist builder — targets a given container id, marks assignedIds as checked
+function buildOmsChecklistInto(containerId, omsList, assignedIds) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    if (!omsList || omsList.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin OMS disponibles</div>`;
+        return;
+    }
+
+    const assigned = new Set(assignedIds || []);
+    const groups = {};
+    omsList.forEach(oms => {
+        if (!groups[oms.WmsId]) groups[oms.WmsId] = { code: oms.WmsCode, items: [] };
+        groups[oms.WmsId].items.push(oms);
+    });
+
+    Object.values(groups).forEach(group => {
+        const header = document.createElement('div');
+        header.className = 'um-oms-group-header';
+        header.textContent = group.code;
+        container.appendChild(header);
+
+        group.items.forEach(oms => {
+            const isAssigned = assigned.has(oms.OmsId);
+            const label = document.createElement('label');
+            label.className = `wms-check-item${isAssigned ? ' checked' : ''}`;
+            label.dataset.containerId = containerId;
+            label.innerHTML = `
+                <input type="checkbox" value="${oms.OmsId}" ${isAssigned ? 'checked' : ''}
+                       onchange="toggleWmsItem(this)" />
+                <span>${escHtml(oms.OmsCode)}</span>
+                <span style="color:var(--text-muted);font-size:12px;margin-left:4px">${escHtml(oms.OmsName)}</span>`;
+            container.appendChild(label);
+        });
+    });
+}
+
 function loadAllLocations() {
     $.ajax({
         type: 'POST',
@@ -321,6 +391,15 @@ function loadAllLocations() {
     });
 }
 
+function filterLocationChecklist(query) {
+    const q = query.toLowerCase().trim();
+    document.querySelectorAll('#locationsChecklist .wms-check-item').forEach(function (item) {
+        const name = item.querySelector('.wms-item-name, span:not(.material-icons)');
+        const text = (name ? name.textContent : item.textContent).toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+}
+
 function toggleWmsItem(checkbox) {
     checkbox.closest('label').classList.toggle('checked', checkbox.checked);
 }
@@ -331,8 +410,8 @@ function toggleWmsItem(checkbox) {
 function saveChanges() {
     const overlay = document.getElementById('modalOverlay');
     const mode = overlay.dataset.mode;
-    const userId = parseInt(overlay.dataset.userId);
-    const roleId = parseInt(document.getElementById('modalRole').value);
+
+    const roleId = parseInt(document.getElementById('modalRole').value) || 0;
     const active = document.getElementById('modalActive').checked;
     const locked = document.getElementById('modalLocked').checked;
     const deptEl = document.getElementById('modalDepartment');
@@ -346,10 +425,16 @@ function saveChanges() {
         document.querySelectorAll('#locationsChecklist input[type=checkbox]:checked')
     ).map(cb => parseInt(cb.value));
 
-    if (mode === 'edit') {
-        saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId);
+    if (mode === 'new') {
+        const newRoleId = parseInt(document.getElementById('newModalRole').value) || 0;
+        const newDeptEl = document.getElementById('newModalDepartment');
+        const newDeptId = newDeptEl && newDeptEl.value ? parseInt(newDeptEl.value) : null;
+        const newOmsIds = Array.from(document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+        const newLocIds = Array.from(document.querySelectorAll('#locationsChecklist input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+        saveNewUser(newRoleId, newOmsIds, newLocIds, newDeptId);
     } else {
-        saveNewUser(roleId, omsIds, locationIds, departmentId);
+        const userId = parseInt(overlay.dataset.userId);
+        saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId);
     }
 }
 
@@ -415,7 +500,51 @@ function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, de
 }
 
 function saveNewUser(roleId, omsIds, locationIds, departmentId) {
-    showToast('Alta de usuario en desarrollo', 'info');
+    const email = (document.getElementById('newEmail').value || '').trim();
+    const username = (document.getElementById('newUsername').value || '').trim();
+
+    if (!email) {
+        showToast('El email es requerido.', 'error');
+        return;
+    }
+    if (!email.toLowerCase().endsWith('@novamex.com')) {
+        showToast('El email debe ser @novamex.com', 'error');
+        return;
+    }
+    if (!username) {
+        showToast(getTranslation('um.modal.username_required'), 'error');
+        return;
+    }
+    if (!roleId) {
+        showToast('Selecciona un rol.', 'error');
+        return;
+    }
+
+    setBtnLoading(true);
+
+    $.ajax({
+        type: 'POST',
+        url: '/Pages/Users/UserRegistration.aspx/CreateUser',
+        // Always Google OAuth — no password needed
+        data: JSON.stringify({ email, username, roleId, omsIds: omsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function (response) {
+            setBtnLoading(false);
+            const result = response.d;
+            if (result.Success) {
+                showToast(result.Message || 'Usuario creado correctamente.', 'success');
+                closeModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(result.Message || getTranslation('common.error'), 'error');
+            }
+        },
+        error: function () {
+            setBtnLoading(false);
+            showToast(getTranslation('common.error'), 'error');
+        }
+    });
 }
 
 // ============================================================

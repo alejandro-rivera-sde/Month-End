@@ -179,35 +179,39 @@ namespace Close_Portal.Pages.Main {
                         startTime = dr.GetDateTime(1);
                     }
 
-                    // 2. Contar locaciones activas totales
+                    // 2. Contar locaciones involucradas en esta guardia (Guard_Locations)
                     int totalLocations;
                     using (var cmd = new SqlCommand(
-                        "SELECT COUNT(*) FROM WMS_Location WHERE Active = 1", conn)) {
+                        "SELECT COUNT(*) FROM Guard_Locations WHERE Guard_Id = @GuardId", conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         totalLocations = (int)cmd.ExecuteScalar();
                     }
 
+                    // Si no hay locaciones definidas, no cerrar
                     if (totalLocations == 0)
                         return new { success = true, closed = false, reason = "no_locations" };
 
-                    // 3. Contar locaciones cuya última solicitud (desde inicio guardia) es Approved
+                    // 3. Contar locaciones involucradas cuya última solicitud es Approved
                     const string sqlApproved = @"
                         WITH LatestReq AS (
-                            SELECT Location_Id, Status,
+                            SELECT cr.Location_Id, cr.Status,
                                    ROW_NUMBER() OVER (
-                                       PARTITION BY Location_Id ORDER BY Created_At DESC
+                                       PARTITION BY cr.Location_Id ORDER BY cr.Created_At DESC
                                    ) AS rn
-                            FROM Closure_Requests
-                            WHERE Created_At >= @Since
+                            FROM Closure_Requests cr
+                            INNER JOIN Guard_Locations gl
+                                   ON gl.Location_Id = cr.Location_Id
+                                  AND gl.Guard_Id    = @GuardId
+                            WHERE cr.Created_At >= @Since
                         )
-                        SELECT COUNT(DISTINCT wl.Location_Id)
-                        FROM WMS_Location wl
-                        INNER JOIN LatestReq lr
-                               ON lr.Location_Id = wl.Location_Id AND lr.rn = 1
-                        WHERE wl.Active = 1
-                          AND lr.Status = 'Approved'";
+                        SELECT COUNT(DISTINCT Location_Id)
+                        FROM LatestReq
+                        WHERE rn = 1
+                          AND Status = 'Approved'";
 
                     int approvedCount;
                     using (var cmd = new SqlCommand(sqlApproved, conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         cmd.Parameters.AddWithValue("@Since", startTime);
                         approvedCount = (int)cmd.ExecuteScalar();
                     }

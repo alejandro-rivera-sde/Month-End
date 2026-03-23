@@ -336,6 +336,20 @@
     gap: 4px;
 }
 
+.um-no-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    color: var(--text-muted);
+    opacity: 0.4;
+}
+
+    .um-no-action .material-icons {
+        font-size: 16px;
+    }
+
 .btn-icon {
     width: 30px;
     height: 30px;
@@ -412,123 +426,294 @@
 
 .um-modal {
     background: var(--card-bg);
-    border-radius: 12px;
-    width: 820px;
+    border-radius: 14px;
+    width: min(1400px, 90vw);
     max-width: 96vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
     position: relative;
     z-index: 9999;
-}
-
-.um-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    background: var(--card-bg);
-    z-index: 1;
-}
-
-    .um-header h3 {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-.um-body {
-    display: flex;
-    gap: 0;
-    padding: 0;
     overflow: hidden;
 }
 
-.um-col-left {
-    flex: 1 1 340px;
-    min-width: 260px;
-    padding: 20px 24px;
-    overflow-y: auto;
-    max-height: 68vh;
-    border-right: 1px solid var(--border-color);
+/* ── Header: user info | tabs | close ───────────── */
+.um-header {
+    padding: 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    background: var(--bg-primary);
+    min-height: 60px;
 }
 
-.um-col-right {
-    flex: 0 0 320px;
-    padding: 20px 24px;
-    overflow-y: auto;
-    max-height: 68vh;
+.um-header-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px 12px 20px;
+    flex-shrink: 0;
+}
+
+.um-header-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.um-header-info {
+    min-width: 0;
+}
+
+.um-header-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.um-header-email {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.um-header-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+    padding: 0 8px 0 20px;
+    display: flex;
+    align-items: center;
+}
+
+.um-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ── Body layout ─────────────────────────────────── */
+.um-body-layout {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    overflow: hidden;
 }
 
-.um-col-right-title {
+.um-sidebar {
+    display: none;
+}
+
+.um-content-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Shared 2-column grid for General tab (both new and edit modes) */
+.um-new-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.um-general-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 28px;
+    align-content: start;
+}
+
+    /* Full-width override for certain children */
+    .um-general-grid > .um-pw-section,
+    .um-general-grid > #editExtraFields {
+        grid-column: span 2;
+    }
+
+/* ── TABS — inside header ────────────────────────── */
+.um-tab-nav {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    padding: 0;
+    background: transparent;
+    border-bottom: none;
+}
+
+.um-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 22px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+    .um-tab .material-icons {
+        font-size: 17px;
+    }
+
+    .um-tab:hover {
+        color: var(--text-secondary);
+    }
+
+    .um-tab.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+/* Close button — fixed to the right end of header */
+.um-header > .btn-icon {
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 14px;
+    color: var(--error-color);
+    background: rgba(239,68,68,0.08);
+    border-radius: 8px;
+    padding: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+    .um-header > .btn-icon:hover {
+        background: rgba(239,68,68,0.18);
+        color: var(--error-color);
+    }
+
+/* Tab panels — fixed height prevents modal resize on tab switch */
+.um-tab-panel {
+    display: none;
+    padding: 16px 20px;
+    overflow-y: auto;
+    height: clamp(400px, 65vh, 780px);
+}
+
+    .um-tab-panel.active {
+        display: block;
+    }
+
+.um-tab-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+/* General tab: 2-column grid */
+#tab-general {
+    display: none;
+    padding: 16px 20px;
+    overflow-y: auto;
+    height: clamp(400px, 65vh, 780px);
+}
+
+    #tab-general.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 28px;
+        align-content: start;
+    }
+
+    /* Fields that should span both columns */
+    #tab-general .toggle-row,
+    #tab-general #statusToggles,
+    #tab-general .um-pw-section,
+    #tab-general #editExtraFields,
+    #tab-general .field-group:has(#modalDepartment) {
+        grid-column: span 2;
+    }
+
+/* user-info-card kept for new-user mode */
+.user-info-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+    .user-info-card .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
+
+.um-section-title {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .7px;
     text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     margin-top: 4px;
 }
 
 .um-pw-section {
-    margin-top: 20px;
-    padding-top: 20px;
+    margin-top: 14px;
+    padding-top: 14px;
     border-top: 1px solid var(--border-color);
 }
 
 .um-pw-hint {
     font-size: 12px;
     color: var(--text-muted);
-    margin: -6px 0 14px;
+    margin: -4px 0 12px;
     line-height: 1.5;
 }
 
 .um-footer {
-    padding: 16px 24px;
+    padding: 12px 20px;
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    position: sticky;
-    bottom: 0;
+    flex-shrink: 0;
     background: var(--card-bg);
 }
 
-/* User info card inside modal */
-.user-info-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 12px;
-    background: var(--bg-primary);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-    .user-info-card .avatar {
-        width: 42px;
-        height: 42px;
-        font-size: 16px;
-    }
 
 /* ========== FORM FIELDS ========== */
 .field-group {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 
     .field-group label {
         display: block;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--text-secondary);
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.4px;
     }
@@ -538,10 +723,10 @@
     .field-group input[type="email"],
     .field-group input[type="password"] {
         width: 100%;
-        padding: 9px 12px;
+        padding: 12px 16px;
         border: 1px solid var(--border-color);
-        border-radius: 7px;
-        font-size: 13px;
+        border-radius: 8px;
+        font-size: 15px;
         background: var(--bg-primary);
         color: var(--text-primary);
         font-family: inherit;
@@ -577,11 +762,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 12px;
+    padding: 11px 16px;
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--text-primary);
     transition: all 0.15s ease;
 }
@@ -593,8 +778,8 @@
 
     .wms-check-item input[type="checkbox"] {
         accent-color: var(--primary-color);
-        width: 15px;
-        height: 15px;
+        width: 18px;
+        height: 18px;
         flex-shrink: 0;
     }
 
@@ -603,9 +788,47 @@
         background: rgba(99, 102, 241, 0.05);
     }
 
-/* ── OMS GROUP HEADER (usado por buildOmsChecklist en JS) ── */
+/* ── Location tab search ─────────────────────────── */
+.um-loc-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+}
+
+    .um-loc-search-wrap:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .um-loc-search-wrap .material-icons {
+        font-size: 18px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+
+.um-loc-search {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text-primary);
+    width: 100%;
+}
+
+    .um-loc-search::placeholder {
+        color: var(--text-muted);
+    }
+
+
 .um-oms-group-header {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     font-family: monospace;
     letter-spacing: .5px;
@@ -698,7 +921,7 @@
 }
 
     .toggle-row label:first-child {
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 500;
         color: var(--text-primary);
         text-transform: none;
@@ -750,11 +973,11 @@ input:checked + .slider {
 
 /* ========== MODAL BUTTONS ========== */
 .btn-cancel {
-    padding: 9px 18px;
-    border-radius: 7px;
+    padding: 12px 24px;
+    border-radius: 8px;
     border: 1px solid var(--border-color);
     background: none;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     color: var(--text-secondary);
@@ -767,12 +990,12 @@ input:checked + .slider {
     }
 
 .btn-save {
-    padding: 9px 18px;
-    border-radius: 7px;
+    padding: 12px 24px;
+    border-radius: 8px;
     border: none;
     background: var(--primary-color);
     color: white;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;

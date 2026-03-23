@@ -19,10 +19,6 @@
             </h2>
             <p data-translate-key="db.subtitle">Estado de locaciones en el turno de guardia activo</p>
         </div>
-        <button type="button" class="db-btn-refresh" id="dbBtnRefresh" onclick="loadDashboard()">
-            <span class="material-icons">refresh</span>
-            <span data-translate-key="db.btn.refresh">Actualizar</span>
-        </button>
     </div>
 
     <!-- ── BANNER GUARDIA ──────────────────────────────────── -->
