@@ -7,6 +7,7 @@
     display: flex;
     min-height: 100vh;
     background-color: var(--bg-primary);
+    overflow-x: hidden;
 }
 
 /* ========== SIDEBAR (DERECHA) ========== */
@@ -22,6 +23,7 @@
     z-index: 1000;
     transition: all 0.3s ease;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
     .sidebar.collapsed {
@@ -161,6 +163,7 @@
 /* ========== MAIN CONTENT ========== */
 .main-content {
     flex: 1;
+    min-width: 0;
     margin-right: 260px;
     display: flex;
     flex-direction: column;
@@ -183,6 +186,8 @@
     position: sticky;
     top: 0;
     z-index: 100;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .menu-toggle {
@@ -292,7 +297,7 @@
    Forzamos --text-secondary globalmente para todas las páginas.
    Guard.css puede eliminar su override local de .page-title p. */
 .page-header {
-    margin-bottom: 15px;
+    margin-bottom: 24px;
 }
 
 .page-title h2 {
@@ -706,6 +711,10 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.95);
     letter-spacing: 0.3px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ── NOTIFICATION PANEL ─────────────────────────────────── */

@@ -11,6 +11,7 @@
 html {
     height: 100% !important;
     min-height: 100vh !important;
+    overflow-y: scroll; /* scrollbar siempre visible — evita el layout shift */
 }
 
 body {
@@ -44,7 +45,7 @@ body > form {
 
 /* Scrollbar personalizado */
 ::-webkit-scrollbar {
-    width: 12px;
+    width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -89,7 +90,4 @@ input, button, textarea, select {
     font-family: inherit;
 }
 
-/* Prevenir scroll horizontal */
-body, html {
-    overflow-x: hidden;
-}
+/* Prevenir scroll horizontal — manejado por dashboard-wrapper */

@@ -376,6 +376,16 @@ function openAssignSpotModal(spotId, departmentId, deptCode, deptName) {
             return;
         }
 
+        // Search box — fuera del scroll, fijo arriba
+        const searchHtml = `
+            <div class="gd-user-search">
+                <span class="material-icons">search</span>
+                <input type="text" class="gd-user-search-input"
+                       placeholder="Buscar usuario..."
+                       oninput="gdFilterUserList(this.value)" />
+            </div>`;
+        listEl.insertAdjacentHTML('beforebegin', searchHtml);
+
         listEl.innerHTML = resp.data.map(u => `
             <div class="gd-user-option" onclick="submitAssignSpot(${u.userId}, '${escapeHtml(u.username)}')">
                 <div class="gd-avatar gd-avatar-sm">${escapeHtml(u.initials)}</div>
@@ -386,6 +396,16 @@ function openAssignSpotModal(spotId, departmentId, deptCode, deptName) {
                 <span class="material-icons gd-user-option-arrow">chevron_right</span>
             </div>`).join('');
         listEl.style.display = 'block';
+    });
+}
+
+function gdFilterUserList(query) {
+    const q = query.toLowerCase().trim();
+    document.querySelectorAll('#gdUserList .gd-user-option').forEach(item => {
+        const name = item.querySelector('.gd-owner-name');
+        const email = item.querySelector('.gd-owner-email');
+        const text = ((name ? name.textContent : '') + ' ' + (email ? email.textContent : '')).toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? '' : 'none';
     });
 }
 
@@ -585,10 +605,16 @@ function renderLocationPicker(gridEl, allLocations) {
                 <p class="gd-field-hint" style="margin:4px 0 12px;">
                     ${t('gd.modal.loc_hint', 'Desmarca las locaciones que no tendrán operaciones en este cierre.')}
                 </p>
+                <div class="gd-loc-picker-search">
+                    <span class="material-icons">search</span>
+                    <input type="text" class="gd-loc-picker-search-input"
+                           placeholder="Buscar locación..."
+                           oninput="gdFilterLocPicker(this.value)" />
+                </div>
                 <div class="gd-field-error" id="gdLocError" style="display:none;">
                     ${t('gd.err.loc_required', 'Selecciona al menos una locación.')}
                 </div>
-                <div class="gd-loc-picker-list">
+                <div class="gd-loc-picker-list" id="gdLocPickerList">
                     ${allLocations.map(loc => {
             const isChecked = defaultAll || savedIds.has(loc.locationId);
             return `<label class="gd-loc-check-item">
@@ -607,6 +633,15 @@ function renderLocationPicker(gridEl, allLocations) {
                     </button>
                 </div>
             </div>`;
+    });
+}
+
+function gdFilterLocPicker(query) {
+    const q = query.toLowerCase().trim();
+    document.querySelectorAll('#gdLocPickerList .gd-loc-check-item').forEach(item => {
+        const name = item.querySelector('.gd-loc-check-name');
+        const text = name ? name.textContent.toLowerCase() : '';
+        item.style.display = (!q || text.includes(q)) ? '' : 'none';
     });
 }
 
