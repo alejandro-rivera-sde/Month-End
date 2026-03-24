@@ -286,7 +286,7 @@ function submitReview(requestId, action) {
                 // Marcar notificación de esta solicitud como leída
                 $.ajax({
                     type: 'POST',
-                    url: '/Pages/Main/Live.aspx/MarkAsRead',
+                    url: window.AppRoot + 'Pages/Main/Live.aspx/MarkAsRead',
                     data: JSON.stringify({ referenceId: requestId, type: 'new_request' }),
                     contentType: 'application/json; charset=utf-8',
                     dataType: 'json',

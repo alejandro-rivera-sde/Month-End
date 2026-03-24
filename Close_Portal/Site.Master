@@ -42,6 +42,17 @@
     <!-- Bootstrap JS (Local) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- AppRoot: derivado de la URL actual, funciona con cualquier virtual directory -->
+    <script>
+        (function () {
+            var path = window.location.pathname;
+            var pagesIdx = path.toLowerCase().indexOf('/pages/');
+            window.AppRoot = pagesIdx !== -1
+                ? path.substring(0, pagesIdx + 1)   // "/MonthEnd/"
+                : '/';
+        })();
+    </script>
+
     <script src='<%= ResolveUrl("~/Scripts/theme-toggle.js") %>'></script>    
     <asp:ContentPlaceHolder ID="ScriptsContent" runat="server">
     </asp:ContentPlaceHolder>

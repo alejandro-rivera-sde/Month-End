@@ -243,17 +243,9 @@ function handleLoginResponse(result) {
         console.log("Preparando redirección al dashboard...");
 
         setTimeout(function () {
-            // USAR RUTA ABSOLUTA para evitar problemas
-            const dashboardUrl = "/Pages/Main/Live.aspx";
+            const dashboardUrl = (window.AppRoot || '/') + 'Pages/Main/Live.aspx';
             console.log("Redirigiendo a:", dashboardUrl);
-
-            try {
-                window.location.href = dashboardUrl;
-            } catch (e) {
-                console.error("Error en redirección:", e);
-                // Fallback con ruta relativa
-                window.location.href = "../Main/Live.aspx";
-            }
+            window.location.href = dashboardUrl;
         }, 1000);
 
     } else {

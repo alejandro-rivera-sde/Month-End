@@ -246,7 +246,7 @@
 
                 // Redirigir
                 console.log('Redirigiendo a Login...');
-                window.location.href = '/Pages/Home/Logout.aspx'; // Mantener apuntando a Logout para limpiar la seesion.
+                window.location.href = window.AppRoot + 'Pages/Home/Logout.aspx';
             });
             console.log('✅ Listener de confirmLogout agregado');
         } else {
@@ -308,7 +308,7 @@ function showOsNotification(title, body, icon) {
 function loadUnreadCount() {
     $.ajax({
         type: 'POST',
-        url: '/Pages/Main/Live.aspx/GetUnreadCount',
+        url: window.AppRoot + 'Pages/Main/Live.aspx/GetUnreadCount',
         data: '{}',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -401,7 +401,7 @@ function loadNotifications() {
 
     $.ajax({
         type: 'POST',
-        url: '/Pages/Main/Live.aspx/GetNotifications',
+        url: window.AppRoot + 'Pages/Main/Live.aspx/GetNotifications',
         data: '{}',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -444,7 +444,7 @@ function renderNotifications(items) {
 function markAllRead() {
     $.ajax({
         type: 'POST',
-        url: '/Pages/Main/Live.aspx/MarkAllRead',
+        url: window.AppRoot + 'Pages/Main/Live.aspx/MarkAllRead',
         data: '{}',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
