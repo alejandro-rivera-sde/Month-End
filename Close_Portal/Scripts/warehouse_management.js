@@ -4,8 +4,8 @@
 // ============================================================
 
 function wmT(key) {
-    const lang = document.documentElement.getAttribute('data-language') || 'es';
-    return (typeof translations !== 'undefined' && translations[lang]?.[key])
+    var lang = document.documentElement.getAttribute('data-language') || 'es';
+    return (typeof translations !== 'undefined' && translations[lang] && translations[lang][key])
         ? translations[lang][key]
         : key;
 }
@@ -71,7 +71,7 @@ function createWmModal() {
 }
 
 function closeWmModal() {
-    const overlay = document.getElementById('wmOverlay');
+    var overlay = document.getElementById('wmOverlay');
     if (overlay) overlay.classList.remove('active');
 }
 
@@ -79,13 +79,11 @@ function showWmOverlay() {
     document.getElementById('wmOverlay').classList.add('active');
 }
 
-// ── Actualiza el título según el modo guardado ───────────────
 function refreshWmModalTitle() {
-    const overlay = document.getElementById('wmOverlay');
+    var overlay = document.getElementById('wmOverlay');
     if (!overlay) return;
-    const mode = overlay.dataset.mode;
-    const titleKey = mode === 'edit' ? 'wm.modal.edit_title' : 'wm.modal.new_title';
-    document.getElementById('wmModalTitle').textContent = wmT(titleKey);
+    var key = overlay.dataset.mode === 'edit' ? 'wm.modal.edit_title' : 'wm.modal.new_title';
+    document.getElementById('wmModalTitle').textContent = wmT(key);
 }
 
 // ============================================================
@@ -94,7 +92,7 @@ function refreshWmModalTitle() {
 function openModalNew() {
     createWmModal();
 
-    const overlay = document.getElementById('wmOverlay');
+    var overlay = document.getElementById('wmOverlay');
     overlay.dataset.mode = 'new';
     overlay.dataset.locationId = '0';
 
@@ -112,7 +110,7 @@ function openModalNew() {
 function openModalEdit(locationId) {
     createWmModal();
 
-    const overlay = document.getElementById('wmOverlay');
+    var overlay = document.getElementById('wmOverlay');
     overlay.dataset.mode = 'edit';
     overlay.dataset.locationId = locationId;
 
@@ -125,11 +123,11 @@ function openModalEdit(locationId) {
     $.ajax({
         type: 'POST',
         url: 'WarehouseManagement.aspx/GetLocationDetail',
-        data: JSON.stringify({ locationId }),
+        data: JSON.stringify({ locationId: locationId }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (r) {
-            const d = r.d;
+            var d = r.d;
             if (!d.Success) {
                 showWmToast(d.Message || wmT('common.error'), 'error');
                 closeWmModal();
@@ -150,12 +148,12 @@ function openModalEdit(locationId) {
 // GUARDAR
 // ============================================================
 function saveWmLocation() {
-    const overlay = document.getElementById('wmOverlay');
-    const mode = overlay.dataset.mode;
-    const locationId = parseInt(overlay.dataset.locationId) || 0;
+    var overlay = document.getElementById('wmOverlay');
+    var mode = overlay.dataset.mode;
+    var locationId = parseInt(overlay.dataset.locationId) || 0;
 
-    const locationName = (document.getElementById('wmLocName').value || '').trim();
-    const active = mode === 'edit' ? document.getElementById('wmActive').checked : true;
+    var locationName = (document.getElementById('wmLocName').value || '').trim();
+    var active = mode === 'edit' ? document.getElementById('wmActive').checked : true;
 
     if (!locationName) {
         showWmToast(wmT('wm.modal.name_required'), 'error');
@@ -169,18 +167,18 @@ function saveWmLocation() {
         url: 'WarehouseManagement.aspx/SaveLocation',
         data: JSON.stringify({
             locationId: mode === 'edit' ? locationId : 0,
-            locationName,
-            active
+            locationName: locationName,
+            active: active
         }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {
             setWmBtnLoading(false);
-            const result = response.d;
+            var result = response.d;
             if (result.Success) {
                 showWmToast(result.Message, 'success');
                 closeWmModal();
-                setTimeout(() => location.reload(), 800);
+                setTimeout(function () { location.reload(); }, 800);
             } else {
                 showWmToast(result.Message || wmT('common.error'), 'error');
             }
@@ -196,19 +194,19 @@ function saveWmLocation() {
 // TOGGLE ACTIVO / INACTIVO
 // ============================================================
 function confirmToggleActive(locationId, isActive, locationName) {
-    const action = isActive ? 'desactivar' : 'activar';
-    if (!confirm(`¿Deseas ${action} la locación "${locationName}"?`)) return;
+    var action = isActive ? 'desactivar' : 'activar';
+    if (!confirm('¿Deseas ' + action + ' la locación "' + locationName + '"?')) return;
 
     $.ajax({
         type: 'POST',
         url: 'WarehouseManagement.aspx/ToggleLocationActive',
-        data: JSON.stringify({ locationId, active: !isActive }),
+        data: JSON.stringify({ locationId: locationId, active: !isActive }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {
-            const result = response.d;
+            var result = response.d;
             showWmToast(result.Message, result.Success ? 'success' : 'error');
-            if (result.Success) setTimeout(() => location.reload(), 800);
+            if (result.Success) setTimeout(function () { location.reload(); }, 800);
         },
         error: function () { showWmToast(wmT('common.error'), 'error'); }
     });
@@ -218,16 +216,13 @@ function confirmToggleActive(locationId, isActive, locationName) {
 // FILTRO DE TABLA
 // ============================================================
 function filterTable() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const filterStat = document.getElementById('filterStatus').value;
+    var search = document.getElementById('searchInput').value.toLowerCase();
+    var filterStat = document.getElementById('filterStatus').value;
 
-    document.querySelectorAll('#warehouseTable tbody tr').forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const status = (row.dataset.status || '');
-
-        const ok = (!search || text.includes(search))
-            && (!filterStat || status === filterStat);
-
+    document.querySelectorAll('#warehouseTable tbody tr').forEach(function (row) {
+        var text = row.innerText.toLowerCase();
+        var status = (row.dataset.status || '');
+        var ok = (!search || text.includes(search)) && (!filterStat || status === filterStat);
         row.style.display = ok ? '' : 'none';
     });
 }
@@ -236,30 +231,30 @@ function filterTable() {
 // HELPERS
 // ============================================================
 function setWmBtnLoading(loading) {
-    const btn = document.getElementById('wmBtnSave');
+    var btn = document.getElementById('wmBtnSave');
     if (!btn) return;
     btn.disabled = loading;
     btn.textContent = loading ? wmT('wm.modal.saving') : wmT('wm.modal.save');
 }
 
 function showWmToast(message, type) {
-    const existing = document.getElementById('wm-toast');
+    var existing = document.getElementById('wm-toast');
     if (existing) existing.remove();
 
-    const colors = {
+    var colors = {
         success: { bg: 'rgba(16,185,129,0.95)', icon: 'check_circle' },
         error: { bg: 'rgba(239,68,68,0.95)', icon: 'error' },
         info: { bg: 'rgba(99,102,241,0.95)', icon: 'info' }
     };
-    const c = colors[type] || colors.info;
+    var c = colors[type] || colors.info;
 
-    const toast = document.createElement('div');
+    var toast = document.createElement('div');
     toast.id = 'wm-toast';
     toast.className = 'wm-toast';
-    toast.innerHTML = `<span class="material-icons" style="font-size:18px">${c.icon}</span>${message}`;
+    toast.innerHTML = '<span class="material-icons" style="font-size:18px">' + c.icon + '</span>' + message;
     toast.style.background = c.bg;
     document.body.appendChild(toast);
-    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3000);
+    setTimeout(function () { if (toast.parentNode) toast.remove(); }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', function () {

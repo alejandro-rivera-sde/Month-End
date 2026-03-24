@@ -18,6 +18,10 @@
             </h2>
             <p data-translate-key="vr.subtitle">Revisa y aprueba o rechaza las solicitudes de cierre de tus locaciones</p>
         </div>
+        <button type="button" class="vr-btn-closed" onclick="openClosedPanel()">
+            <span class="material-icons">lock</span>
+            <span data-translate-key="vr.btn.closed">Solicitudes Cerradas</span>
+        </button>
     </div>
 
     <!-- ── PANEL PRINCIPAL ── -->

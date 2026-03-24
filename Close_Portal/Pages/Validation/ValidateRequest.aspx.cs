@@ -231,92 +231,147 @@ namespace Close_Portal.Pages {
             }
         }
         // ============================================================
-        // REOPEN REQUEST
-        // Revierte una solicitud Approved a Pending para corrección.
-        // Solo Manager de la locación o Admin/Owner.
+        // GET CLOSED REQUESTS
+        // Solo solicitudes Approved. Manager: solo sus locaciones.
         // ============================================================
         [WebMethod(EnableSession = true)]
-        public static object ReopenRequest(int requestId, string reason) {
+        public static object GetClosedRequests() {
             try {
                 CheckAccess(RoleLevel.Manager);
                 var session = System.Web.HttpContext.Current.Session;
-                int reviewerId = (int)session["UserId"];
+                int userId = (int)session["UserId"];
+                int roleId = (int)session["RoleId"];
+                bool isManagerOnly = roleId == RoleLevel.Manager;
+
+                string sql = isManagerOnly
+                    ? @"
+                        SELECT
+                            cr.Request_Id, cr.Notes, cr.Created_At,
+                            cr.Review_Notes, cr.Reviewed_At,
+                            wl.Location_Id, wl.Location_Name,
+                            req.Username  AS RequesterName,
+                            req.Email     AS RequesterEmail,
+                            rev.Username  AS ReviewedByName
+                        FROM Closure_Requests cr
+                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
+                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
+                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
+                        WHERE cr.Status = 'Approved'
+                          AND EXISTS (
+                              SELECT 1 FROM Users_Location ul
+                              WHERE ul.Location_Id = cr.Location_Id
+                                AND ul.User_Id     = @UserId
+                          )
+                        ORDER BY cr.Reviewed_At DESC"
+                    : @"
+                        SELECT
+                            cr.Request_Id, cr.Notes, cr.Created_At,
+                            cr.Review_Notes, cr.Reviewed_At,
+                            wl.Location_Id, wl.Location_Name,
+                            req.Username  AS RequesterName,
+                            req.Email     AS RequesterEmail,
+                            rev.Username  AS ReviewedByName
+                        FROM Closure_Requests cr
+                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
+                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
+                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
+                        WHERE cr.Status = 'Approved'
+                        ORDER BY cr.Reviewed_At DESC";
+
+                var list = new List<object>();
+                using (var conn = new SqlConnection(_connStr)) {
+                    using (var cmd = new SqlCommand(sql, conn)) {
+                        if (isManagerOnly) cmd.Parameters.AddWithValue("@UserId", userId);
+                        conn.Open();
+                        using (var r = cmd.ExecuteReader()) {
+                            while (r.Read()) {
+                                list.Add(new {
+                                    requestId = (int)r["Request_Id"],
+                                    locationId = (int)r["Location_Id"],
+                                    locationName = r["Location_Name"].ToString(),
+                                    notes = r["Notes"]?.ToString() ?? "",
+                                    reviewNotes = r["Review_Notes"]?.ToString() ?? "",
+                                    createdAt = ((DateTime)r["Created_At"]).ToString("dd/MM/yyyy HH:mm"),
+                                    reviewedAt = r["Reviewed_At"] != System.DBNull.Value
+                                                         ? ((DateTime)r["Reviewed_At"]).ToString("dd/MM/yyyy HH:mm")
+                                                         : null,
+                                    requesterName = r["RequesterName"]?.ToString() ?? "",
+                                    requesterEmail = r["RequesterEmail"].ToString(),
+                                    reviewedByName = r["ReviewedByName"]?.ToString() ?? ""
+                                });
+                            }
+                        }
+                    }
+                }
+                return new { success = true, data = list };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[ValidateRequest.GetClosedRequests] ERROR: {ex.Message}");
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // REVERT LOCATION
+        // Elimina la solicitud Approved → locación vuelve a Active.
+        // El Regular puede enviar una nueva solicitud.
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object RevertLocation(int requestId, string reason) {
+            try {
+                CheckAccess(RoleLevel.Manager);
+                var session = System.Web.HttpContext.Current.Session;
+                int callerId = (int)session["UserId"];
                 int roleId = (int)session["RoleId"];
 
                 if (string.IsNullOrWhiteSpace(reason))
-                    return new { success = false, message = "Debes indicar el motivo de reapertura." };
+                    return new { success = false, message = "Debes indicar el motivo de la reversión." };
 
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // Verificar que existe y está Approved
                     int locationId;
+                    string locationName;
+                    int requestedBy;
                     using (var cmd = new SqlCommand(@"
-                        SELECT Location_Id, Status FROM Closure_Requests
-                        WHERE Request_Id = @RequestId", conn)) {
+                        SELECT cr.Location_Id, cr.Requested_By, wl.Location_Name
+                        FROM Closure_Requests cr
+                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
+                        WHERE cr.Request_Id = @RequestId AND cr.Status = 'Approved'", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         using (var r = cmd.ExecuteReader()) {
                             if (!r.Read())
-                                return new { success = false, message = "Solicitud no encontrada." };
-                            if (r["Status"].ToString() != "Approved")
-                                return new { success = false, message = "Solo se pueden reabrir solicitudes aprobadas." };
+                                return new { success = false, message = "Solicitud no encontrada o no está aprobada." };
                             locationId = (int)r["Location_Id"];
+                            locationName = r["Location_Name"].ToString();
+                            requestedBy = (int)r["Requested_By"];
                         }
                     }
 
-                    // Manager: verificar que tiene la locación asignada
                     if (roleId == RoleLevel.Manager) {
                         using (var cmd = new SqlCommand(@"
                             SELECT COUNT(*) FROM Users_Location
                             WHERE Location_Id = @LocationId AND User_Id = @UserId", conn)) {
                             cmd.Parameters.AddWithValue("@LocationId", locationId);
-                            cmd.Parameters.AddWithValue("@UserId", reviewerId);
+                            cmd.Parameters.AddWithValue("@UserId", callerId);
                             if ((int)cmd.ExecuteScalar() == 0)
-                                return new { success = false, message = "No tienes permiso para reabrir esta solicitud." };
+                                return new { success = false, message = "No tienes permiso para revertir esta solicitud." };
                         }
                     }
 
-                    // Revertir a Pending y limpiar revisión
-                    using (var cmd = new SqlCommand(@"
-                        UPDATE Closure_Requests SET
-                            Status       = 'Pending',
-                            Reviewed_By  = NULL,
-                            Reviewed_At  = NULL,
-                            Review_Notes = @Reason
-                        WHERE Request_Id = @RequestId", conn)) {
-                        cmd.Parameters.AddWithValue("@Reason", reason.Trim());
+                    using (var cmd = new SqlCommand(
+                        "DELETE FROM Closure_Requests WHERE Request_Id = @RequestId", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         cmd.ExecuteNonQuery();
                     }
 
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[ValidateRequest.ReopenRequest] RequestId={requestId} reabierto por UserId={reviewerId}");
-
-                    // Notificar al solicitante
-                    int requestedBy;
-                    string locName;
-                    using (var cmd = new SqlCommand(@"
-                        SELECT cr.Requested_By, wl.Location_Name
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
-                        WHERE cr.Request_Id = @RequestId", conn)) {
-                        cmd.Parameters.AddWithValue("@RequestId", requestId);
-                        using (var r = cmd.ExecuteReader()) {
-                            r.Read();
-                            requestedBy = (int)r["Requested_By"];
-                            locName = r["Location_Name"].ToString();
-                        }
-                    }
-
-                    string reviewerName = session["Username"]?.ToString() ?? "";
-                    LocationHub.NotifyRequestReviewed(requestedBy, requestId, locName, "Reopened", reviewerName);
-                    LocationHub.NotifyLocationUpdated(locationId, locName, "Pending", reviewerName);
+                    string callerName = session["Username"]?.ToString() ?? session["Email"]?.ToString() ?? "";
+                    LocationHub.NotifyLocationUpdated(locationId, locationName, "Active", callerName);
+                    LocationHub.NotifyRequestReviewed(requestedBy, requestId, locationName, "Reverted", callerName);
                 }
 
-                return new { success = true, message = $"Solicitud #{requestId} reabierta correctamente." };
-
+                return new { success = true, message = "Locación revertida a operación correctamente." };
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[ValidateRequest.ReopenRequest] ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ValidateRequest.RevertLocation] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
             }
         }
