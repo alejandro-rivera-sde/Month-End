@@ -26,7 +26,6 @@ namespace Close_Portal {
             // 1 = Regular   → Solo Warehouses
             sectionAdmin.Visible = (roleId == 4 || roleId == 3);
             sectionGuard.Visible = (roleId == 4 || roleId == 3);
-            sectionUsers.Visible = (roleId == 4 || roleId == 3);
             sectionValidation.Visible = (roleId == 4 || roleId == 3 || roleId == 2);
             sectionWarehouses.Visible = true;
 

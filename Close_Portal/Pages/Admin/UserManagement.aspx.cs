@@ -689,6 +689,150 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
+        // WEBMETHOD — CreateUser
+        // Alta de nuevo usuario.  Migrado desde UserRegistration.aspx.cs.
+        // Parámetros alineados con saveNewUser() en user_management.js.
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object CreateUser(
+            string email, string username, int roleId,
+            int[] omsIds, int[] locationIds, int departmentId) {
+            try {
+                var session = System.Web.HttpContext.Current.Session;
+                int currentRole = session["RoleId"] != null ? (int)session["RoleId"] : -1;
+                int currentUser = session["UserId"] != null ? (int)session["UserId"] : -1;
+                string createdBy = session["Email"]?.ToString() ?? "Sistema";
+
+                // No se puede crear un Owner
+                if (roleId >= RoleLevel.Owner)
+                    return new { Success = false, Message = "No se puede crear un usuario con rol Owner" };
+
+                // El creador no puede asignar un rol >= al suyo
+                if (roleId >= currentRole)
+                    return new { Success = false, Message = "No tienes permisos para asignar ese rol" };
+
+                // Admin solo puede asignar OMS dentro de sus WMS
+                if (currentRole < RoleLevel.Owner && omsIds != null && omsIds.Length > 0) {
+                    string ids = string.Join(",", omsIds);
+                    string sqlCheck = $@"
+                        SELECT COUNT(DISTINCT o.OMS_Id)
+                        FROM OMS o
+                        INNER JOIN WMS w ON w.WMS_Id = o.WMS_Id
+                        WHERE o.OMS_Id IN ({ids})
+                          AND w.WMS_Id IN (
+                              SELECT DISTINCT o2.WMS_Id
+                              FROM Users_OMS uo2
+                              INNER JOIN OMS o2 ON o2.OMS_Id = uo2.OMS_Id
+                              WHERE uo2.User_Id = @CreatorId
+                          )";
+                    using (SqlConnection c = new SqlConnection(_connStr)) {
+                        using (SqlCommand cmd = new SqlCommand(sqlCheck, c)) {
+                            cmd.Parameters.AddWithValue("@CreatorId", currentUser);
+                            c.Open();
+                            int accessible = (int)cmd.ExecuteScalar();
+                            if (accessible != omsIds.Length)
+                                return new { Success = false, Message = "Solo puedes asignar OMS a los que tienes acceso" };
+                        }
+                    }
+                }
+
+                // Email duplicado
+                using (SqlConnection c = new SqlConnection(_connStr)) {
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT COUNT(*) FROM Users WHERE Email = @Email", c)) {
+                        cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
+                        c.Open();
+                        if ((int)cmd.ExecuteScalar() > 0)
+                            return new { Success = false, Message = "Ya existe un usuario con ese email" };
+                    }
+                }
+
+                // Nombre del rol para el email de notificación
+                string roleName = "";
+                using (SqlConnection c = new SqlConnection(_connStr)) {
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT Role_Name FROM Users_Roles WHERE Role_Id = @RoleId", c)) {
+                        cmd.Parameters.AddWithValue("@RoleId", roleId);
+                        c.Open();
+                        roleName = cmd.ExecuteScalar()?.ToString() ?? "";
+                    }
+                }
+
+                int newUserId = -1;
+                using (SqlConnection conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+                    using (SqlTransaction tx = conn.BeginTransaction()) {
+                        try {
+                            // 1. INSERT Users
+                            string sqlInsert = @"
+                                INSERT INTO Users (Email, Username, Login_Type, Role_Id, Active, Locked, Department_Id)
+                                VALUES (@Email, @Username, 'Google', @RoleId, 1, 0, @DeptId);
+                                SELECT SCOPE_IDENTITY();";
+                            using (SqlCommand cmd = new SqlCommand(sqlInsert, conn, tx)) {
+                                cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
+                                cmd.Parameters.AddWithValue("@Username",
+                                    string.IsNullOrWhiteSpace(username)
+                                        ? email.Split('@')[0]
+                                        : username.Trim());
+                                cmd.Parameters.AddWithValue("@RoleId", roleId);
+                                cmd.Parameters.AddWithValue("@DeptId",
+                                    departmentId > 0 ? (object)departmentId : DBNull.Value);
+                                newUserId = Convert.ToInt32(cmd.ExecuteScalar());
+                            }
+
+                            // 2. INSERT Users_OMS
+                            if (omsIds != null) {
+                                foreach (int omsId in omsIds) {
+                                    using (SqlCommand cmd = new SqlCommand(
+                                        "INSERT INTO Users_OMS (User_Id, OMS_Id) VALUES (@UserId, @OmsId)",
+                                        conn, tx)) {
+                                        cmd.Parameters.AddWithValue("@UserId", newUserId);
+                                        cmd.Parameters.AddWithValue("@OmsId", omsId);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+
+                            // 3. INSERT Users_Location
+                            if (locationIds != null) {
+                                foreach (int locationId in locationIds) {
+                                    using (SqlCommand cmd = new SqlCommand(
+                                        "INSERT INTO Users_Location (User_Id, Location_Id) VALUES (@UserId, @LocationId)",
+                                        conn, tx)) {
+                                        cmd.Parameters.AddWithValue("@UserId", newUserId);
+                                        cmd.Parameters.AddWithValue("@LocationId", locationId);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+
+                            tx.Commit();
+                            System.Diagnostics.Debug.WriteLine($"[CreateUser] Id={newUserId} Email={email}");
+
+                        } catch (Exception ex) {
+                            tx.Rollback();
+                            System.Diagnostics.Debug.WriteLine($"[CreateUser] Rollback: {ex.Message}");
+                            return new { Success = false, Message = "Error al crear el usuario" };
+                        }
+                    }
+                }
+
+                EmailService.NotifyUserAdded(
+                    targetEmail: email,
+                    targetUsername: username,
+                    targetRole: roleName,
+                    performedByEmail: createdBy
+                );
+
+                return new { Success = true, Message = "Usuario creado correctamente", UserId = newUserId };
+
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"ERROR CreateUser: {ex.Message}");
+                return new { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ============================================================
         // WEBMETHOD — ToggleUserActive
         // ============================================================
         [WebMethod(EnableSession = true)]

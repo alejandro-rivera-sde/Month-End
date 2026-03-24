@@ -524,7 +524,7 @@ function saveNewUser(roleId, omsIds, locationIds, departmentId) {
 
     $.ajax({
         type: 'POST',
-        url: '/Pages/Users/UserRegistration.aspx/CreateUser',
+        url: 'UserManagement.aspx/CreateUser',
         // Always Google OAuth — no password needed
         data: JSON.stringify({ email, username, roleId, omsIds: omsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
         contentType: 'application/json; charset=utf-8',

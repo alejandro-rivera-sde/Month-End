@@ -120,14 +120,11 @@
     <Content Include="Pages\Admin\UserManagement.aspx" />
     <Content Include="Pages\Admin\WarehouseManagement.aspx" />
     <Content Include="Pages\Home\Error.aspx" />
-    <Content Include="Pages\Users\AssignRoles.aspx" />
     <Content Include="Pages\Main\Live.aspx" />
     <Content Include="Pages\Home\Login.aspx" />
     <Content Include="Pages\Home\Logout.aspx" />
     <Content Include="Pages\Warehouses\RequestClosure.aspx" />
-    <Content Include="Pages\Users\UserRegistration.aspx" />
     <Content Include="Pages\Validation\ValidateRequest.aspx" />
-    <Content Include="Scripts\assign_roles.js" />
     <Content Include="Scripts\dashboard_layout.js" />
     <Content Include="Scripts\jquery.signalR-2.4.3.js" />
     <Content Include="Scripts\jquery.signalR-2.4.3.min.js" />
@@ -139,10 +136,8 @@
     <Content Include="Scripts\theme-toggle.js" />
     <Content Include="Scripts\translations.js" />
     <Content Include="Scripts\user_management.js" />
-    <Content Include="Scripts\user_registration.js" />
     <Content Include="Scripts\validate_request.js" />
     <Content Include="Scripts\warehouse_management.js" />
-    <Content Include="Styles\AssignRoles.css" />
     <Content Include="Styles\Components.css" />
     <Content Include="Styles\DashboardLayout.css" />
     <Content Include="Styles\Error.css" />
@@ -152,7 +147,6 @@
     <Content Include="Styles\Site.css" />
     <Content Include="Styles\ValidateRequest.css" />
     <Content Include="Styles\UserManagement.css" />
-    <Content Include="Styles\UserRegistration.css" />
     <Content Include="Styles\Variables.css" />
     <Content Include="Styles\WarehouseManagement.css" />
     <Content Include="Web.config" />
@@ -204,13 +198,6 @@
     <Compile Include="Pages\Home\Error.aspx.designer.cs">
       <DependentUpon>Error.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Pages\Users\AssignRoles.aspx.cs">
-      <DependentUpon>AssignRoles.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Pages\Users\AssignRoles.aspx.designer.cs">
-      <DependentUpon>AssignRoles.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Pages\Main\Live.aspx.cs">
       <DependentUpon>Live.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -238,13 +225,6 @@
     </Compile>
     <Compile Include="Pages\Warehouses\RequestClosure.aspx.designer.cs">
       <DependentUpon>RequestClosure.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Pages\Users\UserRegistration.aspx.cs">
-      <DependentUpon>UserRegistration.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Pages\Users\UserRegistration.aspx.designer.cs">
-      <DependentUpon>UserRegistration.aspx</DependentUpon>
     </Compile>
     <Compile Include="Pages\Validation\ValidateRequest.aspx.cs">
       <DependentUpon>ValidateRequest.aspx</DependentUpon>
