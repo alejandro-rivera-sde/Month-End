@@ -121,8 +121,17 @@ const translations = {
         "um.modal.pw_invalid_chars": "Password contains invalid characters",
         "um.modal.username_required": "Username is required",
         "um.modal.username_hint": "Display name within the portal",
+        "um.modal.username_placeholder": "Username",
+        "um.modal.email_placeholder": "user@novamex.com",
+        "um.modal.new_google_hint": "User will sign in with their Google @novamex.com account",
         "um.modal.department_label": "Department",
         "um.modal.department_placeholder": "Select department",
+        "um.tab.general": "General",
+        "um.tab.oms": "OMS",
+        "um.tab.locations": "Locations",
+        "um.tab.oms_hint": "OMS this user has access to.",
+        "um.tab.locations_hint": "Operational locations assigned to this user.",
+        "um.tab.locations_search": "Search location...",
 
         // Warehouse Management
         "wm.title": "Warehouse Management",
@@ -149,6 +158,8 @@ const translations = {
         "wm.modal.code_hint": "Unique internal identifier — not visible to end users",
         "wm.modal.active": "Active Warehouse",
         "wm.modal.save": "Save",
+        "wm.modal.saving": "Saving...",
+        "wm.modal.name_placeholder": "e.g. North Warehouse",
         "wm.modal.name_required": "Warehouse name is required",
         "wm.modal.code_required": "Internal code is required",
 
@@ -476,8 +487,17 @@ const translations = {
         "um.modal.pw_invalid_chars": "La contraseña contiene caracteres no permitidos",
         "um.modal.username_required": "El username es requerido",
         "um.modal.username_hint": "Nombre visible dentro del portal",
+        "um.modal.username_placeholder": "Nombre de usuario",
+        "um.modal.email_placeholder": "usuario@novamex.com",
+        "um.modal.new_google_hint": "El usuario iniciará sesión con su cuenta Google @novamex.com",
         "um.modal.department_label": "Departamento",
         "um.modal.department_placeholder": "Seleccionar departamento",
+        "um.tab.general": "General",
+        "um.tab.oms": "OMS",
+        "um.tab.locations": "Locaciones",
+        "um.tab.oms_hint": "OMS a los que tiene acceso este usuario.",
+        "um.tab.locations_hint": "Locaciones operativas asignadas a este usuario.",
+        "um.tab.locations_search": "Buscar locación...",
 
         // Warehouse Management
         "wm.title": "Gestión de Bodegas",
@@ -504,6 +524,8 @@ const translations = {
         "wm.modal.code_hint": "Identificador único de uso interno — no es visible para usuarios finales",
         "wm.modal.active": "Bodega Activa",
         "wm.modal.save": "Guardar",
+        "wm.modal.saving": "Guardando...",
+        "wm.modal.name_placeholder": "Ej. Bodega Norte",
         "wm.modal.name_required": "El nombre de la bodega es requerido",
         "wm.modal.code_required": "El código interno es requerido",
 

@@ -84,7 +84,6 @@
             <thead>
                 <tr>
                     <th data-translate-key="wm.table.location">Locación</th>
-                    <th data-translate-key="wm.table.oms">OMS</th>
                     <th data-translate-key="wm.table.users">Usuarios</th>
                     <th data-translate-key="wm.table.status">Estado</th>
                     <th data-translate-key="wm.table.actions">Acciones</th>
@@ -103,11 +102,6 @@
                                         <div class="location-name"><%# Eval("LocationName") %></div>
                                         <div class="location-id-tag">#<%# Eval("LocationId") %></div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="code-cell oms-tags-cell">
-                                    <%# Eval("OmsTagsHtml") %>
                                 </div>
                             </td>
                             <td>

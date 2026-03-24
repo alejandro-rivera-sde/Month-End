@@ -7,6 +7,7 @@
 // ─── Estado global ──────────────────────────────────────────
 let db_allLocations = [];
 let db_currentFilter = 'all';
+let db_lastGuard = null;   // caché para re-renderizar el banner al cambiar idioma
 
 // ─── SIGNALR — handlers registrados antes de start() ────────
 (function () {
@@ -28,6 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
             filterLocations(card.dataset.filter);
         });
     });
+
+    // Re-renderizar contenido dinámico al cambiar idioma
+    window.onLanguageChange = function () {
+        if (db_lastGuard !== null) renderGuardBanner(db_lastGuard);
+        filterLocations(db_currentFilter);   // reconstruye las cards (labels de status)
+    };
 });
 
 // ─── SIGNALR ────────────────────────────────────────────────
@@ -87,6 +94,7 @@ function loadDashboard() {
                 return;
             }
             renderGuardBanner(d.guard);
+            db_lastGuard = d.guard;   // guardar para re-render al cambiar idioma
             renderStats(d.summary);
             db_allLocations = d.locations || [];
             filterLocations(db_currentFilter);

@@ -198,15 +198,15 @@
                 <div class="um-tab-nav">
                     <button type="button" class="um-tab active" data-tab="general" onclick="switchTab('general')">
                         <span class="material-icons">person</span>
-                        General
+                        <span data-translate-key="um.tab.general">General</span>
                     </button>
                     <button type="button" class="um-tab" data-tab="oms" onclick="switchTab('oms')">
                         <span class="material-icons">warehouse</span>
-                        OMS
+                        <span data-translate-key="um.tab.oms">OMS</span>
                     </button>
                     <button type="button" class="um-tab" data-tab="locations" onclick="switchTab('locations')">
                         <span class="material-icons">location_on</span>
-                        Locaciones
+                        <span data-translate-key="um.tab.locations">Locaciones</span>
                     </button>
                 </div>
 
@@ -226,11 +226,15 @@
                             <div class="um-general-grid">
                                 <div class="field-group">
                                     <label data-translate-key="um.modal.email">Email (@novamex.com)</label>
-                                    <input type="email" id="newEmail" placeholder="usuario@novamex.com" autocomplete="off" />
+                                    <input type="email" id="newEmail"
+                                           data-translate-key="um.modal.email_placeholder"
+                                           placeholder="usuario@novamex.com" autocomplete="off" />
                                 </div>
                                 <div class="field-group">
                                     <label data-translate-key="um.modal.username">Username</label>
-                                    <input type="text" id="newUsername" placeholder="Nombre de usuario" maxlength="80" autocomplete="off" />
+                                    <input type="text" id="newUsername"
+                                           data-translate-key="um.modal.username_placeholder"
+                                           placeholder="Nombre de usuario" maxlength="80" autocomplete="off" />
                                     <span class="field-hint" data-translate-key="um.modal.username_hint">Nombre visible dentro del portal</span>
                                 </div>
                                 <div class="field-group">
@@ -257,7 +261,7 @@
                             </div>
                             <p class="um-new-hint">
                                 <span class="material-icons" style="font-size:15px;vertical-align:middle;">g_mobiledata</span>
-                                El usuario iniciará sesión con su cuenta Google @novamex.com
+                                <span data-translate-key="um.modal.new_google_hint">El usuario iniciará sesión con su cuenta Google @novamex.com</span>
                             </p>
                         </div>
 
@@ -362,7 +366,7 @@
 
                     <!-- Tab: OMS -->
                     <div class="um-tab-panel" id="tab-oms">
-                        <p class="um-tab-hint">OMS a los que tiene acceso este usuario.</p>
+                        <p class="um-tab-hint" data-translate-key="um.tab.oms_hint">OMS a los que tiene acceso este usuario.</p>
                         <div class="wms-checklist" id="omsChecklist"></div>
                     </div>
 
@@ -371,10 +375,11 @@
                         <div class="um-loc-search-wrap">
                             <span class="material-icons">search</span>
                             <input type="text" id="locSearch" class="um-loc-search"
+                                   data-translate-key="um.tab.locations_search"
                                    placeholder="Buscar locación..."
                                    oninput="filterLocationChecklist(this.value)" />
                         </div>
-                        <p class="um-tab-hint">Locaciones operativas asignadas a este usuario.</p>
+                        <p class="um-tab-hint" data-translate-key="um.tab.locations_hint">Locaciones operativas asignadas a este usuario.</p>
                         <div class="wms-checklist" id="locationsChecklist"></div>
                     </div>
 

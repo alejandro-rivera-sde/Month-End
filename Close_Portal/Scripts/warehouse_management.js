@@ -3,8 +3,12 @@
 // Modal inyectado en document.body (position:fixed seguro)
 // ============================================================
 
-// ── Cache de catálogo OMS ────────────────────────────────────
-let _wmOmsList = [];   // { OmsId, OmsCode, OmsName, WmsId, WmsCode, WmsName }
+function wmT(key) {
+    const lang = document.documentElement.getAttribute('data-language') || 'es';
+    return (typeof translations !== 'undefined' && translations[lang]?.[key])
+        ? translations[lang][key]
+        : key;
+}
 
 // ============================================================
 // CREAR MODAL (una sola vez en body)
@@ -19,7 +23,7 @@ function createWmModal() {
                 <div class="wm-header">
                     <h3>
                         <span class="material-icons">warehouse</span>
-                        <span id="wmModalTitle">Locación</span>
+                        <span id="wmModalTitle"></span>
                     </h3>
                     <button type="button" class="btn-icon" onclick="closeWmModal()" title="Cerrar">
                         <span class="material-icons">close</span>
@@ -32,23 +36,13 @@ function createWmModal() {
                     <div class="field-group">
                         <label data-translate-key="wm.modal.name">Nombre de la Locación</label>
                         <input type="text" id="wmLocName" maxlength="150"
+                               data-translate-key="wm.modal.name_placeholder"
                                placeholder="Ej. Bodega Norte" />
                     </div>
 
-                    <div class="wm-divider"></div>
-
-                    <!-- OMS checklist -->
-                    <div class="field-group">
-                        <label data-translate-key="wm.modal.oms">OMS que pueden ver esta locación</label>
-                        <div id="wmOmsChecklist" class="wm-oms-checklist">
-                            <div class="wm-checklist-loading">Cargando...</div>
-                        </div>
-                    </div>
-
-                    <div class="wm-divider"></div>
-
                     <!-- Estado (solo edición) -->
                     <div id="wmStatusRow" style="display:none">
+                        <div class="wm-divider"></div>
                         <div class="toggle-row">
                             <span class="toggle-label" data-translate-key="wm.modal.active">Activa</span>
                             <label class="toggle">
@@ -85,20 +79,31 @@ function showWmOverlay() {
     document.getElementById('wmOverlay').classList.add('active');
 }
 
+// ── Actualiza el título según el modo guardado ───────────────
+function refreshWmModalTitle() {
+    const overlay = document.getElementById('wmOverlay');
+    if (!overlay) return;
+    const mode = overlay.dataset.mode;
+    const titleKey = mode === 'edit' ? 'wm.modal.edit_title' : 'wm.modal.new_title';
+    document.getElementById('wmModalTitle').textContent = wmT(titleKey);
+}
+
 // ============================================================
 // ABRIR MODAL — NUEVO
 // ============================================================
 function openModalNew() {
     createWmModal();
 
-    document.getElementById('wmModalTitle').textContent = 'Nueva Locación';
+    const overlay = document.getElementById('wmOverlay');
+    overlay.dataset.mode = 'new';
+    overlay.dataset.locationId = '0';
+
     document.getElementById('wmLocName').value = '';
     document.getElementById('wmStatusRow').style.display = 'none';
-    document.getElementById('wmOverlay').dataset.mode = 'new';
-    document.getElementById('wmOverlay').dataset.locationId = '0';
+    refreshWmModalTitle();
 
-    loadOmsCatalog().then(() => buildOmsChecklist([]));
     showWmOverlay();
+    document.getElementById('wmLocName').focus();
 }
 
 // ============================================================
@@ -107,113 +112,38 @@ function openModalNew() {
 function openModalEdit(locationId) {
     createWmModal();
 
-    document.getElementById('wmModalTitle').textContent = 'Editar Locación';
-    document.getElementById('wmStatusRow').style.display = 'block';
-    document.getElementById('wmOmsChecklist').innerHTML =
-        '<div class="wm-checklist-loading">Cargando...</div>';
-    document.getElementById('wmOverlay').dataset.mode = 'edit';
-    document.getElementById('wmOverlay').dataset.locationId = locationId;
+    const overlay = document.getElementById('wmOverlay');
+    overlay.dataset.mode = 'edit';
+    overlay.dataset.locationId = locationId;
+
+    document.getElementById('wmLocName').value = '';
+    document.getElementById('wmStatusRow').style.display = 'none';
+    refreshWmModalTitle();
 
     showWmOverlay();
 
-    Promise.all([
-        loadOmsCatalog(),
-        fetchLocationDetail(locationId)
-    ]).then(([, detail]) => {
-        if (!detail.Success) {
-            showWmToast(detail.Message || 'Error al cargar', 'error');
+    $.ajax({
+        type: 'POST',
+        url: 'WarehouseManagement.aspx/GetLocationDetail',
+        data: JSON.stringify({ locationId }),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function (r) {
+            const d = r.d;
+            if (!d.Success) {
+                showWmToast(d.Message || wmT('common.error'), 'error');
+                closeWmModal();
+                return;
+            }
+            document.getElementById('wmLocName').value = d.LocationName || '';
+            document.getElementById('wmActive').checked = d.Active;
+            document.getElementById('wmStatusRow').style.display = 'block';
+        },
+        error: function () {
+            showWmToast(wmT('common.error'), 'error');
             closeWmModal();
-            return;
         }
-        document.getElementById('wmLocName').value = detail.LocationName || '';
-        document.getElementById('wmActive').checked = detail.Active;
-        buildOmsChecklist(detail.OmsIds || []);
-    }).catch(() => {
-        showWmToast('Error al cargar la locación', 'error');
-        closeWmModal();
     });
-}
-
-// ============================================================
-// CARGAR CATÁLOGO OMS (con caché)
-// ============================================================
-function loadOmsCatalog() {
-    if (_wmOmsList.length > 0) return Promise.resolve();
-
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: 'WarehouseManagement.aspx/GetOmsList',
-            data: JSON.stringify({}),
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
-            success: function (r) {
-                if (r.d && r.d.Success) _wmOmsList = r.d.Data;
-                resolve();
-            },
-            error: reject
-        });
-    });
-}
-
-function fetchLocationDetail(locationId) {
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: 'WarehouseManagement.aspx/GetLocationDetail',
-            data: JSON.stringify({ locationId }),
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
-            success: function (r) { resolve(r.d); },
-            error: reject
-        });
-    });
-}
-
-// ============================================================
-// CONSTRUIR OMS CHECKLIST (agrupado por WMS para legibilidad)
-// ============================================================
-function buildOmsChecklist(assignedIds) {
-    const container = document.getElementById('wmOmsChecklist');
-    container.innerHTML = '';
-
-    if (_wmOmsList.length === 0) {
-        container.innerHTML = '<div class="wm-checklist-empty">Sin OMS disponibles</div>';
-        return;
-    }
-
-    // Agrupar por WMS
-    const groups = {};
-    _wmOmsList.forEach(o => {
-        if (!groups[o.WmsId]) {
-            groups[o.WmsId] = { wmsCode: o.WmsCode, wmsName: o.WmsName, items: [] };
-        }
-        groups[o.WmsId].items.push(o);
-    });
-
-    Object.values(groups).forEach(group => {
-        const header = document.createElement('div');
-        header.className = 'wm-oms-group-header';
-        header.innerHTML = `<span class="code-tag wms">${group.wmsCode}</span>${group.wmsName}`;
-        container.appendChild(header);
-
-        group.items.forEach(o => {
-            const assigned = assignedIds.includes(o.OmsId);
-            const label = document.createElement('label');
-            label.className = `wm-oms-item${assigned ? ' checked' : ''}`;
-            label.innerHTML = `
-                <input type="checkbox" value="${o.OmsId}" ${assigned ? 'checked' : ''}
-                       onchange="toggleOmsItem(this)" />
-                <span class="wm-oms-code">${o.OmsCode}</span>
-                <span class="wm-oms-name">${o.OmsName}</span>
-            `;
-            container.appendChild(label);
-        });
-    });
-}
-
-function toggleOmsItem(checkbox) {
-    checkbox.closest('label').classList.toggle('checked', checkbox.checked);
 }
 
 // ============================================================
@@ -225,14 +155,10 @@ function saveWmLocation() {
     const locationId = parseInt(overlay.dataset.locationId) || 0;
 
     const locationName = (document.getElementById('wmLocName').value || '').trim();
-    const active = document.getElementById('wmActive').checked;
-
-    const omsIds = Array.from(
-        document.querySelectorAll('#wmOmsChecklist input[type=checkbox]:checked')
-    ).map(cb => parseInt(cb.value));
+    const active = mode === 'edit' ? document.getElementById('wmActive').checked : true;
 
     if (!locationName) {
-        showWmToast('El nombre de la locación es requerido', 'error');
+        showWmToast(wmT('wm.modal.name_required'), 'error');
         return;
     }
 
@@ -244,8 +170,7 @@ function saveWmLocation() {
         data: JSON.stringify({
             locationId: mode === 'edit' ? locationId : 0,
             locationName,
-            active: mode === 'edit' ? active : true,
-            omsIds
+            active
         }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -257,12 +182,12 @@ function saveWmLocation() {
                 closeWmModal();
                 setTimeout(() => location.reload(), 800);
             } else {
-                showWmToast(result.Message || 'Error al guardar', 'error');
+                showWmToast(result.Message || wmT('common.error'), 'error');
             }
         },
         error: function () {
             setWmBtnLoading(false);
-            showWmToast('Error de conexión', 'error');
+            showWmToast(wmT('common.error'), 'error');
         }
     });
 }
@@ -285,7 +210,7 @@ function confirmToggleActive(locationId, isActive, locationName) {
             showWmToast(result.Message, result.Success ? 'success' : 'error');
             if (result.Success) setTimeout(() => location.reload(), 800);
         },
-        error: function () { showWmToast('Error de conexión', 'error'); }
+        error: function () { showWmToast(wmT('common.error'), 'error'); }
     });
 }
 
@@ -314,7 +239,7 @@ function setWmBtnLoading(loading) {
     const btn = document.getElementById('wmBtnSave');
     if (!btn) return;
     btn.disabled = loading;
-    btn.textContent = loading ? 'Guardando...' : 'Guardar';
+    btn.textContent = loading ? wmT('wm.modal.saving') : wmT('wm.modal.save');
 }
 
 function showWmToast(message, type) {
@@ -339,4 +264,9 @@ function showWmToast(message, type) {
 
 document.addEventListener('DOMContentLoaded', function () {
     createWmModal();
+
+    // Re-traducir el modal al cambiar idioma
+    window.onLanguageChange = function () {
+        refreshWmModalTitle();
+    };
 });
