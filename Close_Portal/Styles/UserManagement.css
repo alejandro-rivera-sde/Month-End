@@ -514,10 +514,6 @@
     overflow: hidden;
 }
 
-.um-sidebar {
-    display: none;
-}
-
 .um-content-area {
     display: flex;
     flex-direction: column;
@@ -652,23 +648,6 @@
         grid-column: span 2;
     }
 
-/* user-info-card kept for new-user mode */
-.user-info-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 20px;
-    background: var(--bg-primary);
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-    .user-info-card .avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 13px;
-    }
-
 .um-section-title {
     font-size: 11px;
     font-weight: 700;
@@ -739,17 +718,6 @@
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
-
-.field-divider {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin: 20px 0 14px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--border-color);
-}
 
 /* ========== CHECKLIST BASE ========== */
 .wms-checklist {
@@ -844,50 +812,7 @@
         margin-top: 0;
     }
 
-/* ── LOCATION / WMS GROUP HEADERS ─────────────────────────── */
-.wms-group-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 4px 4px;
-    margin-top: 8px;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 4px;
-}
-
-    .wms-group-header:first-child {
-        margin-top: 0;
-    }
-
-.wms-group-code {
-    font-size: 10px;
-    font-weight: 700;
-    font-family: monospace;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-    background: rgba(139, 92, 246, .15);
-    color: var(--secondary-color);
-    border: 1px solid rgba(139, 92, 246, .2);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.wms-group-name {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--text-muted);
-}
-
 /* ── Checklist item internals ── */
-.wms-check-info {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-}
-
 .wms-check-code {
     font-size: 10px;
     font-weight: 700;
@@ -1095,10 +1020,6 @@ input:checked + .slider {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .user-info-card {
-    background: var(--bg-elevated);
-}
-
 [data-theme="dark"] .stat-card:hover {
     box-shadow: var(--shadow-lg);
 }
@@ -1128,17 +1049,6 @@ input:checked + .slider {
 @media (max-width: 640px) {
     .um-body {
         flex-direction: column;
-    }
-
-    .um-col-left {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        max-height: none;
-    }
-
-    .um-col-right {
-        flex: unset;
-        max-height: none;
     }
 }
 

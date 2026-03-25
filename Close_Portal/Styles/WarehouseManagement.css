@@ -304,24 +304,6 @@
         border: 1px solid rgba(139, 92, 246, .2);
     }
 
-.cell-name {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-/* ── OMS tags en celda de tabla (multi-tag) ───────────────── */
-.oms-tags-cell {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    align-items: center;
-}
-
-.no-oms {
-    color: var(--text-muted);
-    font-size: 13px;
-}
-
 /* ── USER COUNT ───────────────────────────────────────────── */
 .user-count {
     display: flex;
@@ -564,24 +546,6 @@
     font-size: 11px;
     color: var(--text-muted);
     line-height: 1.4;
-}
-
-/* ── WMS AUTO-FILL DISPLAY ────────────────────────────────── */
-.wm-auto-field {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 9px 12px;
-    min-height: 40px;
-}
-
-.wm-auto-name {
-    font-size: 13px;
-    color: var(--text-muted);
-    font-style: italic;
 }
 
 /* ── DIVIDER ──────────────────────────────────────────────── */

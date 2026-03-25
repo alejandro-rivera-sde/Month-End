@@ -2,6 +2,15 @@
 // DASHBOARD_layout.JS - JavaScript para Dashboard con Bootstrap 5
 // ============================================================================
 
+// ─── AppRoot: raíz de la app, independiente del virtual directory ─────────────
+if (!window.AppRoot) {
+    (function () {
+        var path = window.location.pathname;
+        var idx = path.toLowerCase().indexOf('/pages/');
+        window.AppRoot = idx !== -1 ? path.substring(0, idx + 1) : '/';
+    })();
+}
+
 // ─── SIGNALR HANDLERS — deben registrarse antes de $.connection.hub.start() ─
 (function () {
     if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;

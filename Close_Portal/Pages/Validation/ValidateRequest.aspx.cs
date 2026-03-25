@@ -314,6 +314,7 @@ namespace Close_Portal.Pages {
         // REVERT LOCATION
         // Elimina la solicitud Approved → locación vuelve a Active.
         // El Regular puede enviar una nueva solicitud.
+        // Manager: solo puede revertir sus locaciones asignadas.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object RevertLocation(int requestId, string reason) {

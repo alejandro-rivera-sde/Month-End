@@ -97,11 +97,6 @@
                 <span class="material-icons">history</span>
                 <h3 data-translate-key="rc.history.title">Mis solicitudes</h3>
                 <span class="rc-count-badge" id="rcCount">—</span>
-                <button type="button" class="rc-btn-refresh" onclick="loadHistory()"
-                        data-translate-key="rc.btn.refresh" data-translate-attr="title"
-                        title="Actualizar">
-                    <span class="material-icons">refresh</span>
-                </button>
             </div>
 
             <!-- Filtros -->

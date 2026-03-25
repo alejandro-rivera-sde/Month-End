@@ -77,27 +77,6 @@
         border-color: var(--primary-color);
     }
 
-/* ── REFRESH BUTTON ──────────────────────────────── */
-.vr-btn-refresh {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    transition: color 0.2s;
-}
-
-    .vr-btn-refresh:hover {
-        color: var(--primary-color);
-    }
-
-    .vr-btn-refresh .material-icons {
-        font-size: 18px;
-    }
-
 /* ── STATUS TABS ─────────────────────────────────── */
 .vr-filter-tabs {
     display: flex;
@@ -318,8 +297,7 @@
 }
 
 .vr-btn-approve,
-.vr-btn-reject,
-.vr-btn-reopen {
+.vr-btn-reject {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -332,20 +310,6 @@
     transition: opacity 0.2s;
     white-space: nowrap;
 }
-
-.vr-btn-reopen {
-    background: rgba(99,102,241,0.1);
-    color: #4338ca;
-    border: 1px solid rgba(99,102,241,0.25);
-}
-
-    .vr-btn-reopen:hover {
-        background: rgba(99,102,241,0.2);
-    }
-
-    .vr-btn-reopen .material-icons {
-        font-size: 15px;
-    }
 
 .vr-btn-approve {
     background: rgba(16,185,129,0.12);
@@ -464,8 +428,8 @@
         color: #ef4444;
     }
 
-    .vr-modal-header.reopen .material-icons {
-        color: #6366f1;
+    .vr-modal-header.revert .material-icons {
+        color: #f59e0b;
     }
 
 .vr-modal-title {
@@ -624,24 +588,34 @@
         background: #ef4444;
     }
 
-    .vr-btn-confirm.reopen {
-        background: #6366f1;
+    .vr-btn-confirm.revert {
+        background: #f59e0b;
     }
 
     .vr-btn-confirm .material-icons {
         font-size: 16px;
     }
 
-.vr-reopen-hint {
+.vr-revert-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
     font-size: 12px;
     color: var(--text-secondary);
-    background: rgba(99,102,241,0.08);
-    border: 1px solid rgba(99,102,241,0.2);
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
     border-radius: 8px;
     padding: 10px 14px;
     margin-bottom: 14px;
     line-height: 1.5;
 }
+
+    .vr-revert-hint .material-icons {
+        font-size: 16px;
+        color: #f59e0b;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
 
 @keyframes vrFadeIn {
     from {
@@ -816,33 +790,3 @@
 [data-theme="dark"] .vr-btn-revert {
     color: #fbbf24;
 }
-
-/* ── Modal revert ───────────────────────────────── */
-.vr-modal-header.revert .material-icons {
-    color: #f59e0b;
-}
-
-.vr-btn-confirm.revert {
-    background: #f59e0b;
-}
-
-.vr-revert-hint {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-secondary);
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 14px;
-    line-height: 1.5;
-}
-
-    .vr-revert-hint .material-icons {
-        font-size: 16px;
-        color: #f59e0b;
-        flex-shrink: 0;
-        margin-top: 1px;
-    }

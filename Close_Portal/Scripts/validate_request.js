@@ -2,6 +2,15 @@
 // validate_request.js
 // ============================================================================
 
+// AppRoot: raíz de la app, independiente del virtual directory
+if (!window.AppRoot) {
+    (function () {
+        var path = window.location.pathname;
+        var idx = path.toLowerCase().indexOf('/pages/');
+        window.AppRoot = idx !== -1 ? path.substring(0, idx + 1) : '/';
+    })();
+}
+
 function vrT(key) {
     var lang = document.documentElement.getAttribute('data-language') || 'es';
     return (typeof translations !== 'undefined' && translations[lang] && translations[lang][key])
@@ -144,7 +153,7 @@ function renderRequestItem(r) {
             '<span>' + who + when + rnotes + '</span></div>';
     }
 
-    // Solo Pending tiene botones de acción — Approved y Rejected son solo lectura aquí
+    // Solo Pending tiene botones — Approved y Rejected son solo lectura aquí
     var actionsHtml = isPending
         ? '<div class="vr-request-actions">' +
         '<button type="button" class="vr-btn-approve" onclick="openReviewModal(' + r.requestId + ',\'Approved\')">' +
@@ -160,8 +169,7 @@ function renderRequestItem(r) {
         '<span class="vr-request-id">#' + r.requestId + '</span>' +
         '<span class="vr-location-tag">' + escHtml(r.locationName) + '</span>' +
         '<span class="vr-status-badge ' + r.status + '">' + statusLabel + '</span>' +
-        '<span class="vr-request-date">' + r.createdAt + '</span>' +
-        '</div>' +
+        '<span class="vr-request-date">' + r.createdAt + '</span></div>' +
         omsHtml +
         '<div class="vr-requester"><span class="material-icons">person</span>' +
         escHtml(r.requesterName) +
@@ -170,7 +178,7 @@ function renderRequestItem(r) {
         '</div>' + actionsHtml + '</div>';
 }
 
-// ── Modal de revisión (Approve/Reject) ────────────────────────────────────────
+// ── Modal de revisión (Approve / Reject) ──────────────────────────────────────
 function openReviewModal(requestId, action) {
     var req = vr_allRequests.find(function (r) { return r.requestId === requestId; });
     if (!req) return;
@@ -199,8 +207,8 @@ function openReviewModal(requestId, action) {
         '<strong>' + vrT('vr.modal.request') + ' #' + req.requestId + '</strong><br/>' +
         '<strong>' + vrT('vr.card.location') + '</strong> ' + escHtml(req.locationName) +
         omsLine + '<br/>' +
-        '<strong>' + vrT('vr.card.requested_by') + '</strong> ' + escHtml(req.requesterName) +
-        ' (' + escHtml(req.requesterEmail) + ')' +
+        '<strong>' + vrT('vr.card.requested_by') + '</strong> ' +
+        escHtml(req.requesterName) + ' (' + escHtml(req.requesterEmail) + ')' +
         (req.notes ? '<br/><strong>' + vrT('vr.card.notes') + '</strong> ' + escHtml(req.notes) : '') +
         '</div>' +
         '<label class="vr-modal-label">' + vrT('vr.modal.notes_label') + ' ' +
@@ -264,7 +272,7 @@ function submitReview(requestId, action) {
                     url: window.AppRoot + 'Pages/Main/Live.aspx/MarkAsRead',
                     data: JSON.stringify({ referenceId: requestId, type: 'new_request' }),
                     contentType: 'application/json; charset=utf-8', dataType: 'json',
-                    complete: function () { refreshBadge(); }
+                    complete: function () { if (typeof refreshBadge === 'function') refreshBadge(); }
                 });
             } else {
                 btnConf.disabled = false;
@@ -306,8 +314,8 @@ function openClosedPanel() {
         '<span class="material-icons">close</span></button></div>' +
         '<p class="vr-closed-subtitle">' + vrT('vr.closed.subtitle') + '</p>' +
         '<div class="vr-closed-list" id="vrClosedList">' +
-        '<div class="vr-loading"><span class="material-icons vr-spin">autorenew</span> ' + vrT('vr.loading') + '</div>' +
-        '</div></div></div>'
+        '<div class="vr-loading"><span class="material-icons vr-spin">autorenew</span> ' +
+        vrT('vr.loading') + '</div></div></div></div>'
     );
 
     document.getElementById('vrClosedOverlay').addEventListener('click', function (e) {

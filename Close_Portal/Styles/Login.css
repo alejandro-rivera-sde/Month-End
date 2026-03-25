@@ -206,59 +206,6 @@ body {
     margin-bottom: 16px;
 }
 
-/* Botón real - sin efectos */
-.btn-submit-real {
-    width: 100%;
-    padding: 14px;
-    background: #6366f1;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    transition: none;
-    text-align: center;
-    user-select: none;
-}
-
-    .btn-submit-real:hover {
-        background: #6366f1;
-        transform: none;
-        box-shadow: none;
-    }
-
-/* Overlay transparente - controla el cursor */
-.cursor-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    cursor: default !important;
-    pointer-events: none;
-    z-index: 10;
-}
-
-/* Legacy styles */
-.btn-wrapper {
-    cursor: default;
-    margin-bottom: 16px;
-}
-
-.btn-submit-inner {
-    width: 100%;
-    padding: 14px;
-    background: #6366f1;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    text-align: center;
-    user-select: none;
-    pointer-events: none;
-}
-
 .btn-submit {
     width: 100%;
     padding: 14px;
@@ -303,32 +250,6 @@ body {
 
     #google-btn-container iframe {
         margin: 0 auto !important;
-    }
-
-/* Botón volver a Google */
-.back-to-google-btn {
-    background: none;
-    border: none;
-    color: #6366f1;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: default; /* Cursor normal */
-    padding: 10px 16px;
-    border-radius: 6px;
-    transition: none; /* Sin transiciones */
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-    /* Sin efectos de hover */
-    .back-to-google-btn:hover {
-        background: none;
-        color: #6366f1;
-    }
-
-    .back-to-google-btn .material-icons {
-        font-size: 18px;
     }
 
 /* Mensajes */
@@ -496,14 +417,4 @@ body {
     /* Sin hover en dark mode tampoco */
     [data-theme="dark"] .tab-btn:hover {
         background: none;
-    }
-
-[data-theme="dark"] .back-to-google-btn {
-    color: #818cf8;
-}
-
-    /* Sin hover en dark mode */
-    [data-theme="dark"] .back-to-google-btn:hover {
-        background: none;
-        color: #818cf8;
     }

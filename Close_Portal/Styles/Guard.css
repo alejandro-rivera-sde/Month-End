@@ -190,29 +190,6 @@
     gap: 10px;
 }
 
-.gd-btn-start {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: var(--success-color);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-    .gd-btn-start:hover {
-        opacity: 0.88;
-    }
-
-    .gd-btn-start .material-icons {
-        font-size: 20px;
-    }
-
 .gd-btn-danger-sm {
     display: inline-flex;
     align-items: center;
@@ -1066,18 +1043,7 @@
         font-size: 18px;
     }
 
-/* Modal de creación (más ancho para albergar la lista de locaciones) */
-.gd-create-modal {
-    max-width: 560px;
-}
-
 /* ─── LOCATION PICKER (dentro del modal de creación) ───── */
-.gd-loc-picker-section {
-    margin-top: 20px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-color);
-}
-
 .gd-loc-picker-header {
     display: flex;
     align-items: center;
@@ -1312,19 +1278,9 @@
     border-left: 3px solid var(--gd-accent);
 }
 
-.gd-loc-pending-badge {
-    background: var(--gd-accent-alpha);
-    color: var(--gd-accent);
-}
-
 /* Approved */
 .gd-loc-approved {
     border-left: 3px solid var(--success-color);
-}
-
-.gd-loc-approved-badge {
-    background: var(--success-bg);
-    color: var(--success-color);
 }
 
 /* Rejected */
@@ -1332,20 +1288,9 @@
     border-left: 3px solid var(--error-color);
 }
 
-.gd-loc-rejected-badge {
-    background: var(--error-bg);
-    color: var(--error-color);
-}
-
 /* NoRequest — esperando actividad */
 .gd-loc-norequest {
     border-left: 3px solid var(--text-muted);
-}
-
-.gd-loc-norequest-badge {
-    background: rgba(148, 163, 184, 0.15);
-    color: var(--text-secondary);
-    border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 /* ─── TOAST ────────────────────────────────────────────── */
@@ -1383,4 +1328,3 @@
         border: 1px solid var(--gd-accent);
         color: var(--gd-accent);
     }
-z

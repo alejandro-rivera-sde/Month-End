@@ -36,11 +36,6 @@
                 <select id="vrLocationFilter" class="vr-filter-select" onchange="applyFilters()">
                     <option value="" data-translate-key="vr.filter.all_locations">Todas las locaciones</option>
                 </select>
-                <button type="button" class="vr-btn-refresh" onclick="loadRequests()"
-                        data-translate-key="vr.btn.refresh" data-translate-attr="title"
-                        title="Actualizar">
-                    <span class="material-icons">refresh</span>
-                </button>
             </div>
         </div>
 

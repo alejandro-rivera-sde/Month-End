@@ -11,36 +11,6 @@
     font-size: 28px;
 }
 
-/* ─── REFRESH BUTTON ────────────────────────────────────── */
-.db-btn-refresh {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
-}
-
-    .db-btn-refresh:hover {
-        border-color: #818cf8;
-        color: #818cf8;
-    }
-
-    .db-btn-refresh:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .db-btn-refresh .material-icons {
-        font-size: 18px;
-    }
-
 /* Layout del page-header para incluir el botón */
 .page-header {
     display: flex;

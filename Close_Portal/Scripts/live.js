@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Re-renderizar contenido dinámico al cambiar idioma
     window.onLanguageChange = function () {
         if (db_lastGuard !== null) renderGuardBanner(db_lastGuard);
-        filterLocations(db_currentFilter);   // reconstruye las cards (labels de status)
+        filterLocations(db_currentFilter);
     };
 });
 
@@ -69,9 +69,6 @@ function initSignalR() {
 function loadDashboard() {
     const grid = document.getElementById('dbLocationGrid');
     const banner = document.getElementById('dbGuardBanner');
-    const refresh = document.getElementById('dbBtnRefresh');
-
-    if (refresh) { refresh.disabled = true; refresh.querySelector('.material-icons').classList.add('db-spin'); }
 
     grid.innerHTML = `<div class="db-loading">
         <span class="material-icons db-spin">autorenew</span>
@@ -94,7 +91,7 @@ function loadDashboard() {
                 return;
             }
             renderGuardBanner(d.guard);
-            db_lastGuard = d.guard;   // guardar para re-render al cambiar idioma
+            db_lastGuard = d.guard;
             renderStats(d.summary);
             db_allLocations = d.locations || [];
             filterLocations(db_currentFilter);
@@ -107,9 +104,6 @@ function loadDashboard() {
                 <span class="material-icons">wifi_off</span>
                 <p>${dbT('common.error')}</p>
             </div>`;
-        },
-        complete: () => {
-            if (refresh) { refresh.disabled = false; refresh.querySelector('.material-icons').classList.remove('db-spin'); }
         }
     });
 }
