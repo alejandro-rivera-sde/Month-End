@@ -163,8 +163,7 @@
                         </div>
                     </div>
                     
-                    <!-- User Dropdown -->
-                    <div class="user-dropdown d-flex align-items-center gap-2">
+                    <!-- User Infor -->
                         <div class="user-avatar">
                             <asp:Literal ID="litUserInitials" runat="server">UN</asp:Literal>
                         </div>
@@ -176,7 +175,6 @@
                                 <asp:Literal ID="litUserRole" runat="server">User</asp:Literal>
                             </div>
                         </div>
-                    </div>
 
                     <!-- Menu Toggle (DERECHA) -->
                     <button class="btn btn-link menu-toggle" id="menuToggle">
@@ -244,7 +242,7 @@
 
     <!-- SignalR ANTES de dashboard_layout.js para que los handlers se registren a tiempo -->
     <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>'></script>
-    <script src="/signalr/hubs"></script>
+    <script src='<%= ResolveUrl("~/signalr/hubs") %>'></script>
 
     <!-- Exponer rol y userId del usuario para SignalR handlers -->
     <script>

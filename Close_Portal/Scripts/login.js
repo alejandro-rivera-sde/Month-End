@@ -2,6 +2,15 @@
 // LOGIN.JS - Cliente JavaScript para Google OAuth y Login Estándar
 // ============================================================================
 
+// AppRoot: raíz de la app derivada desde la URL actual
+if (!window.AppRoot) {
+    (function () {
+        var path = window.location.pathname;
+        var idx = path.toLowerCase().indexOf('/pages/');
+        window.AppRoot = idx !== -1 ? path.substring(0, idx + 1) : '/';
+    })();
+}
+
 const GOOGLE_CLIENT_ID = "529272784814-e2o5s7m1fscqhssu78s5efb4feg6h2em.apps.googleusercontent.com";
 
 // Estado del toggle
@@ -243,7 +252,7 @@ function handleLoginResponse(result) {
         console.log("Preparando redirección al dashboard...");
 
         setTimeout(function () {
-            const dashboardUrl = (window.AppRoot || '/') + 'Pages/Main/Live.aspx';
+            var dashboardUrl = window.AppRoot + 'Pages/Main/Live.aspx';
             console.log("Redirigiendo a:", dashboardUrl);
             window.location.href = dashboardUrl;
         }, 1000);

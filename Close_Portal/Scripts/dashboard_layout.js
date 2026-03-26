@@ -2,7 +2,7 @@
 // DASHBOARD_layout.JS - JavaScript para Dashboard con Bootstrap 5
 // ============================================================================
 
-// ─── AppRoot: raíz de la app, independiente del virtual directory ─────────────
+// AppRoot: raíz de la app derivada desde la URL actual
 if (!window.AppRoot) {
     (function () {
         var path = window.location.pathname;
