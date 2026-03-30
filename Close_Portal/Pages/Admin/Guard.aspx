@@ -25,82 +25,175 @@
         </div>
     </div>
 
-    <!-- ========== GUARDIA ACTUAL ========== -->
-    <div class="gd-section">
-
-        <!-- Sin guardia abierta -->
-        <div id="gdNoGuard" class="gd-empty-panel" style="display:none;">
+    <!-- ========== SIN GUARDIA ABIERTA ========== -->
+    <div class="gd-section" id="gdNoGuard" style="display:none;">
+        <div class="gd-empty-panel">
             <span class="material-icons gd-empty-icon">shield</span>
             <p data-translate-key="gd.no_guard">No hay ninguna guardia abierta</p>
-            <button type="button" class="gd-btn-create" onclick="createGuard()">
+            <button type="button" class="gd-btn-create" id="gdBtnCreate"
+                    onclick="createGuard()" style="display:none;">
                 <span class="material-icons">add_circle_outline</span>
                 <span data-translate-key="gd.btn.create">Crear nueva guardia</span>
             </button>
         </div>
+    </div>
 
-        <!-- Guardia en curso (slots) -->
-        <div id="gdActivePanel" style="display:none;">
+    <!-- ========== CARRUSEL DE PASOS (visible cuando hay guardia) ========== -->
+    <div class="gd-section gd-carousel-section" id="gdCarousel" style="display:none;">
 
-            <!-- Cabecera de la guardia -->
-            <div class="gd-guard-header">
-                <div class="gd-guard-meta">
-                    <span class="material-icons">event</span>
-                    <span id="gdCreatedInfo"></span>
-                </div>
-                <div class="gd-guard-actions">
-                    <!-- Paso 3: visible solo en borrador con locaciones seleccionadas -->
-                    <button type="button" class="gd-btn-confirm-guard" id="gdBtnConfirmGuard"
-                            onclick="submitConfirmGuard()" style="display:none;">
-                        <span class="material-icons">rocket_launch</span>
-                        <span data-translate-key="gd.btn.confirm_guard">Crear guardia</span>
-                    </button>
-                    <button type="button" class="gd-btn-danger-sm" id="gdBtnRemove"
-                            onclick="confirmRemoveGuard()" style="display:none;">
-                        <span class="material-icons">delete_outline</span>
-                        <span data-translate-key="gd.btn.remove">Eliminar guardia</span>
-                    </button>
-                </div>
+        <!-- Cabecera de guardia: meta + acciones -->
+        <div class="gd-guard-header">
+            <div class="gd-guard-meta">
+                <span class="material-icons">event</span>
+                <span id="gdCreatedInfo"></span>
             </div>
-
-            <!-- Banner de inicio programado -->
-            <div class="gd-start-status" id="gdStartStatus" style="display:none;">
-                <span class="material-icons">schedule</span>
-                <span id="gdStartStatusText"></span>
+            <div class="gd-guard-actions">
+                <button type="button" class="gd-btn-danger-sm" id="gdBtnRemove"
+                        onclick="confirmRemoveGuard()" style="display:none;">
+                    <span class="material-icons">delete_outline</span>
+                    <span data-translate-key="gd.btn.remove">Eliminar guardia</span>
+                </button>
             </div>
+        </div>
 
-            <!-- Banner de cierre estimado (informativo, no afecta el cierre real) -->
-            <div class="gd-est-end-status" id="gdEstEndStatus" style="display:none;">
-                <span class="material-icons">event_available</span>
-                <span id="gdEstEndStatusText"></span>
-            </div>
+        <!-- Banners de estado -->
+        <div class="gd-start-status" id="gdStartStatus" style="display:none;">
+            <span class="material-icons">schedule</span>
+            <span id="gdStartStatusText"></span>
+        </div>
+        <div class="gd-est-end-status" id="gdEstEndStatus" style="display:none;">
+            <span class="material-icons">event_available</span>
+            <span id="gdEstEndStatusText"></span>
+        </div>
 
-            <!-- Slots por departamento -->
+        <!-- ── Pestañas de navegación ── -->
+        <div class="gd-tabs">
+            <button type="button" class="gd-tab gd-tab-active" data-tab="0" onclick="gdSwitchTab(0)">
+                <span class="material-icons">manage_accounts</span>
+                <span data-translate-key="gd.tab.responsible">Persona responsable</span>
+            </button>
+            <button type="button" class="gd-tab" data-tab="1" onclick="gdSwitchTab(1)">
+                <span class="material-icons">warehouse</span>
+                <span data-translate-key="gd.tab.locations">Locaciones involucradas</span>
+            </button>
+            <button type="button" class="gd-tab" data-tab="2" id="gdTab2" onclick="gdSwitchTab(2)">
+                <span class="material-icons" id="gdTab2Icon">rocket_launch</span>
+                <span id="gdTab2Label" data-translate-key="gd.tab.creation">Creación de guardia</span>
+            </button>
+        </div>
+
+        <!-- ── Panel 0: Persona responsable (spots) ── -->
+        <div class="gd-tab-panel gd-tab-panel-active" id="gdTabPanel0">
             <div class="gd-spots-grid" id="gdSpotsGrid">
                 <!-- Llenado por guard.js -->
             </div>
+        </div>
+
+        <!-- ── Panel 1: Locaciones involucradas ── -->
+        <div class="gd-tab-panel" id="gdTabPanel1">
+            <div class="gd-loc-count-row">
+                <span class="gd-count-badge" id="gdLocCount">—</span>
+                <p class="gd-loc-subtitle" data-translate-key="gd.loc.subtitle">
+                    Locaciones definidas para este cierre programado.
+                </p>
+            </div>
+            <div class="gd-loc-empty" id="gdLocEmpty" style="display:none;">
+                <span class="material-icons">inventory_2</span>
+                <p data-translate-key="gd.loc.empty">Sin movimientos registrados aún.</p>
+            </div>
+            <div class="gd-loc-grid" id="gdLocGrid"></div>
+        </div>
+
+        <!-- ── Panel 2: Creación / Cierre de guardia ── -->
+        <div class="gd-tab-panel" id="gdTabPanel2">
+
+            <!-- Pendiente de locaciones (borrador sin locaciones) -->
+            <div id="gdPendingLocPanel" class="gd-step-panel" style="display:none;">
+                <div class="gd-step-icon-wrap gd-step-icon-muted">
+                    <span class="material-icons">hourglass_empty</span>
+                </div>
+                <h4 data-translate-key="gd.step.pending.title">Pendiente de locaciones</h4>
+                <p data-translate-key="gd.step.pending.desc">
+                    Ve a la pestaña <strong>Locaciones involucradas</strong> y selecciona
+                    al menos una locación para poder crear la guardia.
+                </p>
+            </div>
+
+            <!-- Listo para crear (borrador + locaciones seleccionadas) -->
+            <div id="gdCreationPanel" class="gd-step-panel" style="display:none;">
+                <div class="gd-step-icon-wrap gd-step-icon-amber">
+                    <span class="material-icons">rocket_launch</span>
+                </div>
+                <h4 data-translate-key="gd.step.create.title">Crear guardia</h4>
+                <p data-translate-key="gd.step.create.desc">
+                    Las locaciones han sido seleccionadas. Confirma para activar la guardia
+                    y que los responsables puedan comenzar a registrar.
+                </p>
+                <button type="button" class="gd-btn-confirm-guard" id="gdBtnConfirmGuard"
+                        onclick="submitConfirmGuard()">
+                    <span class="material-icons">rocket_launch</span>
+                    <span data-translate-key="gd.btn.confirm_guard">Crear guardia</span>
+                </button>
+            </div>
+
+            <!-- Guardia en curso (confirmada, locaciones pendientes) -->
+            <div id="gdProgressPanel" class="gd-step-panel" style="display:none;">
+                <div class="gd-step-icon-wrap gd-step-icon-green">
+                    <span class="material-icons">pending_actions</span>
+                </div>
+                <h4 data-translate-key="gd.step.progress.title">Guardia en curso</h4>
+                <p data-translate-key="gd.step.progress.desc">
+                    La guardia está activa. El cierre estará disponible cuando
+                    todas las locaciones involucradas hayan sido procesadas.
+                </p>
+                <div class="gd-progress-locs" id="gdProgressLocs"></div>
+            </div>
+
+            <!-- Cierre de guardia (todas las locaciones procesadas) -->
+            <div id="gdClosurePanel" class="gd-step-panel" style="display:none;">
+                <div class="gd-step-icon-wrap gd-step-icon-red">
+                    <span class="material-icons">lock</span>
+                </div>
+                <h4 data-translate-key="gd.step.close.title">Cierre de guardia</h4>
+                <p data-translate-key="gd.step.close.desc">
+                    Todas las locaciones han sido procesadas. Confirma que las operaciones de
+                    <strong>AR</strong> y <strong>CS</strong> han concluido para cerrar esta guardia.
+                </p>
+                <div class="gd-closure-checklist" id="gdClosureChecklist">
+                    <label class="gd-closure-check-item">
+                        <input type="checkbox" id="gdCheckAR" onchange="gdUpdateCloseBtn()" />
+                        <span class="material-icons gd-closure-icon">business</span>
+                        <span>Operaciones <strong>AR</strong> finalizadas</span>
+                    </label>
+                    <label class="gd-closure-check-item">
+                        <input type="checkbox" id="gdCheckCS" onchange="gdUpdateCloseBtn()" />
+                        <span class="material-icons gd-closure-icon">local_shipping</span>
+                        <span>Operaciones <strong>CS</strong> finalizadas</span>
+                    </label>
+                </div>
+                <button type="button" class="gd-btn-close-guard" id="gdBtnCloseGuard"
+                        onclick="confirmCloseGuard()" disabled style="display:none;">
+                    <span class="material-icons">lock</span>
+                    <span data-translate-key="gd.btn.close_guard">Confirmar cierre de guardia</span>
+                </button>
+            </div>
+
+            <!-- Guardia ya finalizada -->
+            <div id="gdFinishedPanel" class="gd-step-panel" style="display:none;">
+                <div class="gd-step-icon-wrap gd-step-icon-muted">
+                    <span class="material-icons">check_circle</span>
+                </div>
+                <h4 data-translate-key="gd.step.finished.title">Guardia finalizada</h4>
+                <p data-translate-key="gd.step.finished.desc">
+                    Esta guardia ha sido cerrada exitosamente. Consulta el historial para más detalles.
+                </p>
+            </div>
 
         </div>
+        <!-- /Panel 2 -->
 
     </div>
-
-    <!-- ========== LOCACIONES INVOLUCRADAS ========== -->
-    <div class="gd-section" id="gdLocSection" style="display:none;">
-        <div class="gd-section-header">
-            <span class="material-icons">warehouse</span>
-            <h3 data-translate-key="gd.loc.title">Locaciones en operación</h3>
-            <span class="gd-count-badge" id="gdLocCount">—</span>
-        </div>
-        <p class="gd-loc-subtitle" data-translate-key="gd.loc.subtitle">
-            Locaciones definidas al crear esta guardia como parte del cierre programado.
-        </p>
-
-        <div class="gd-loc-empty" id="gdLocEmpty" style="display:none;">
-            <span class="material-icons">inventory_2</span>
-            <p data-translate-key="gd.loc.empty">Sin movimientos registrados aún.</p>
-        </div>
-
-        <div class="gd-loc-grid" id="gdLocGrid"></div>
-    </div>
+    <!-- /gdCarousel -->
 
     <!-- ========== HISTORIAL ========== -->
     <div class="gd-section gd-history-section">

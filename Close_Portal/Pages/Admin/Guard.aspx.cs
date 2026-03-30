@@ -11,7 +11,6 @@ using System.Web.UI;
 namespace Close_Portal.Pages.Admin {
     public partial class Guard : SecurePage {
 
-        // Owners y Administradores pueden acceder
         protected override int RequiredRoleId => RoleLevel.Administrador;
 
         protected void Page_Load(object sender, EventArgs e) {
@@ -19,10 +18,10 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ════════════════════════════════════════════════════════════════
-        // HELPER — validación inline (evita que UnauthorizedAccessException
-        // sea capturada por el pipeline HTTP antes del try/catch del método)
+        // HELPER — validación de sesión sin lanzar excepción
         // ════════════════════════════════════════════════════════════════
-        private static bool TryGetSession(int requiredRole, out HttpSessionState session, out int userId, out int roleId) {
+        private static bool TryGetSession(int requiredRole, out HttpSessionState session,
+                                          out int userId, out int roleId) {
             session = HttpContext.Current.Session;
             userId = 0;
             roleId = -1;
@@ -33,7 +32,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET DEPARTMENTS — catálogo de departamentos activos
+        // GET DEPARTMENTS
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetDepartments() {
@@ -43,7 +42,6 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var depts = da.GetDepartments();
-
                 var result = new List<object>();
                 foreach (var d in depts)
                     result.Add(new {
@@ -60,7 +58,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET USERS BY DEPARTMENT — usuarios disponibles para un spot
+        // GET USERS BY DEPARTMENT
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetUsersByDepartment(int departmentId) {
@@ -70,7 +68,6 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var users = da.GetUsersByDepartment(departmentId);
-
                 var result = new List<object>();
                 foreach (var u in users)
                     result.Add(new {
@@ -88,7 +85,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET GUARD STATUS — guardia actual (activa o pendiente)
+        // GET GUARD STATUS
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetGuardStatus() {
@@ -100,7 +97,6 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 int myDepartmentId = isOwner ? -1 : da.GetUserDepartmentId(currentUserId);
-
                 string myDeptCode = isOwner ? "OWNER" : da.GetUserDepartmentCode(currentUserId);
                 bool canCreateGuard = isOwner || string.Equals(myDeptCode, "AR", StringComparison.OrdinalIgnoreCase);
 
@@ -109,9 +105,24 @@ namespace Close_Portal.Pages.Admin {
                 if (guard == null)
                     return new { success = true, guard = (object)null, myDepartmentId, isOwner, canCreateGuard };
 
+                // Calcular si todas las locaciones están en estado terminal (Approved o Rejected)
+                bool allLocationsClosed = false;
+                if (guard.IsConfirmed && guard.HasLocations) {
+                    var locs = da.GetActiveGuardLocations();
+                    if (locs.Count > 0) {
+                        allLocationsClosed = true;
+                        foreach (var l in locs) {
+                            if (l.Status != "Approved" && l.Status != "Rejected") {
+                                allLocationsClosed = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 return new {
                     success = true,
-                    guard = BuildGuardDto(guard),
+                    guard = BuildGuardDto(guard, allLocationsClosed),
                     myDepartmentId,
                     isOwner,
                     canCreateGuard
@@ -123,7 +134,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET ACTIVE GUARD LOCATIONS — locaciones pre-definidas en la guardia
+        // GET ACTIVE GUARD LOCATIONS — locaciones con estado de solicitud
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetActiveGuardLocations() {
@@ -133,7 +144,6 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var locations = da.GetActiveGuardLocations();
-
                 var result = new List<object>();
                 foreach (var l in locations)
                     result.Add(new {
@@ -156,7 +166,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET GUARD HISTORY — últimas guardias finalizadas
+        // GET GUARD HISTORY
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetGuardHistory() {
@@ -166,7 +176,6 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var history = da.GetGuardHistory(20);
-
                 var result = new List<object>();
                 foreach (var g in history)
                     result.Add(BuildGuardDto(g));
@@ -179,7 +188,12 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del modal
+        // GET ALL ACTIVE LOCATIONS — catálogo para el picker
+        // Incluye hasResponsible: indica si hay usuarios Admin o Regular
+        // mapeados a la WMS de esa locación vía Users_WMS.
+        // NOTA: LocationModel debe exponer HasResponsible (bool),
+        //       calculado en GuardDataAccess.GetAllActiveLocations()
+        //       con un LEFT JOIN a Users_WMS + Users.RoleId IN (1,2,3).
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetAllActiveLocations() {
@@ -189,10 +203,15 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var locations = da.GetAllActiveLocations();
-
                 var result = new List<object>();
                 foreach (var l in locations)
-                    result.Add(new { locationId = l.LocationId, locationName = l.LocationName });
+                    result.Add(new {
+                        locationId = l.LocationId,
+                        locationName = l.LocationName,
+                        hasAdmin = l.HasAdmin,
+                        hasRegular = l.HasRegular,
+                        hasResponsible = l.HasResponsible   // HasAdmin && HasRegular
+                    });
 
                 return new { success = true, data = result };
             } catch (Exception ex) {
@@ -202,7 +221,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // RESERVE DATES — Paso 1: reserva fecha, crea borrador
+        // RESERVE DATES — Paso 1: crea borrador con fechas
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object ReserveDates(string startTime, string estimatedEndTime) {
@@ -242,7 +261,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // SAVE GUARD LOCATIONS — Paso 2: guarda locaciones seleccionadas
+        // SAVE GUARD LOCATIONS — Paso 2
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SaveGuardLocations(int guardId, int[] locationIds) {
@@ -265,7 +284,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // CONFIRM GUARD — Paso 3: confirma guardia y crea spots por depto
+        // CONFIRM GUARD — Paso 3: confirma y crea spots por depto
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object ConfirmGuard(int guardId) {
@@ -295,7 +314,52 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // ASSIGN SPOT — asigna un usuario a un spot de departamento
+        // CLOSE GUARD — Cierre manual cuando todas las locaciones
+        //               han sido procesadas (AR confirma en nombre de AR+CS).
+
+        //       que actualice Guards SET EndTime = GETDATE(), IsFinished = 1
+        //       WHERE Guard_Id = @guardId.
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object CloseGuard(int guardId) {
+            try {
+                if (!TryGetSession(RoleLevel.Administrador, out _, out int userId, out int roleId))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                bool isOwner = roleId >= RoleLevel.Owner;
+                if (!isOwner) {
+                    var daCheck = new GuardDataAccess();
+                    string deptCode = daCheck.GetUserDepartmentCode(userId);
+                    if (!string.Equals(deptCode, "AR", StringComparison.OrdinalIgnoreCase))
+                        return new { success = false, message = "Solo el departamento AR puede cerrar guardias." };
+                }
+
+                // Validar que todas las locaciones estén en estado terminal antes de cerrar
+                var daValidate = new GuardDataAccess();
+                var locs = daValidate.GetActiveGuardLocations();
+                foreach (var l in locs) {
+                    if (l.Status != "Approved" && l.Status != "Rejected")
+                        return new {
+                            success = false,
+                            message = "Aún hay locaciones pendientes de procesar. No se puede cerrar la guardia."
+                        };
+                }
+
+                var da = new GuardDataAccess();
+                var result = da.CloseGuard(guardId);
+
+                return result.Success
+                    ? (object)new { success = true }
+                    : new { success = false, message = result.Message };
+
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[CloseGuard] ERROR: {ex.Message}");
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // ASSIGN SPOT
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object AssignSpot(int spotId, int userId) {
@@ -325,7 +389,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // UNASSIGN SPOT — limpia un spot para reasignar
+        // UNASSIGN SPOT
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object UnassignSpot(int spotId) {
@@ -355,7 +419,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // REMOVE GUARD — elimina guardia no cerrada
+        // REMOVE GUARD
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object RemoveGuard(int guardId) {
@@ -379,7 +443,7 @@ namespace Close_Portal.Pages.Admin {
         // ════════════════════════════════════════════════════════════════
         // DTO HELPER — serializa GuardViewModel a objeto anónimo para JS
         // ════════════════════════════════════════════════════════════════
-        private static object BuildGuardDto(GuardViewModel g) {
+        private static object BuildGuardDto(GuardViewModel g, bool allLocationsClosed = false) {
             var spots = new List<object>();
             foreach (var s in g.Spots) {
                 spots.Add(new {
@@ -417,6 +481,8 @@ namespace Close_Portal.Pages.Admin {
                 isDraft = g.IsDraft,
                 hasLocations = g.HasLocations,
                 locationCount = g.LocationCount,
+                // true cuando todas las locaciones están Approved o Rejected
+                allLocationsClosed,
                 spots
             };
         }

@@ -90,6 +90,12 @@ namespace Close_Portal.DataAccess {
     public class ActiveLocationViewModel {
         public int LocationId { get; set; }
         public string LocationName { get; set; }
+        // true si hay un Administrador (Role_Id=3) activo asignado en Users_Location
+        public bool HasAdmin { get; set; }
+        // true si hay un Regular (Role_Id=1) activo asignado en Users_Location
+        public bool HasRegular { get; set; }
+        // Ambas condiciones cumplidas → grupo principal; si falta alguna → grupo rojo
+        public bool HasResponsible => HasAdmin && HasRegular;
     }
 
     // Locación involucrada en la guardia actual (enriquecida con última solicitud)
@@ -687,16 +693,39 @@ namespace Close_Portal.DataAccess {
         }
 
         // ────────────────────────────────────────────────────────────────
-        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del modal
+        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del borrador.
+        // Solo locaciones activas que tengan al menos:
+        //   · Un Administrador (Role_Id = 3) activo en Users_Location
+        //   · Un Regular       (Role_Id = 1) activo en Users_Location
+        // Si falta alguno, se devuelve de todos modos con HasAdmin/HasRegular
+        // en false para que el JS lo muestre en el grupo rojo.
         // ────────────────────────────────────────────────────────────────
         public List<ActiveLocationViewModel> GetAllActiveLocations() {
             var list = new List<ActiveLocationViewModel>();
             try {
                 string sql = @"
-                    SELECT Location_Id, Location_Name
-                    FROM   WMS_Location
-                    WHERE  Active = 1
-                    ORDER BY Location_Name";
+                    SELECT
+                        wl.Location_Id,
+                        wl.Location_Name,
+                        CASE WHEN EXISTS (
+                            SELECT 1 FROM Users_Location ul
+                            INNER JOIN Users u ON u.User_Id = ul.User_Id
+                            WHERE ul.Location_Id = wl.Location_Id
+                              AND u.Role_Id = 3
+                              AND u.Active  = 1
+                              AND u.Locked  = 0
+                        ) THEN 1 ELSE 0 END AS HasAdmin,
+                        CASE WHEN EXISTS (
+                            SELECT 1 FROM Users_Location ul
+                            INNER JOIN Users u ON u.User_Id = ul.User_Id
+                            WHERE ul.Location_Id = wl.Location_Id
+                              AND u.Role_Id = 1
+                              AND u.Active  = 1
+                              AND u.Locked  = 0
+                        ) THEN 1 ELSE 0 END AS HasRegular
+                    FROM WMS_Location wl
+                    WHERE wl.Active = 1
+                    ORDER BY wl.Location_Name";
 
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
@@ -705,7 +734,9 @@ namespace Close_Portal.DataAccess {
                         while (r.Read()) {
                             list.Add(new ActiveLocationViewModel {
                                 LocationId = (int)r["Location_Id"],
-                                LocationName = r["Location_Name"].ToString()
+                                LocationName = r["Location_Name"].ToString(),
+                                HasAdmin = (int)r["HasAdmin"] == 1,
+                                HasRegular = (int)r["HasRegular"] == 1
                             });
                         }
                     }

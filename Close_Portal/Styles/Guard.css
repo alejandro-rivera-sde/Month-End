@@ -1084,8 +1084,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 6px;
-    max-height: 320px;
-    overflow-y: auto;
     padding-right: 4px;
 }
 
@@ -1328,3 +1326,429 @@
         border: 1px solid var(--gd-accent);
         color: var(--gd-accent);
     }
+
+/* ═══════════════════════════════════════════════════════════
+   NUEVOS ESTILOS — Carrusel de pasos, Cierre manual, Locaciones sin responsable
+   Agregar al final de Guard.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── BADGE: LISTA PARA CIERRE ───────────────────────────── */
+.gd-header-badge.closing {
+    background: rgba(220, 38, 38, 0.10);
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+/* ─── CAROUSEL SECTION ────────────────────────────────────── */
+.gd-carousel-section {
+    padding-bottom: 28px;
+}
+
+/* ─── TABS ────────────────────────────────────────────────── */
+.gd-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin: 20px -28px 0;
+    padding: 0 20px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+    .gd-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+.gd-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 18px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 0;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+    .gd-tab:hover {
+        color: var(--text-primary);
+        background: var(--gd-accent-alpha);
+    }
+
+    .gd-tab.gd-tab-active {
+        color: var(--gd-accent);
+        border-bottom-color: var(--gd-accent);
+    }
+
+    /* Tab 3 en fase de cierre */
+    .gd-tab.gd-tab-closing {
+        color: var(--error-color);
+    }
+
+        .gd-tab.gd-tab-closing.gd-tab-active {
+            border-bottom-color: var(--error-color);
+        }
+
+    .gd-tab .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── TAB PANELS ──────────────────────────────────────────── */
+.gd-tab-panel {
+    display: none;
+    padding-top: 24px;
+}
+
+    .gd-tab-panel.gd-tab-panel-active {
+        display: block;
+    }
+
+/* ─── LOCATION COUNT ROW (Panel 1 header) ─────────────────── */
+.gd-loc-count-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+    .gd-loc-count-row .gd-loc-subtitle {
+        margin: 0;
+    }
+
+/* ─── STEP PANELS (Panel 2 sub-estados) ─────────────────────  */
+.gd-step-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px 40px;
+    gap: 18px;
+}
+
+.gd-step-icon-wrap {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .gd-step-icon-wrap .material-icons {
+        font-size: 34px;
+    }
+
+.gd-step-icon-amber {
+    background: var(--gd-accent-alpha);
+    color: var(--gd-accent);
+}
+
+.gd-step-icon-green {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.gd-step-icon-red {
+    background: rgba(220, 38, 38, 0.10);
+    color: #dc2626;
+}
+
+.gd-step-icon-muted {
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+.gd-step-panel h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.gd-step-panel p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    max-width: 500px;
+}
+
+/* ─── PROGRESS STAT ──────────────────────────────────────── */
+.gd-progress-locs {
+    margin-top: 4px;
+}
+
+.gd-progress-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+    .gd-progress-stat .material-icons {
+        font-size: 18px;
+        color: var(--success-color);
+    }
+
+/* ─── CIERRE CHECKLIST ───────────────────────────────────── */
+.gd-closure-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    text-align: left;
+}
+
+.gd-closure-check-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    user-select: none;
+}
+
+    .gd-closure-check-item:hover {
+        border-color: var(--success-color);
+        background: var(--success-bg);
+    }
+
+    /* Cuando el checkbox está marcado */
+    .gd-closure-check-item:has(input:checked) {
+        border-color: var(--success-color);
+        background: var(--success-bg);
+        color: var(--success-color);
+    }
+
+    .gd-closure-check-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success-color);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .gd-closure-check-item strong {
+        color: inherit;
+    }
+
+.gd-closure-icon {
+    font-size: 20px !important;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.gd-closure-check-item:has(input:checked) .gd-closure-icon {
+    color: var(--success-color);
+}
+
+/* ─── BOTÓN CERRAR GUARDIA ───────────────────────────────── */
+.gd-btn-close-guard {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-close-guard:hover:not(:disabled) {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-close-guard:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .gd-btn-close-guard .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── LOCACIONES SIN RESPONSABLE (picker en borrador) ───────  */
+.gd-loc-unattended-group {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1.5px dashed rgba(220, 38, 38, 0.45);
+}
+
+.gd-loc-unattended-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #dc2626;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+    .gd-loc-unattended-header .material-icons {
+        font-size: 15px;
+    }
+
+/* (reglas de gd-loc-check-danger movidas al bloque de gd-loc-missing-tag) */
+
+.gd-loc-missing-tag {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border-radius: 20px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+    /* Rojo — faltan Admin y Regular */
+    .gd-loc-missing-tag.gd-loc-missing-both {
+        color: #dc2626;
+        background: rgba(220, 38, 38, 0.10);
+        border-color: rgba(220, 38, 38, 0.30);
+    }
+
+    /* Naranja — falta Admin */
+    .gd-loc-missing-tag.gd-loc-missing-admin {
+        color: #c2410c;
+        background: rgba(234, 88, 12, 0.10);
+        border-color: rgba(234, 88, 12, 0.30);
+    }
+
+    /* Amarillo — falta Regular */
+    .gd-loc-missing-tag.gd-loc-missing-regular {
+        color: #92400e;
+        background: rgba(217, 119, 6, 0.12);
+        border-color: rgba(217, 119, 6, 0.30);
+    }
+
+/*  Locación completa — Admin + Regular */
+.gd-loc-check-item.gd-loc-check-ok {
+    border-width: 2px;
+    border-color: #16a34a;
+    background: rgba(22, 163, 74, 0.10);
+    font-weight: 700;
+}
+
+    .gd-loc-check-item.gd-loc-check-ok .gd-loc-check-name {
+        color: #4ade80;
+    }
+
+    .gd-loc-check-item.gd-loc-check-ok input[type="checkbox"] {
+        accent-color: #16a34a;
+    }
+
+/* Item danger — base */
+.gd-loc-check-item.gd-loc-check-danger {
+    border-width: 2px;
+    font-weight: 700;
+}
+
+/* Faltan ambos */
+.gd-loc-check-item.gd-loc-missing-both {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+}
+
+    .gd-loc-check-item.gd-loc-missing-both .gd-loc-check-name {
+        color: #ef4444;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-both input[type="checkbox"] {
+        accent-color: #dc2626;
+    }
+
+/* Falta Admin — amarillo canario */
+.gd-loc-check-item.gd-loc-missing-admin {
+    border-color: #eab308;
+    background: rgba(234, 179, 8, 0.13);
+}
+
+    .gd-loc-check-item.gd-loc-missing-admin .gd-loc-check-name {
+        color: #fde047;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-admin input[type="checkbox"] {
+        accent-color: #eab308;
+    }
+
+/* Falta Regular */
+.gd-loc-check-item.gd-loc-missing-regular {
+    border-color: #0891b2;
+    background: rgba(8, 145, 178, 0.12);
+}
+
+    .gd-loc-check-item.gd-loc-missing-regular .gd-loc-check-name {
+        color: #22d3ee;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-regular input[type="checkbox"] {
+        accent-color: #0891b2;
+    }
+
+/* Leyenda en el header */
+.gd-loc-legend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.gd-loc-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+    .gd-loc-legend-dot.gd-loc-missing-both {
+        background: #dc2626;
+    }
+
+    .gd-loc-legend-dot.gd-loc-missing-admin {
+        background: #eab308;
+    }
+
+    .gd-loc-legend-dot.gd-loc-missing-regular {
+        background: #0891b2;
+    }
+
+.gd-loc-legend-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-right: 6px;
+}
