@@ -23,6 +23,7 @@ namespace Close_Portal {
             sectionGuard.Visible = (roleId == 4 || roleId == 3);
             sectionValidation.Visible = (roleId == 4 || roleId == 3 || roleId == 2);
             sectionWarehouses.Visible = true;
+            sectionIT.Visible = (roleId == 4);
             string roleKey = roleId == 4 ? "owner"
                            : roleId == 3 ? "admin"
                            : roleId == 2 ? "manager"

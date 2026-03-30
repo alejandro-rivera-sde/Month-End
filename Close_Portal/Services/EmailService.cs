@@ -9,9 +9,31 @@ using Close_Portal.DataAccess;
 namespace Close_Portal.Services {
     public static class EmailService {
 
-        // ── Deshabilitar todas las notificaciones temporalmente ──────────
-        // Cambiar a true para reactivar el envío de correos.
-        private static readonly bool NOTIFICATIONS_ENABLED = false;
+        // ── Control de notificaciones (toggle en runtime desde EmailService page) ──
+        // false por defecto. Persistencia: solo dura mientras el app pool esté activo.
+        public static volatile bool NotificationsEnabled = false;
+        public static volatile bool TestMode = false;
+        public static string TestRecipient = "";
+
+        // ── Control por tipo de alerta ────────────────────────────────────────────
+        private static readonly Dictionary<string, bool> _alertEnabled =
+            new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase) {
+                { "UserAdded",       true },
+                { "UserRemoved",     true },
+                { "UserUpdated",     true },
+                { "ClosureRequest",  true },
+                { "GuardStarted",    true },
+                { "GuardClosed",     true },
+            };
+
+        public static bool IsAlertEnabled(string key) {
+            return _alertEnabled.TryGetValue(key, out bool v) && v;
+        }
+        public static void SetAlertEnabled(string key, bool enabled) {
+            if (_alertEnabled.ContainsKey(key)) _alertEnabled[key] = enabled;
+        }
+        public static Dictionary<string, bool> GetAlertStates() =>
+            new Dictionary<string, bool>(_alertEnabled);
 
         private static readonly string SmtpHost = ConfigurationManager.AppSettings["Smtp_Host"];
         private static readonly int SmtpPort = int.Parse(ConfigurationManager.AppSettings["Smtp_Port"] ?? "587");
@@ -53,7 +75,8 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: ResolveGuardRecipients()
+                recipientList: ResolveGuardRecipients(),
+                alertKey: "UserAdded"
             );
         }
 
@@ -67,7 +90,8 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: ResolveGuardRecipients()
+                recipientList: ResolveGuardRecipients(),
+                alertKey: "UserRemoved"
             );
         }
 
@@ -82,7 +106,8 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: MergeGroups(TeamIT, ResolveGuardRecipients())
+                recipientList: MergeGroups(TeamIT, ResolveGuardRecipients()),
+                alertKey: "UserUpdated"
             );
         }
 
@@ -100,7 +125,8 @@ namespace Close_Portal.Services {
                 body: BuildClosureRequestTemplate(
                     managerName, requesterName, requesterEmail,
                     wmsCode, wmsName, notes, requestId),
-                recipientList: managerEmail
+                recipientList: managerEmail,
+                alertKey: "ClosureRequest"
             );
         }
 
@@ -225,7 +251,8 @@ namespace Close_Portal.Services {
             Send(
                 subject: $"[Close Portal] Guardia iniciada — {startTime:dd/MM/yyyy HH:mm} hrs",
                 body: body,
-                recipientList: string.Join(";", recipients)
+                recipientList: string.Join(";", recipients),
+                alertKey: "GuardStarted"
             );
         }
 
@@ -243,7 +270,8 @@ namespace Close_Portal.Services {
                     $"<b>Cierre registrado:</b> {closedAt:dd/MM/yyyy HH:mm} hrs",
                     $"<b>Disparado por:</b> {triggeredByEmail ?? "Sistema"}"
                 }),
-                recipientList: ResolveGuardRecipients()
+                recipientList: ResolveGuardRecipients(),
+                alertKey: "GuardClosed"
             );
         }
 
@@ -273,12 +301,24 @@ namespace Close_Portal.Services {
 </table></td></tr></table></body></html>";
         }
 
-        private static void Send(string subject, string body, string recipientList = null) {
-            if (!NOTIFICATIONS_ENABLED) {
+        private static void Send(string subject, string body, string recipientList = null, string alertKey = null) {
+            if (!NotificationsEnabled) {
                 Debug.WriteLine($"[EmailService] Notificaciones deshabilitadas. Omitido: {subject}");
                 return;
             }
-            var targets = recipientList ?? AdminEmails;
+            if (alertKey != null && !IsAlertEnabled(alertKey)) {
+                Debug.WriteLine($"[EmailService] Alerta '{alertKey}' deshabilitada. Omitido: {subject}");
+                return;
+            }
+
+            string targets;
+            if (TestMode && !string.IsNullOrWhiteSpace(TestRecipient)) {
+                targets = TestRecipient;
+                subject = "[TEST] " + subject;
+                Debug.WriteLine($"[EmailService] Modo prueba → redirigiendo a: {targets}");
+            } else {
+                targets = recipientList ?? AdminEmails;
+            }
 
             if (string.IsNullOrWhiteSpace(targets)) {
                 Debug.WriteLine("[EmailService] Sin destinatarios. Omitido.");

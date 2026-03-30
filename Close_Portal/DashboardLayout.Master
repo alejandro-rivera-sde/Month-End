@@ -98,6 +98,25 @@
                 </div>
 
                 <!-- Settings Section -->
+                <div class="nav-section" id="sectionIT" runat="server">
+                    <div class="nav-section-title">IT</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/Pages/IT/EmailService.aspx" runat="server">
+                                <span class="material-icons">mail</span>
+                                <span class="nav-text">Email Service</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/Pages/IT/Processes.aspx" runat="server">
+                                <span class="material-icons">settings_suggest</span>
+                                <span class="nav-text">Procesos</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Settings Section -->
                 <div class="nav-section">
                     <div class="nav-section-title" data-translate-key="sidebar.settings">Settings</div>
                     <ul class="nav flex-column">
