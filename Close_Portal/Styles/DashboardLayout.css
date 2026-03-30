@@ -664,23 +664,23 @@
 
 /* ========== ROLE-BASED HEADER COLORS ========== */
 .header-role-owner {
-    background: #c60000 !important;
-    border-bottom-color: #881337 !important;
-}
-
-.header-role-admin {
     background: #7d00fb !important;
     border-bottom-color: #6200c9 !important;
 }
 
+.header-role-admin {
+    background: #005ce6 !important;
+    border-bottom-color: #0047b3 !important;
+}
+
 .header-role-manager {
-    background: #48a4ff !important;
-    border-bottom-color: #0c6578 !important;
+    background: #00d56a !important;
+    border-bottom-color: #3f6812 !important;
 }
 
 .header-role-regular {
-    background: #00d56a !important;
-    border-bottom-color: #3f6812 !important;
+    background: #808080 !important;
+    border-bottom-color: #737373 !important;
 }
 
     .header-role-owner .user-name,
