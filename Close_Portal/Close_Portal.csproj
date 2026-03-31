@@ -167,6 +167,7 @@
     <Compile Include="DashboardLayout.Master.designer.cs">
       <DependentUpon>DashboardLayout.Master</DependentUpon>
     </Compile>
+    <Compile Include="Data_Access\EmailDataAccess.cs" />
     <Compile Include="Data_Access\GuardDataAccess.cs" />
     <Compile Include="Data_Access\UserDataAccess.cs" />
     <Compile Include="Hubs\LocationHub.cs" />

@@ -1,4 +1,5 @@
 ﻿using Close_Portal.Core;
+using Close_Portal.DataAccess;
 using Close_Portal.Services;
 using System;
 using System.Collections.Generic;
@@ -12,177 +13,264 @@ namespace Close_Portal.Pages.IT {
 
         protected override int RequiredRoleId => RoleLevel.Owner;
 
-        protected void Page_Load(object sender, EventArgs e) { }
+        protected void Page_Load(object sender, EventArgs e) {
+            // Sincronizar cache con DB en cada carga de página
+            if (!IsPostBack) EmailService.LoadConfig();
+        }
 
-        // ─── Session helper ────────────────────────────────────────────
-        private static bool TryGetOwnerSession(out HttpSessionState session) {
+        // ─── Session helper ────────────────────────────────────────
+        private static bool TryGetOwner(out HttpSessionState session, out int userId) {
             session = HttpContext.Current.Session;
+            userId = 0;
             if (session["UserId"] == null) return false;
+            userId = (int)session["UserId"];
             int roleId = session["RoleId"] != null ? (int)session["RoleId"] : -1;
             return roleId >= RoleLevel.Owner;
         }
 
         // ============================================================
-        // GET EMAIL CONFIG — estado completo del servicio
+        // GET FULL CONFIG
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetEmailConfig() {
             try {
-                if (!TryGetOwnerSession(out _))
+                if (!TryGetOwner(out _, out _))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                var cfg = ConfigurationManager.AppSettings;
+                var da = new EmailDataAccess();
+                var cfg = da.GetServiceConfig();
+
+                // SMTP (read-only desde web.config)
+                var appCfg = ConfigurationManager.AppSettings;
                 var smtp = new {
-                    host = cfg["Smtp_Host"] ?? "—",
-                    port = cfg["Smtp_Port"] ?? "587",
-                    user = cfg["Smtp_User"] ?? "—",
-                    from = cfg["Smtp_From"] ?? "—",
-                    ssl = cfg["Smtp_EnableSsl"] ?? "true"
+                    host = appCfg["Smtp_Host"] ?? "—",
+                    port = appCfg["Smtp_Port"] ?? "587",
+                    user = appCfg["Smtp_User"] ?? "—",
+                    from = appCfg["Smtp_From"] ?? "—",
+                    ssl = appCfg["Smtp_EnableSsl"] ?? "true"
                 };
 
-                var groups = new List<object> {
-                    new {
-                        key   = "CallGod",
-                        label = "Call God",
-                        desc  = "Administradores principales. Fallback cuando no hay guardia activa.",
-                        icon  = "emergency",
-                        color = "red",
-                        emails = SplitEmails(cfg["Call_God"])
-                    },
-                    new {
-                        key   = "TeamIT",
-                        label = "Team IT",
-                        desc  = "Equipo de IT. Recibe notificaciones de cambios de usuario.",
-                        icon  = "computer",
-                        color = "blue",
-                        emails = SplitEmails(cfg["Notify_TeamIT"])
-                    }
-                };
+                // Grupos desde DB
+                var groups = da.GetGroups();
+                var groupDto = new List<object>();
+                foreach (var g in groups) {
+                    var members = new List<object>();
+                    foreach (var m in g.Members)
+                        members.Add(new {
+                            memberId = m.MemberId,
+                            email = m.Email,
+                            displayName = m.DisplayName
+                        });
+                    groupDto.Add(new {
+                        groupId = g.GroupId,
+                        groupKey = g.GroupKey,
+                        label = g.Label,
+                        description = g.Description,
+                        icon = g.Icon,
+                        color = g.Color,
+                        members
+                    });
+                }
 
-                var alerts = new List<object> {
-                    new { key = "UserAdded",      label = "Usuario agregado",         icon = "person_add",     recipients = "Guardia activa / Call God" },
-                    new { key = "UserRemoved",    label = "Usuario desactivado",      icon = "person_remove",  recipients = "Guardia activa / Call God" },
-                    new { key = "UserUpdated",    label = "Usuario modificado",       icon = "manage_accounts",recipients = "Team IT + Guardia activa"  },
-                    new { key = "ClosureRequest", label = "Solicitud de cierre",      icon = "lock",           recipients = "Manager de la locación"    },
-                    new { key = "GuardStarted",   label = "Guardia iniciada",         icon = "security",       recipients = "Responsables de spots"     },
-                    new { key = "GuardClosed",    label = "Guardia cerrada",          icon = "lock_clock",     recipients = "Guardia activa / Call God" },
-                };
+                // Alertas desde DB con metadata estática
+                var alertMeta = GetAlertMeta();
+                var alertSettings = da.GetAlertSettings();
+                var alertMap = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                foreach (var a in alertSettings) alertMap[a.AlertKey] = a.Enabled;
 
-                // Inyectar estado enabled por alerta
-                var alertStates = EmailService.GetAlertStates();
-                var alertsWithState = new List<object>();
-                foreach (var a in alerts) {
-                    dynamic d = a;
-                    string k = d.key;
-                    alertsWithState.Add(new {
-                        key = (string)d.key,
-                        label = (string)d.label,
-                        icon = (string)d.icon,
-                        recipients = (string)d.recipients,
-                        enabled = alertStates.TryGetValue(k, out bool v) && v
+                var alertsDto = new List<object>();
+                foreach (var meta in alertMeta) {
+                    bool enabled = alertMap.TryGetValue(meta.Key, out bool v) ? v : true;
+                    alertsDto.Add(new {
+                        key = meta.Key,
+                        label = meta.Label,
+                        icon = meta.Icon,
+                        recipients = meta.Recipients,
+                        enabled
                     });
                 }
 
                 return new {
                     success = true,
-                    notificationsEnabled = EmailService.NotificationsEnabled,
-                    testMode = EmailService.TestMode,
-                    testRecipient = EmailService.TestRecipient ?? "",
+                    notificationsEnabled = cfg.NotificationsEnabled,
+                    testMode = cfg.TestMode,
+                    testRecipient = cfg.TestRecipient ?? "",
                     smtp,
-                    groups,
-                    alerts = alertsWithState
+                    groups = groupDto,
+                    alerts = alertsDto
                 };
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[EmailConfig.GetEmailConfig] ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[GetEmailConfig] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
             }
         }
 
         // ============================================================
-        // SET NOTIFICATIONS ENABLED
+        // SERVICE CONFIG — guardar en DB + actualizar cache
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SetNotificationsEnabled(bool enabled) {
             try {
-                if (!TryGetOwnerSession(out _))
+                if (!TryGetOwner(out _, out int userId))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                EmailService.NotificationsEnabled = enabled;
-                System.Diagnostics.Debug.WriteLine($"[EmailService] NotificationsEnabled → {enabled}");
-                return new { success = true };
+                var da = new EmailDataAccess();
+                var cfg = da.GetServiceConfig();
+                var r = da.SaveServiceConfig(enabled, cfg.TestMode, cfg.TestRecipient, userId);
+                if (r.Success) EmailService.InvalidateCache(notificationsEnabled: enabled);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
             } catch (Exception ex) {
                 return new { success = false, message = ex.Message };
             }
         }
 
-        // ============================================================
-        // SET TEST MODE
-        // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SetTestMode(bool enabled, string testRecipient) {
             try {
-                if (!TryGetOwnerSession(out _))
+                if (!TryGetOwner(out _, out int userId))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                EmailService.TestMode = enabled;
-                EmailService.TestRecipient = (testRecipient ?? "").Trim();
-                System.Diagnostics.Debug.WriteLine(
-                    $"[EmailService] TestMode → {enabled} | Recipient → {EmailService.TestRecipient}");
-                return new { success = true };
+                var da = new EmailDataAccess();
+                var cfg = da.GetServiceConfig();
+                var r = da.SaveServiceConfig(cfg.NotificationsEnabled, enabled,
+                                               testRecipient?.Trim() ?? "", userId);
+                if (r.Success) EmailService.InvalidateCache(testMode: enabled,
+                                                            testRecipient: testRecipient?.Trim() ?? "");
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
             } catch (Exception ex) {
                 return new { success = false, message = ex.Message };
             }
         }
 
         // ============================================================
-        // SET ALERT ENABLED
+        // ALERT SETTINGS
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SetAlertEnabled(string alertKey, bool enabled) {
             try {
-                if (!TryGetOwnerSession(out _))
+                if (!TryGetOwner(out _, out int userId))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                EmailService.SetAlertEnabled(alertKey, enabled);
-                System.Diagnostics.Debug.WriteLine($"[EmailService] Alert '{alertKey}' → {enabled}");
-                return new { success = true };
+                var r = new EmailDataAccess().SetAlertEnabled(alertKey, enabled, userId);
+                if (r.Success) EmailService.SetAlertEnabledCache(alertKey, enabled);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
             } catch (Exception ex) {
                 return new { success = false, message = ex.Message };
             }
         }
 
-        // ============================================================
-        // SET BULK ALERTS
-        // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SetBulkAlerts(bool enabled) {
             try {
-                if (!TryGetOwnerSession(out _))
+                if (!TryGetOwner(out _, out int userId))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                foreach (var key in new[] { "UserAdded", "UserRemoved", "UserUpdated",
-                                            "ClosureRequest", "GuardStarted", "GuardClosed" })
-                    EmailService.SetAlertEnabled(key, enabled);
+                var r = new EmailDataAccess().SetBulkAlerts(enabled, userId);
+                if (r.Success)
+                    foreach (var key in new[] { "UserAdded", "UserRemoved", "UserUpdated",
+                                                "ClosureRequest", "GuardStarted", "GuardClosed" })
+                        EmailService.SetAlertEnabledCache(key, enabled);
 
-                System.Diagnostics.Debug.WriteLine($"[EmailService] Bulk alerts → {enabled}");
-                return new { success = true };
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
             } catch (Exception ex) {
                 return new { success = false, message = ex.Message };
             }
         }
 
         // ============================================================
-        // SEND TEST EMAIL — envía un correo de prueba para una alerta
-        // Si testRecipient está vacío usa el TestRecipient configurado,
-        // si también está vacío usa Call_God.
+        // GRUPOS — CRUD
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object CreateGroup(string groupKey, string label,
+                                         string description, string icon, string color) {
+            try {
+                if (!TryGetOwner(out _, out _))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().CreateGroup(groupKey, label, description, icon, color);
+                return r.Success ? (object)new { success = true, groupId = r.Id }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        [WebMethod(EnableSession = true)]
+        public static object UpdateGroup(int groupId, string label,
+                                         string description, string icon, string color) {
+            try {
+                if (!TryGetOwner(out _, out _))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().UpdateGroup(groupId, label, description, icon, color);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        [WebMethod(EnableSession = true)]
+        public static object DeleteGroup(int groupId) {
+            try {
+                if (!TryGetOwner(out _, out _))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().DeleteGroup(groupId);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // MIEMBROS — CRUD
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object AddMember(int groupId, string email, string displayName) {
+            try {
+                if (!TryGetOwner(out _, out _))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().AddMember(groupId, email, displayName);
+                return r.Success ? (object)new { success = true, memberId = r.Id }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        [WebMethod(EnableSession = true)]
+        public static object RemoveMember(int memberId) {
+            try {
+                if (!TryGetOwner(out _, out _))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().RemoveMember(memberId);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // SEND TEST EMAIL
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SendTestEmail(string alertKey, string overrideRecipient) {
             try {
-                if (!TryGetOwnerSession(out var session))
+                if (!TryGetOwner(out var session, out _))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                string performer = session["Email"]?.ToString() ?? "IT";
+                if (!EmailService.NotificationsEnabled)
+                    return new { success = false, message = "Activa las notificaciones primero." };
+
                 string recipient = !string.IsNullOrWhiteSpace(overrideRecipient)
                     ? overrideRecipient.Trim()
                     : !string.IsNullOrWhiteSpace(EmailService.TestRecipient)
@@ -190,32 +278,26 @@ namespace Close_Portal.Pages.IT {
                         : ConfigurationManager.AppSettings["Call_God"];
 
                 if (string.IsNullOrWhiteSpace(recipient))
-                    return new { success = false, message = "No hay destinatario configurado para la prueba." };
+                    return new { success = false, message = "Configura un correo de prueba primero." };
 
-                if (!EmailService.NotificationsEnabled)
-                    return new { success = false, message = "Las notificaciones están desactivadas. Actívalas primero para enviar una prueba." };
+                string performer = session["Email"]?.ToString() ?? "IT";
 
-                // Enviar correo de prueba usando los templates reales
-                bool wasPreviouslyDisabled = !EmailService.IsAlertEnabled(alertKey);
-                if (wasPreviouslyDisabled) EmailService.SetAlertEnabled(alertKey, true);
+                // Guardar estado temporal, forzar test mode para este envío
+                bool wasTest = EmailService.TestMode;
+                string wasRecip = EmailService.TestRecipient;
+                bool wasDisabled = !EmailService.IsAlertEnabled(alertKey);
 
-                bool wasTestMode = EmailService.TestMode;
-                string wasRecipient = EmailService.TestRecipient;
-                EmailService.TestMode = true;
-                EmailService.TestRecipient = recipient;
+                EmailService.InvalidateCache(testMode: true, testRecipient: recipient);
+                if (wasDisabled) EmailService.SetAlertEnabledCache(alertKey, true);
 
                 try {
                     SendTestAlertByKey(alertKey, performer);
                 } finally {
-                    EmailService.TestMode = wasTestMode;
-                    EmailService.TestRecipient = wasRecipient;
-                    if (wasPreviouslyDisabled) EmailService.SetAlertEnabled(alertKey, false);
+                    EmailService.InvalidateCache(testMode: wasTest, testRecipient: wasRecip);
+                    if (wasDisabled) EmailService.SetAlertEnabledCache(alertKey, false);
                 }
 
-                System.Diagnostics.Debug.WriteLine(
-                    $"[EmailService] Test '{alertKey}' enviado a {recipient}");
                 return new { success = true, sentTo = recipient };
-
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[SendTestEmail] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
@@ -223,14 +305,6 @@ namespace Close_Portal.Pages.IT {
         }
 
         // ─── Helpers ────────────────────────────────────────────────
-        private static List<string> SplitEmails(string raw) {
-            var list = new List<string>();
-            if (string.IsNullOrWhiteSpace(raw)) return list;
-            foreach (var e in raw.Split(';'))
-                if (!string.IsNullOrWhiteSpace(e)) list.Add(e.Trim());
-            return list;
-        }
-
         private static void SendTestAlertByKey(string key, string performer) {
             switch (key) {
                 case "UserAdded":
@@ -244,20 +318,29 @@ namespace Close_Portal.Pages.IT {
                     break;
                 case "ClosureRequest":
                     EmailService.NotifyClosureRequest(
-                        EmailService.TestRecipient, "Manager Prueba",
-                        "Regular Prueba", "regular@test.com",
-                        "TEST", "Bodega de Prueba", "Notas de prueba", 0);
+                        EmailService.TestRecipient, "Manager Prueba", "Regular Prueba",
+                        "regular@test.com", "TEST", "Bodega de Prueba", "Notas de prueba", 0);
                     break;
                 case "GuardStarted":
-                    var spots = new List<(string, string, string, string)> {
-                        ("AR",   "Cuentas por Cobrar", "Usuario Prueba", "test@example.com")
-                    };
-                    EmailService.NotifyGuardStarted(DateTime.Now, performer, spots);
+                    EmailService.NotifyGuardStarted(DateTime.Now, performer,
+                        new List<(string, string, string, string)> {
+                            ("AR", "Cuentas por Cobrar", "Usuario Prueba", "test@example.com")
+                        });
                     break;
                 case "GuardClosed":
                     EmailService.NotifyGuardClosed(DateTime.Now, performer);
                     break;
             }
         }
+
+        private static List<(string Key, string Label, string Icon, string Recipients)> GetAlertMeta() =>
+            new List<(string, string, string, string)> {
+                ("UserAdded",      "Usuario agregado",      "person_add",      "Guardia activa / Call God"),
+                ("UserRemoved",    "Usuario desactivado",   "person_remove",   "Guardia activa / Call God"),
+                ("UserUpdated",    "Usuario modificado",    "manage_accounts", "Team IT + Guardia activa"),
+                ("ClosureRequest", "Solicitud de cierre",   "lock",            "Manager de la locación"),
+                ("GuardStarted",   "Guardia iniciada",      "security",        "Responsables de spots"),
+                ("GuardClosed",    "Guardia cerrada",       "lock_clock",      "Guardia activa / Call God"),
+            };
     }
 }
