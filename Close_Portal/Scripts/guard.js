@@ -5,6 +5,15 @@
    Patrón: WebMethod via $.ajax, modales en document.body
    ========================================================= */
 
+// ─── AppRoot — independiente del virtual directory ─────────
+if (!window.AppRoot) {
+    (function () {
+        var p = window.location.pathname;
+        var idx = p.toLowerCase().indexOf('/pages/');
+        window.AppRoot = idx !== -1 ? p.substring(0, idx + 1) : '/';
+    })();
+}
+
 // ─── Estado global ─────────────────────────────────────────
 let gd_guard = null;           // guardia actual (o null)
 let gd_pendingSpot = null;     // spot seleccionado para asignar usuario
@@ -12,6 +21,7 @@ let gd_myDepartmentId = -1;    // departamento del usuario en sesión
 let gd_isOwner = false;        // true = Owner, gestiona cualquier spot
 let gd_canCreateGuard = false; // true = AR o Owner
 let gd_activeTab = 0;          // índice del tab activo (0, 1, 2)
+let gd_pollTimer = null;       // intervalo de polling de estado
 
 // ─── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +45,7 @@ function t(key, fallback) {
 function gdCall(method, data, onSuccess) {
     $.ajax({
         type: 'POST',
-        url: 'Guard.aspx/' + method,
+        url: window.AppRoot + 'Pages/Admin/Guard.aspx/' + method,
         data: JSON.stringify(data),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -61,7 +71,35 @@ function loadGuardStatus() {
         renderGuardPanel();
         updateHeaderBadge();
         loadActiveLocations();
+
+        // Polling: activo solo cuando hay guardia confirmada en curso
+        if (gd_guard && gd_guard.isConfirmed && !gd_guard.isFinished) {
+            gdStartPolling();
+        } else {
+            gdStopPolling();
+        }
     });
+}
+
+// ─── POLLING DE ESTADO ─────────────────────────────────────
+// Recarga el estado cada 30 s para detectar cuando todas las
+// locaciones cierran y habilitar automáticamente el Tab 3.
+function gdStartPolling() {
+    if (gd_pollTimer) return; // ya está corriendo
+    gd_pollTimer = setInterval(() => {
+        if (gd_guard && gd_guard.isConfirmed && !gd_guard.isFinished) {
+            loadGuardStatus();
+        } else {
+            gdStopPolling();
+        }
+    }, 30000); // 30 segundos
+}
+
+function gdStopPolling() {
+    if (gd_pollTimer) {
+        clearInterval(gd_pollTimer);
+        gd_pollTimer = null;
+    }
 }
 
 // ─── RENDER GUARD PANEL ────────────────────────────────────
@@ -118,8 +156,8 @@ function renderGuardPanel() {
     // Panel 0 — Spots
     renderSpots(gd_guard.spots || []);
 
-    // Panel 2 — Actualizar sub-panel y etiqueta del tab
-    updateTab3();
+    // Panel 2 — Actualizar sub-panel y Tab 3
+    updateTabs();
 }
 
 // ─── TABS ──────────────────────────────────────────────────
@@ -133,31 +171,33 @@ function gdSwitchTab(idx) {
     });
 }
 
-// ─── TAB 3: ETIQUETA + SUB-PANEL ACTIVO ───────────────────
-function updateTab3() {
+// ─── GESTIÓN DE TABS: mostrar/ocultar Tab 3 y actualizar Panel 2 ──
+function updateTabs() {
     if (!gd_guard) return;
-
-    const tab2Label = document.getElementById('gdTab2Label');
-    const tab2Icon = document.getElementById('gdTab2Icon');
-    const tab2Btn = document.getElementById('gdTab2');
 
     const allClosed = gd_guard.allLocationsClosed || false;
     const isClosingPhase = gd_guard.isConfirmed && allClosed && !gd_guard.isFinished;
+    const tab3Btn = document.getElementById('gdTab3');
 
-    // ── Etiqueta del tab ──
-    if (isClosingPhase) {
-        if (tab2Label) tab2Label.textContent = t('gd.tab.close', 'Cierre de guardia');
-        if (tab2Icon) tab2Icon.textContent = 'lock';
-        if (tab2Btn) tab2Btn.classList.add('gd-tab-closing');
-    } else {
-        if (tab2Label) tab2Label.textContent = t('gd.tab.creation', 'Creación de guardia');
-        if (tab2Icon) tab2Icon.textContent = 'rocket_launch';
-        if (tab2Btn) tab2Btn.classList.remove('gd-tab-closing');
+    // Tab 3 solo visible cuando todas las locaciones cerraron y la guardia sigue abierta
+    if (tab3Btn) {
+        tab3Btn.style.display = isClosingPhase ? '' : 'none';
+        // Sin auto-navegación: el usuario llega al tab manualmente
     }
 
-    // ── Sub-paneles ──
-    const panels = ['gdPendingLocPanel', 'gdCreationPanel', 'gdProgressPanel',
-        'gdClosurePanel', 'gdFinishedPanel'];
+    // Botón cierre en Tab 3 — solo AR/Owner pueden cerrarlo
+    const btnClose = document.getElementById('gdBtnCloseGuard');
+    if (btnClose) btnClose.style.display = gd_canCreateGuard ? '' : 'none';
+
+    // Reset checkboxes al recargar
+    const ar = document.getElementById('gdCheckAR');
+    const cs = document.getElementById('gdCheckCS');
+    if (ar) ar.checked = false;
+    if (cs) cs.checked = false;
+    gdUpdateCloseBtn();
+
+    // ── Sub-paneles en Panel 2 ──
+    const panels = ['gdPendingLocPanel', 'gdCreationPanel', 'gdProgressPanel', 'gdFinishedPanel'];
     panels.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -165,21 +205,6 @@ function updateTab3() {
 
     if (gd_guard.isFinished) {
         document.getElementById('gdFinishedPanel').style.display = '';
-
-    } else if (isClosingPhase) {
-        const panel = document.getElementById('gdClosurePanel');
-        if (panel) panel.style.display = '';
-
-        // Botón de cierre visible solo para AR/Owner
-        const btnClose = document.getElementById('gdBtnCloseGuard');
-        if (btnClose) btnClose.style.display = gd_canCreateGuard ? '' : 'none';
-
-        // Reset checkboxes
-        const ar = document.getElementById('gdCheckAR');
-        const cs = document.getElementById('gdCheckCS');
-        if (ar) ar.checked = false;
-        if (cs) cs.checked = false;
-        gdUpdateCloseBtn();
 
     } else if (gd_guard.isConfirmed && !gd_guard.isFinished) {
         const panel = document.getElementById('gdProgressPanel');
@@ -190,7 +215,6 @@ function updateTab3() {
         if (gd_guard.hasLocations && gd_canCreateGuard) {
             document.getElementById('gdCreationPanel').style.display = '';
         } else if (gd_guard.hasLocations && !gd_canCreateGuard) {
-            // Tiene locaciones pero el usuario no puede crear — mostrar progress hint
             document.getElementById('gdProgressPanel').style.display = '';
             renderProgressLocs();
         } else {
@@ -299,7 +323,7 @@ function updateHeaderBadge() {
             : t('gd.badge.draft_locs', 'Borrador — selecciona locaciones');
     } else if (gd_guard.isConfirmed && (gd_guard.allLocationsClosed || false)) {
         badge.className = 'gd-header-badge closing';
-        text.textContent = t('gd.badge.closing', 'Lista para cierre');
+        text.textContent = t('gd.badge.closing', 'Lista para finalizar');
     } else if (gd_guard.isStarted) {
         badge.className = 'gd-header-badge active';
         text.textContent = t('gd.badge.active', 'Guardia activa');

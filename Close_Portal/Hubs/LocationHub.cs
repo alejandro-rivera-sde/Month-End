@@ -72,7 +72,7 @@ namespace Close_Portal.Hubs {
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
-                    INSERT INTO Notifications (User_Id, Type, Reference_Id, Message)
+                    INSERT INTO MonthEnd_Notifications (User_Id, Type, Reference_Id, Message)
                     VALUES (@UserId, @Type, @RefId, @Message)", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     cmd.Parameters.AddWithValue("@Type", type);

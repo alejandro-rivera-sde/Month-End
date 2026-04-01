@@ -76,8 +76,9 @@ namespace Close_Portal.Pages.Main {
                     // 1. Guardia activa
                     var guard = GetActiveGuard(conn);
 
-                    // 2. Locaciones visibles para este usuario/rol
-                    var locations = GetLocations(conn, userId, roleId);
+                    // 2. Locaciones — solo las involucradas en la guardia activa
+                    int guardId = guard?.GuardId ?? 0;
+                    var locations = GetLocations(conn, userId, roleId, guardId);
 
                     // 3. Enriquecer con solicitudes desde el inicio de la guardia (o hoy)
                     DateTime since = (guard != null) ? guard.StartTime : DateTime.Today;
@@ -163,7 +164,7 @@ namespace Close_Portal.Pages.Main {
                     // 1. Buscar guardia activa iniciada
                     const string sqlGuard = @"
                         SELECT TOP 1 Guard_Id, Start_Time
-                        FROM Guard_Schedule
+                        FROM MonthEnd_Guard_Schedule
                         WHERE Start_Time IS NOT NULL
                           AND End_Time   IS NULL
                         ORDER BY Start_Time DESC";
@@ -179,10 +180,10 @@ namespace Close_Portal.Pages.Main {
                         startTime = dr.GetDateTime(1);
                     }
 
-                    // 2. Contar locaciones involucradas en esta guardia (Guard_Locations)
+                    // 2. Contar locaciones involucradas en esta guardia (MonthEnd_Guard_Locations)
                     int totalLocations;
                     using (var cmd = new SqlCommand(
-                        "SELECT COUNT(*) FROM Guard_Locations WHERE Guard_Id = @GuardId", conn)) {
+                        "SELECT COUNT(*) FROM MonthEnd_Guard_Locations WHERE Guard_Id = @GuardId", conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         totalLocations = (int)cmd.ExecuteScalar();
                     }
@@ -198,8 +199,8 @@ namespace Close_Portal.Pages.Main {
                                    ROW_NUMBER() OVER (
                                        PARTITION BY cr.Location_Id ORDER BY cr.Created_At DESC
                                    ) AS rn
-                            FROM Closure_Requests cr
-                            INNER JOIN Guard_Locations gl
+                            FROM MonthEnd_Closure_Requests cr
+                            INNER JOIN MonthEnd_Guard_Locations gl
                                    ON gl.Location_Id = cr.Location_Id
                                   AND gl.Guard_Id    = @GuardId
                             WHERE cr.Created_At >= @Since
@@ -265,7 +266,7 @@ namespace Close_Portal.Pages.Main {
                 int count = 0;
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM Notifications WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
+                    "SELECT COUNT(*) FROM MonthEnd_Notifications WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     conn.Open();
                     count = (int)cmd.ExecuteScalar();
@@ -294,7 +295,7 @@ namespace Close_Portal.Pages.Main {
                     SELECT TOP 20
                         Notification_Id, Type, Reference_Id, Message, Is_Read,
                         Created_At
-                    FROM Notifications
+                    FROM MonthEnd_Notifications
                     WHERE User_Id = @UserId
                     ORDER BY Created_At DESC", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
@@ -332,7 +333,7 @@ namespace Close_Portal.Pages.Main {
                 string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(@"
-                    UPDATE Notifications SET Is_Read = 1
+                    UPDATE MonthEnd_Notifications SET Is_Read = 1
                     WHERE User_Id     = @UserId
                       AND Reference_Id = @RefId
                       AND Type         = @Type
@@ -362,7 +363,7 @@ namespace Close_Portal.Pages.Main {
                 string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(
-                    "UPDATE Notifications SET Is_Read = 1 WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
+                    "UPDATE MonthEnd_Notifications SET Is_Read = 1 WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     conn.Open();
                     cmd.ExecuteNonQuery();
@@ -385,8 +386,8 @@ namespace Close_Portal.Pages.Main {
                     gs.Guard_Id,
                     gs.Start_Time,
                     cb.Username AS StartedBy
-                FROM  Guard_Schedule gs
-                LEFT  JOIN Users cb ON cb.User_Id = gs.Created_By
+                FROM  MonthEnd_Guard_Schedule gs
+                LEFT  JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
                 WHERE gs.Start_Time IS NOT NULL
                   AND gs.Start_Time <= GETDATE()
                   AND gs.End_Time   IS NULL
@@ -408,9 +409,9 @@ namespace Close_Portal.Pages.Main {
             // Cargar spots del guard
             const string sqlSpots = @"
                 SELECT d.Department_Code, d.Department_Name, u.Username
-                FROM   Guard_Spots sp
-                INNER JOIN Departments d ON d.Department_Id = sp.Department_Id
-                LEFT  JOIN Users       u ON u.User_Id       = sp.User_Id
+                FROM   MonthEnd_Guard_Spots sp
+                INNER JOIN MonthEnd_Departments d ON d.Department_Id = sp.Department_Id
+                LEFT  JOIN MonthEnd_Users       u ON u.User_Id       = sp.User_Id
                 WHERE  sp.Guard_Id = @GuardId
                 ORDER BY d.Department_Code";
 
@@ -431,39 +432,49 @@ namespace Close_Portal.Pages.Main {
         }
 
         // ── Locaciones según rol ─────────────────────────────────────────
-        private static List<LocationDto> GetLocations(SqlConnection conn, int userId, int roleId) {
+        // ── Locaciones — solo las involucradas en la guardia activa ────────
+        private static List<LocationDto> GetLocations(SqlConnection conn, int userId, int roleId, int guardId) {
+
+            // Sin guardia activa → nada que mostrar
+            if (guardId == 0)
+                return new List<LocationDto>();
+
             string sql;
 
             if (roleId >= RoleLevel.Owner) {
+                // Owner ve todas las locaciones de la guardia
                 sql = @"
-                    SELECT Location_Id, Location_Name
-                    FROM   WMS_Location
-                    WHERE  Active = 1
-                    ORDER BY Location_Name";
+                    SELECT wl.Location_Id, wl.Location_Name
+                    FROM   MonthEnd_Locations wl
+                    INNER JOIN MonthEnd_Guard_Locations gl ON gl.Location_Id = wl.Location_Id
+                    WHERE  gl.Guard_Id = @GuardId
+                      AND  wl.Active  = 1
+                    ORDER BY wl.Location_Name";
             } else {
-                // Manager, Admin y Regular — solo las locaciones asignadas directamente
+                // Todos los demás — sus locaciones asignadas que estén en la guardia
                 sql = @"
-                    SELECT
-                        wl.Location_Id,
-                        wl.Location_Name
-                    FROM  WMS_Location   wl
-                    INNER JOIN Users_Location ul ON wl.Location_Id = ul.Location_Id
-                    WHERE wl.Active  = 1
-                      AND ul.User_Id = @userId
+                    SELECT wl.Location_Id, wl.Location_Name
+                    FROM   MonthEnd_Locations wl
+                    INNER JOIN MonthEnd_Guard_Locations gl ON gl.Location_Id = wl.Location_Id
+                    INNER JOIN MonthEnd_Users_Location  ul ON ul.Location_Id = wl.Location_Id
+                    WHERE  gl.Guard_Id = @GuardId
+                      AND  ul.User_Id  = @UserId
+                      AND  wl.Active   = 1
                     ORDER BY wl.Location_Name";
             }
 
             var list = new List<LocationDto>();
             using (var cmd = new SqlCommand(sql, conn)) {
+                cmd.Parameters.AddWithValue("@GuardId", guardId);
                 if (roleId < RoleLevel.Owner)
-                    cmd.Parameters.AddWithValue("@userId", userId);
+                    cmd.Parameters.AddWithValue("@UserId", userId);
 
                 using (var dr = cmd.ExecuteReader()) {
                     while (dr.Read()) {
                         list.Add(new LocationDto {
                             LocationId = dr.GetInt32(0),
                             LocationName = dr.GetString(1),
-                            LocationCode = ""   // columna no existe aún en WMS_Location
+                            LocationCode = ""
                         });
                     }
                 }
@@ -496,9 +507,9 @@ namespace Close_Portal.Pages.Main {
                             PARTITION BY cr.Location_Id
                             ORDER BY cr.Created_At DESC
                         ) AS rn
-                    FROM  Closure_Requests cr
-                    INNER JOIN Users u  ON cr.Requested_By = u.User_Id
-                    LEFT  JOIN Users ru ON cr.Reviewed_By  = ru.User_Id
+                    FROM  MonthEnd_Closure_Requests cr
+                    INNER JOIN MonthEnd_Users u  ON cr.Requested_By = u.User_Id
+                    LEFT  JOIN MonthEnd_Users ru ON cr.Reviewed_By  = ru.User_Id
                     WHERE cr.Location_Id IN ({0})
                       AND cr.Created_At  >= @since
                 )

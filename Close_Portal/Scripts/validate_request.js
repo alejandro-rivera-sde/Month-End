@@ -131,13 +131,6 @@ function renderRequestItem(r) {
     };
     var statusLabel = statusLabels[r.status] || r.status;
 
-    var omsHtml = r.omsLabel && r.omsLabel !== '—'
-        ? '<div class="vr-oms-row">' +
-        r.omsLabel.split(',').map(function (c) {
-            return '<span class="vr-oms-pill">' + escHtml(c.trim()) + '</span>';
-        }).join('') + '</div>'
-        : '';
-
     var notesHtml = r.notes
         ? '<div class="vr-request-notes">' + escHtml(r.notes) + '</div>' : '';
 
@@ -153,7 +146,7 @@ function renderRequestItem(r) {
             '<span>' + who + when + rnotes + '</span></div>';
     }
 
-    // Solo Pending tiene botones — Approved y Rejected son solo lectura aquí
+    // Solo Pending tiene botones
     var actionsHtml = isPending
         ? '<div class="vr-request-actions">' +
         '<button type="button" class="vr-btn-approve" onclick="openReviewModal(' + r.requestId + ',\'Approved\')">' +
@@ -170,7 +163,6 @@ function renderRequestItem(r) {
         '<span class="vr-location-tag">' + escHtml(r.locationName) + '</span>' +
         '<span class="vr-status-badge ' + r.status + '">' + statusLabel + '</span>' +
         '<span class="vr-request-date">' + r.createdAt + '</span></div>' +
-        omsHtml +
         '<div class="vr-requester"><span class="material-icons">person</span>' +
         escHtml(r.requesterName) +
         '<span class="vr-requester-email">· ' + escHtml(r.requesterEmail) + '</span></div>' +
@@ -191,9 +183,6 @@ function openReviewModal(requestId, action) {
     var btnIcon = isApprove ? 'check_circle' : 'cancel';
     var btnText = isApprove ? vrT('vr.modal.confirm_approve') : vrT('vr.modal.confirm_reject');
 
-    var omsLine = req.omsLabel && req.omsLabel !== '—'
-        ? '<br/><strong>' + vrT('vr.card.oms') + '</strong> ' + escHtml(req.omsLabel) : '';
-
     var html =
         '<div class="vr-overlay" id="vrOverlay" onclick="closeReviewModalOnBg(event)">' +
         '<div class="vr-modal">' +
@@ -205,8 +194,7 @@ function openReviewModal(requestId, action) {
         '<div class="vr-modal-body">' +
         '<div class="vr-modal-summary">' +
         '<strong>' + vrT('vr.modal.request') + ' #' + req.requestId + '</strong><br/>' +
-        '<strong>' + vrT('vr.card.location') + '</strong> ' + escHtml(req.locationName) +
-        omsLine + '<br/>' +
+        '<strong>' + vrT('vr.card.location') + '</strong> ' + escHtml(req.locationName) + '<br/>' +
         '<strong>' + vrT('vr.card.requested_by') + '</strong> ' +
         escHtml(req.requesterName) + ' (' + escHtml(req.requesterEmail) + ')' +
         (req.notes ? '<br/><strong>' + vrT('vr.card.notes') + '</strong> ' + escHtml(req.notes) : '') +

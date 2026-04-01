@@ -15,7 +15,7 @@ namespace Close_Portal.DataAccess {
         public LoginResult ValidateGoogleLogin(string email) {
             try {
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
-                    using (SqlCommand cmd = new SqlCommand("sp_ValidateGoogleLogin", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_ValidateGoogleLogin", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Email", email);
                         conn.Open();
@@ -75,7 +75,7 @@ namespace Close_Portal.DataAccess {
                     conn.Open();
                     System.Diagnostics.Debug.WriteLine("Conexión abierta ✓");
 
-                    using (SqlCommand cmd = new SqlCommand("sp_ValidateStandardLogin", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_ValidateStandardLogin", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Email", email);
                         cmd.Parameters.AddWithValue("@PasswordHash", DBNull.Value);
@@ -139,7 +139,7 @@ namespace Close_Portal.DataAccess {
                         using (SqlConnection conn = new SqlConnection(_connectionString)) {
                             conn.Open();
                             using (SqlCommand cmd = new SqlCommand(
-                                "UPDATE Users SET Last_Login_Date = GETDATE() WHERE User_Id = @UserId", conn)) {
+                                "UPDATE MonthEnd_Users SET Last_Login_Date = GETDATE() WHERE User_Id = @UserId", conn)) {
                                 cmd.Parameters.AddWithValue("@UserId", userId);
                                 cmd.ExecuteNonQuery();
                                 System.Diagnostics.Debug.WriteLine("Last_Login_Date actualizada");
@@ -173,8 +173,8 @@ namespace Close_Portal.DataAccess {
         }
 
         /// <summary>
-        /// Obtiene el WMS_Code del primer WMS activo asignado al usuario,
-        /// derivado via Users_OMS → OMS → WMS.
+        /// Obtiene el WMS_Code del primer MonthEnd_WMS activo asignado al usuario,
+        /// derivado via MonthEnd_Users_WMS → MonthEnd_OMS → MonthEnd_WMS.
         /// Se almacena en Session["WmsCode"] al hacer login.
         /// </summary>
         public string GetUserWmsCode(int userId) {
@@ -182,10 +182,9 @@ namespace Close_Portal.DataAccess {
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
                     using (SqlCommand cmd = new SqlCommand(@"
                         SELECT TOP 1 w.WMS_Code
-                        FROM Users_OMS uo
-                        INNER JOIN OMS o ON o.OMS_Id = uo.OMS_Id
-                        INNER JOIN WMS w ON w.WMS_Id = o.WMS_Id
-                        WHERE uo.User_Id = @UserId
+                        FROM MonthEnd_Users_WMS uw
+                        INNER JOIN MonthEnd_WMS w ON w.WMS_Id = uw.WMS_Id
+                        WHERE uw.User_Id = @UserId
                           AND w.Active   = 1
                         ORDER BY w.WMS_Code", conn)) {
 

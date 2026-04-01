@@ -14,7 +14,7 @@
     <div class="page-header">
         <div class="page-title">
             <h2 data-translate-key="um.title">Gestión de Usuarios</h2>
-            <p data-translate-key="um.subtitle">Administra usuarios, roles y accesos a OMS</p>
+            <p data-translate-key="um.subtitle">Administra usuarios, roles y accesos a WMS</p>
         </div>
         <button type="button" class="btn-new" onclick="openModalNew()">
             <span class="material-icons">person_add</span>
@@ -200,9 +200,9 @@
                         <span class="material-icons">person</span>
                         <span data-translate-key="um.tab.general">General</span>
                     </button>
-                    <button type="button" class="um-tab" data-tab="oms" onclick="switchTab('oms')">
+                    <button type="button" class="um-tab" data-tab="wms" onclick="switchTab('wms')">
                         <span class="material-icons">warehouse</span>
-                        <span data-translate-key="um.tab.oms">OMS</span>
+                        <span data-translate-key="um.tab.wms">WMS</span>
                     </button>
                     <button type="button" class="um-tab" data-tab="locations" onclick="switchTab('locations')">
                         <span class="material-icons">location_on</span>
@@ -364,9 +364,9 @@
 
                     </div>
 
-                    <!-- Tab: OMS -->
-                    <div class="um-tab-panel" id="tab-oms">
-                        <p class="um-tab-hint" data-translate-key="um.tab.oms_hint">OMS a los que tiene acceso este usuario.</p>
+                    <!-- Tab: WMS -->
+                    <div class="um-tab-panel" id="tab-wms">
+                        <p class="um-tab-hint" data-translate-key="um.tab.wms_hint">WMS a los que tiene acceso este usuario.</p>
                         <div class="wms-checklist" id="omsChecklist"></div>
                     </div>
 

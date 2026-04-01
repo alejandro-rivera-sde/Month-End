@@ -50,7 +50,7 @@ namespace Close_Portal {
             string deptCode = GetUserDepartmentCode(userId);
             string wmsName = GetWmsFullName(wmsCode);
 
-            // Header: "DEPT · WMS" — si no tiene departamento, solo WMS
+            // Header: "DEPT · MonthEnd_WMS" — si no tiene departamento, solo MonthEnd_WMS
             litWmsName.Text = !string.IsNullOrEmpty(deptCode)
                 ? $"{deptCode} · {wmsName}"
                 : wmsName;
@@ -67,8 +67,8 @@ namespace Close_Portal {
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(@"
                     SELECT d.Department_Name
-                    FROM   Users u
-                    INNER JOIN Departments d ON d.Department_Id = u.Department_Id
+                    FROM   MonthEnd_Users u
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                     WHERE  u.User_Id = @UserId", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     conn.Open();

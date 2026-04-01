@@ -58,7 +58,7 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT Notifications_Enabled, Test_Mode, Test_Recipient
-                    FROM   Email_Service_Config
+                    FROM   MonthEnd_Email_Service_Config
                     WHERE  Config_Id = 1";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
@@ -83,7 +83,7 @@ namespace Close_Portal.DataAccess {
                                              string testRecipient, int updatedBy) {
             try {
                 string sql = @"
-                    UPDATE Email_Service_Config SET
+                    UPDATE MonthEnd_Email_Service_Config SET
                         Notifications_Enabled = @Enabled,
                         Test_Mode             = @TestMode,
                         Test_Recipient        = @Recipient,
@@ -112,7 +112,7 @@ namespace Close_Portal.DataAccess {
         public List<EmailAlertSettingViewModel> GetAlertSettings() {
             var list = new List<EmailAlertSettingViewModel>();
             try {
-                string sql = "SELECT Alert_Key, Label, Enabled FROM Email_Alert_Settings ORDER BY Alert_Key";
+                string sql = "SELECT Alert_Key, Label, Enabled FROM MonthEnd_Email_Alert_Settings ORDER BY Alert_Key";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     conn.Open();
@@ -134,7 +134,7 @@ namespace Close_Portal.DataAccess {
         public EmailResult SetAlertEnabled(string alertKey, bool enabled, int updatedBy) {
             try {
                 string sql = @"
-                    UPDATE Email_Alert_Settings SET
+                    UPDATE MonthEnd_Email_Alert_Settings SET
                         Enabled    = @Enabled,
                         Updated_At = GETDATE(),
                         Updated_By = @UpdatedBy
@@ -159,7 +159,7 @@ namespace Close_Portal.DataAccess {
         public EmailResult SetBulkAlerts(bool enabled, int updatedBy) {
             try {
                 string sql = @"
-                    UPDATE Email_Alert_Settings SET
+                    UPDATE MonthEnd_Email_Alert_Settings SET
                         Enabled    = @Enabled,
                         Updated_At = GETDATE(),
                         Updated_By = @UpdatedBy";
@@ -185,7 +185,7 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT Group_Id, Group_Key, Label, Description, Icon, Color, Active
-                    FROM   Email_Groups
+                    FROM   MonthEnd_Email_Groups
                     WHERE  (@ActiveOnly = 0 OR Active = 1)
                     ORDER BY Group_Id";
                 using (var conn = new SqlConnection(_connStr)) {
@@ -221,7 +221,7 @@ namespace Close_Portal.DataAccess {
             var list = new List<EmailGroupMemberViewModel>();
             string sql = @"
                 SELECT Member_Id, Group_Id, Email, Display_Name, Active
-                FROM   Email_Group_Members
+                FROM   MonthEnd_Email_Group_Members
                 WHERE  Group_Id = @GroupId AND Active = 1
                 ORDER BY Display_Name, Email";
             using (var cmd = new SqlCommand(sql, conn)) {
@@ -247,10 +247,10 @@ namespace Close_Portal.DataAccess {
                     return new EmailResult { Success = false, Message = "Clave y nombre son requeridos." };
 
                 string sql = @"
-                    IF EXISTS (SELECT 1 FROM Email_Groups WHERE Group_Key = @Key)
+                    IF EXISTS (SELECT 1 FROM MonthEnd_Email_Groups WHERE Group_Key = @Key)
                         SELECT -1 AS Id
                     ELSE BEGIN
-                        INSERT INTO Email_Groups (Group_Key, Label, Description, Icon, Color)
+                        INSERT INTO MonthEnd_Email_Groups (Group_Key, Label, Description, Icon, Color)
                         OUTPUT INSERTED.Group_Id AS Id
                         VALUES (@Key, @Label, @Desc, @Icon, @Color)
                     END";
@@ -278,7 +278,7 @@ namespace Close_Portal.DataAccess {
                                        string icon, string color) {
             try {
                 string sql = @"
-                    UPDATE Email_Groups SET
+                    UPDATE MonthEnd_Email_Groups SET
                         Label       = @Label,
                         Description = @Desc,
                         Icon        = @Icon,
@@ -305,7 +305,7 @@ namespace Close_Portal.DataAccess {
             try {
                 // Soft delete — ON DELETE CASCADE limpia los miembros si haces hard delete
                 // Aquí hacemos soft para preservar historial
-                string sql = "UPDATE Email_Groups SET Active = 0 WHERE Group_Id = @GroupId";
+                string sql = "UPDATE MonthEnd_Email_Groups SET Active = 0 WHERE Group_Id = @GroupId";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     cmd.Parameters.AddWithValue("@GroupId", groupId);
@@ -331,23 +331,23 @@ namespace Close_Portal.DataAccess {
 
                 string sql = @"
                     IF EXISTS (
-                        SELECT 1 FROM Email_Group_Members
+                        SELECT 1 FROM MonthEnd_Email_Group_Members
                         WHERE Group_Id = @GroupId AND Email = @Email AND Active = 1
                     )
                         SELECT -1 AS Id
                     ELSE BEGIN
                         -- Reactivar si existe inactivo
                         IF EXISTS (
-                            SELECT 1 FROM Email_Group_Members
+                            SELECT 1 FROM MonthEnd_Email_Group_Members
                             WHERE Group_Id = @GroupId AND Email = @Email AND Active = 0
                         ) BEGIN
-                            UPDATE Email_Group_Members
+                            UPDATE MonthEnd_Email_Group_Members
                             SET Active = 1, Display_Name = @Name
                             WHERE Group_Id = @GroupId AND Email = @Email;
-                            SELECT Member_Id AS Id FROM Email_Group_Members
+                            SELECT Member_Id AS Id FROM MonthEnd_Email_Group_Members
                             WHERE Group_Id = @GroupId AND Email = @Email;
                         END ELSE BEGIN
-                            INSERT INTO Email_Group_Members (Group_Id, Email, Display_Name)
+                            INSERT INTO MonthEnd_Email_Group_Members (Group_Id, Email, Display_Name)
                             OUTPUT INSERTED.Member_Id AS Id
                             VALUES (@GroupId, @Email, @Name)
                         END
@@ -372,7 +372,7 @@ namespace Close_Portal.DataAccess {
 
         public EmailResult RemoveMember(int memberId) {
             try {
-                string sql = "UPDATE Email_Group_Members SET Active = 0 WHERE Member_Id = @Id";
+                string sql = "UPDATE MonthEnd_Email_Group_Members SET Active = 0 WHERE Member_Id = @Id";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     cmd.Parameters.AddWithValue("@Id", memberId);
@@ -393,8 +393,8 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT m.Email
-                    FROM   Email_Group_Members m
-                    INNER JOIN Email_Groups g ON g.Group_Id = m.Group_Id
+                    FROM   MonthEnd_Email_Group_Members m
+                    INNER JOIN MonthEnd_Email_Groups g ON g.Group_Id = m.Group_Id
                     WHERE  g.Group_Key = @Key AND g.Active = 1 AND m.Active = 1";
                 var emails = new List<string>();
                 using (var conn = new SqlConnection(_connStr))

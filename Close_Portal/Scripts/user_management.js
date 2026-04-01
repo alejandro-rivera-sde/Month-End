@@ -170,8 +170,8 @@ function populateModal(data) {
         }
     }
 
-    // Primero OMS (define el scope), luego locaciones filtradas por OMS asignados
-    buildOmsChecklist(data.OmsList);
+    // Primero WMS, luego locaciones
+    buildWmsChecklist(data.WmsList);
     buildLocationChecklist(data.LocationList);
 
     document.getElementById('modalOverlay').dataset.userId = data.UserId;
@@ -179,55 +179,35 @@ function populateModal(data) {
 }
 
 // ============================================================
-// OMS CHECKLIST
-// Agrupa por WMS para legibilidad.
-// Al cambiar cualquier OMS, filtra dinámicamente las locaciones visibles.
+// WMS CHECKLIST
+// Lista plana de WMS — cada usuario puede tener N WMS asignados.
 // ============================================================
-function buildOmsChecklist(omsList) {
+function buildWmsChecklist(wmsList) {
     const container = document.getElementById('omsChecklist');
     container.innerHTML = '';
 
-    if (!omsList || omsList.length === 0) {
+    if (!wmsList || wmsList.length === 0) {
         container.innerHTML =
-            `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin OMS disponibles</div>`;
+            `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin WMS disponibles</div>`;
         return;
     }
 
-    // Agrupar por WmsId
-    const groups = {};
-    omsList.forEach(oms => {
-        if (!groups[oms.WmsId])
-            groups[oms.WmsId] = { code: oms.WmsCode, items: [] };
-        groups[oms.WmsId].items.push(oms);
+    wmsList.forEach(wms => {
+        const label = document.createElement('label');
+        label.className = `wms-check-item${wms.Assigned ? ' checked' : ''}`;
+        label.innerHTML = `
+            <input type="checkbox"
+                   value="${wms.WmsId}"
+                   ${wms.Assigned ? 'checked' : ''}
+                   onchange="toggleWmsItem(this)" />
+            <span class="wms-check-code">${escHtml(wms.WmsCode)}</span>
+            <span class="wms-check-oms">${escHtml(wms.WmsName)}</span>`;
+        container.appendChild(label);
     });
-
-    Object.values(groups).forEach(group => {
-        const header = document.createElement('div');
-        header.className = 'um-oms-group-header';
-        header.textContent = group.code;
-        container.appendChild(header);
-
-        group.items.forEach(oms => {
-            const label = document.createElement('label');
-            label.className = `wms-check-item${oms.Assigned ? ' checked' : ''}`;
-            label.innerHTML = `
-                <input type="checkbox"
-                       value="${oms.OmsId}"
-                       ${oms.Assigned ? 'checked' : ''}
-                       onchange="toggleWmsItem(this); filterLocationsByOms()" />
-                <span class="wms-check-code">${escHtml(oms.OmsCode)}</span>
-                <span class="wms-check-oms">${escHtml(oms.OmsName)}</span>`;
-            container.appendChild(label);
-        });
-    });
-
-    // Aplicar filtro inicial con los OMS ya marcados
-    filterLocationsByOms();
 }
 
 // ============================================================
 // LOCATION CHECKLIST
-// Cada ítem guarda data-oms-ids para filtrado dinámico.
 // ============================================================
 function buildLocationChecklist(locationList) {
     const container = document.getElementById('locationsChecklist');
@@ -242,66 +222,30 @@ function buildLocationChecklist(locationList) {
     locationList.forEach(loc => {
         const label = document.createElement('label');
         label.className = `wms-check-item${loc.Assigned ? ' checked' : ''}`;
-        label.dataset.omsIds = JSON.stringify(loc.OmsIds || []);
         label.innerHTML = `
             <input type="checkbox"
                    value="${loc.LocationId}"
                    ${loc.Assigned ? 'checked' : ''}
                    onchange="toggleWmsItem(this)" />
-            <span class="wms-check-loc">${escHtml(loc.LocationName)}</span>
-            <span class="wms-check-oms">${escHtml(loc.OmsLabel)}</span>`;
+            <span class="wms-check-loc">${escHtml(loc.LocationName)}</span>`;
         container.appendChild(label);
     });
-
-    // Sincronizar visibilidad con OMS actualmente seleccionados
-    filterLocationsByOms();
 }
 
 // ============================================================
-// FILTRAR LOCACIONES POR OMS SELECCIONADOS
-// Muestra solo locaciones que tienen al menos un OMS marcado.
-// Si ningún OMS está marcado → muestra todas (modo sin filtro).
-// Desmarca y oculta locaciones que queden fuera del filtro.
-// ============================================================
-function filterLocationsByOms() {
-    const checkedOmsIds = Array.from(
-        document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')
-    ).map(cb => parseInt(cb.value));
-
-    document.querySelectorAll('#locationsChecklist .wms-check-item').forEach(item => {
-        const itemOmsIds = JSON.parse(item.dataset.omsIds || '[]');
-        const visible = checkedOmsIds.length === 0 ||
-            itemOmsIds.some(id => checkedOmsIds.includes(id));
-
-        item.style.display = visible ? '' : 'none';
-
-        // Desmarcar locaciones que ya no están en scope
-        if (!visible) {
-            const cb = item.querySelector('input[type=checkbox]');
-            if (cb && cb.checked) {
-                cb.checked = false;
-                item.classList.remove('checked');
-            }
-        }
-    });
-}
-
-// ============================================================
-// CARGAR OMS PARA NUEVO USUARIO
-// Después de cargar OMS, carga locaciones en callback
+// CARGAR WMS PARA NUEVO / EDITAR USUARIO
 // ============================================================
 function loadAllOms() {
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetAllOms',
+        url: 'UserManagement.aspx/GetAllWms',
         data: JSON.stringify({}),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {
             const result = response.d;
             if (result && result.Success) {
-                buildOmsChecklist(result.Data);
-                // Cargar locaciones después de OMS para que filterLocationsByOms funcione
+                buildWmsChecklist(result.Data);
                 loadAllLocations();
             } else {
                 showToast(getTranslation('common.error'), 'error');
@@ -314,61 +258,48 @@ function loadAllOms() {
 function loadAllOmsForNew() {
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetAllOms',
+        url: 'UserManagement.aspx/GetAllWms',
         data: JSON.stringify({}),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {
             const result = response.d;
             if (result && result.Success) {
-                buildOmsChecklistInto('omsChecklistNew', result.Data, []);
+                buildWmsChecklistInto('omsChecklistNew', result.Data, []);
             } else {
                 document.getElementById('omsChecklistNew').innerHTML =
-                    `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin OMS disponibles</div>`;
+                    `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin WMS disponibles</div>`;
             }
         },
         error: function () {
             document.getElementById('omsChecklistNew').innerHTML =
-                `<div style="color:var(--text-muted);font-size:13px;padding:8px">Error al cargar OMS</div>`;
+                `<div style="color:var(--text-muted);font-size:13px;padding:8px">Error al cargar WMS</div>`;
         }
     });
 }
 
-// Generic OMS checklist builder — targets a given container id, marks assignedIds as checked
-function buildOmsChecklistInto(containerId, omsList, assignedIds) {
+// Generic WMS checklist builder — targets a given container id, marks assignedIds as checked
+function buildWmsChecklistInto(containerId, wmsList, assignedIds) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
 
-    if (!omsList || omsList.length === 0) {
-        container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin OMS disponibles</div>`;
+    if (!wmsList || wmsList.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin WMS disponibles</div>`;
         return;
     }
 
     const assigned = new Set(assignedIds || []);
-    const groups = {};
-    omsList.forEach(oms => {
-        if (!groups[oms.WmsId]) groups[oms.WmsId] = { code: oms.WmsCode, items: [] };
-        groups[oms.WmsId].items.push(oms);
-    });
 
-    Object.values(groups).forEach(group => {
-        const header = document.createElement('div');
-        header.className = 'um-oms-group-header';
-        header.textContent = group.code;
-        container.appendChild(header);
-
-        group.items.forEach(oms => {
-            const isAssigned = assigned.has(oms.OmsId);
-            const label = document.createElement('label');
-            label.className = `wms-check-item${isAssigned ? ' checked' : ''}`;
-            label.dataset.containerId = containerId;
-            label.innerHTML = `
-                <input type="checkbox" value="${oms.OmsId}" ${isAssigned ? 'checked' : ''}
-                       onchange="toggleWmsItem(this)" />
-                <span>${escHtml(oms.OmsCode)}</span>
-                <span style="color:var(--text-muted);font-size:12px;margin-left:4px">${escHtml(oms.OmsName)}</span>`;
-            container.appendChild(label);
-        });
+    wmsList.forEach(wms => {
+        const isAssigned = assigned.has(wms.WmsId);
+        const label = document.createElement('label');
+        label.className = `wms-check-item${isAssigned ? ' checked' : ''}`;
+        label.innerHTML = `
+            <input type="checkbox" value="${wms.WmsId}" ${isAssigned ? 'checked' : ''}
+                   onchange="toggleWmsItem(this)" />
+            <span>${escHtml(wms.WmsCode)}</span>
+            <span style="color:var(--text-muted);font-size:12px;margin-left:4px">${escHtml(wms.WmsName)}</span>`;
+        container.appendChild(label);
     });
 }
 
@@ -417,7 +348,7 @@ function saveChanges() {
     const deptEl = document.getElementById('modalDepartment');
     const departmentId = deptEl && deptEl.value ? parseInt(deptEl.value) : null;
 
-    const omsIds = Array.from(
+    const wmsIds = Array.from(
         document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')
     ).map(cb => parseInt(cb.value));
 
@@ -429,16 +360,16 @@ function saveChanges() {
         const newRoleId = parseInt(document.getElementById('newModalRole').value) || 0;
         const newDeptEl = document.getElementById('newModalDepartment');
         const newDeptId = newDeptEl && newDeptEl.value ? parseInt(newDeptEl.value) : null;
-        const newOmsIds = Array.from(document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+        const newWmsIds = Array.from(document.querySelectorAll('#omsChecklist input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
         const newLocIds = Array.from(document.querySelectorAll('#locationsChecklist input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
-        saveNewUser(newRoleId, newOmsIds, newLocIds, newDeptId);
+        saveNewUser(newRoleId, newWmsIds, newLocIds, newDeptId);
     } else {
         const userId = parseInt(overlay.dataset.userId);
-        saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId);
+        saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, departmentId);
     }
 }
 
-function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, departmentId) {
+function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, departmentId) {
     const username = (document.getElementById('editUsername').value || '').trim();
     const password1 = document.getElementById('editPassword1').value;
     const password2 = document.getElementById('editPassword2').value;
@@ -473,7 +404,7 @@ function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, de
             roleId,
             active,
             locked,
-            omsIds,
+            wmsIds,
             locationIds,
             username,
             newPassword: password1 || null,
@@ -499,7 +430,7 @@ function saveEditChanges(userId, roleId, active, locked, omsIds, locationIds, de
     });
 }
 
-function saveNewUser(roleId, omsIds, locationIds, departmentId) {
+function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
     const email = (document.getElementById('newEmail').value || '').trim();
     const username = (document.getElementById('newUsername').value || '').trim();
 
@@ -526,7 +457,7 @@ function saveNewUser(roleId, omsIds, locationIds, departmentId) {
         type: 'POST',
         url: 'UserManagement.aspx/CreateUser',
         // Always Google OAuth — no password needed
-        data: JSON.stringify({ email, username, roleId, omsIds: omsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
+        data: JSON.stringify({ email, username, roleId, wmsIds: wmsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {

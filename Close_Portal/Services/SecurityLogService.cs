@@ -31,7 +31,7 @@ namespace Close_Portal.Services {
                 string sessionId = GetSessionId();
 
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
-                    using (SqlCommand cmd = new SqlCommand("sp_LogSecurityEvent", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_LogSecurityEvent", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         cmd.Parameters.AddWithValue("@UserId", userId.HasValue ? (object)userId.Value : DBNull.Value);
@@ -71,7 +71,7 @@ namespace Close_Portal.Services {
                 bool shouldLock = false;
 
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
-                    using (SqlCommand cmd = new SqlCommand("sp_LogSecurityEvent", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_LogSecurityEvent", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         cmd.Parameters.AddWithValue("@UserId", userId.HasValue ? (object)userId.Value : DBNull.Value);
@@ -132,7 +132,7 @@ namespace Close_Portal.Services {
                 System.Diagnostics.Debug.WriteLine($"Razón: {reason}");
 
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
-                    using (SqlCommand cmd = new SqlCommand("sp_LockUserAccount", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_LockUserAccount", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Email", email);
                         cmd.Parameters.AddWithValue("@Reason", reason);
@@ -157,7 +157,7 @@ namespace Close_Portal.Services {
                 System.Diagnostics.Debug.WriteLine($"=== Desbloqueando cuenta: {email} ===");
 
                 using (SqlConnection conn = new SqlConnection(_connectionString)) {
-                    using (SqlCommand cmd = new SqlCommand("sp_UnlockUserAccount", conn)) {
+                    using (SqlCommand cmd = new SqlCommand("MonthEnd_sp_UnlockUserAccount", conn)) {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Email", email);
                         cmd.Parameters.AddWithValue("@UnlockedBy", unlockedBy);

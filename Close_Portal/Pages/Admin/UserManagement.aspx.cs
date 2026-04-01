@@ -38,7 +38,7 @@ namespace Close_Portal.Pages.Admin {
                             COUNT(*)                                                    AS Total,
                             SUM(CASE WHEN Active = 1 AND Locked = 0 THEN 1 ELSE 0 END) AS Activos,
                             SUM(CASE WHEN Locked = 1 THEN 1 ELSE 0 END)                AS Bloqueados
-                        FROM Users";
+                        FROM MonthEnd_Users";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
@@ -51,7 +51,7 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
-                    string sqlWms = "SELECT COUNT(*) FROM WMS WHERE Active = 1";
+                    string sqlWms = "SELECT COUNT(*) FROM MonthEnd_WMS WHERE Active = 1";
                     using (SqlCommand cmd = new SqlCommand(sqlWms, conn)) {
                         litActiveWms.Text = cmd.ExecuteScalar().ToString();
                     }
@@ -62,12 +62,12 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // LOAD WMS FILTER (toolbar)
+        // LOAD MonthEnd_WMS FILTER (toolbar)
         // ============================================================
         private void LoadWmsFilter() {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "SELECT WMS_Id, WMS_Code, WMS_Name FROM WMS WHERE Active = 1 ORDER BY WMS_Code";
+                    string sql = "SELECT WMS_Id, WMS_Code, WMS_Name FROM MonthEnd_WMS WHERE Active = 1 ORDER BY WMS_Code";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
@@ -88,7 +88,7 @@ namespace Close_Portal.Pages.Admin {
         private void LoadRoles() {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "SELECT Role_Id, Role_Name FROM Users_Roles ORDER BY Role_Id DESC";
+                    string sql = "SELECT Role_Id, Role_Name FROM MonthEnd_Users_Roles ORDER BY Role_Id DESC";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
@@ -114,7 +114,7 @@ namespace Close_Portal.Pages.Admin {
         private void LoadDepartments() {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM Departments WHERE Active = 1 ORDER BY Department_Code";
+                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM MonthEnd_Departments WHERE Active = 1 ORDER BY Department_Code";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
@@ -147,9 +147,9 @@ namespace Close_Portal.Pages.Admin {
                             u.Active, u.Locked, u.Login_Type,
                             r.Role_Id, r.Role_Name,
                             d.Department_Id, d.Department_Code, d.Department_Name
-                        FROM Users u
-                        INNER JOIN Users_Roles r ON u.Role_Id = r.Role_Id
-                        LEFT  JOIN Departments d ON d.Department_Id = u.Department_Id
+                        FROM MonthEnd_Users u
+                        INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
+                        LEFT  JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                         ORDER BY u.Role_Id DESC, u.Username";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
@@ -192,14 +192,13 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ── WmsCodes para data-wms del <tr> (filtro toolbar)
-        //    Deriva WMS desde Users_OMS → OMS → WMS
+        //    Deriva WMS_Code directamente desde MonthEnd_Users_WMS
         private string GetUserWmsCodes(SqlConnection conn, int userId) {
             string sql = @"
                 SELECT DISTINCT w.WMS_Code
-                FROM Users_OMS uo
-                INNER JOIN OMS o ON o.OMS_Id = uo.OMS_Id
-                INNER JOIN WMS w ON w.WMS_Id = o.WMS_Id
-                WHERE uo.User_Id = @UserId AND w.Active = 1
+                FROM MonthEnd_Users_WMS uw
+                INNER JOIN MonthEnd_WMS w ON w.WMS_Id = uw.WMS_Id
+                WHERE uw.User_Id = @UserId AND w.Active = 1
                 ORDER BY w.WMS_Code";
 
             using (SqlCommand cmd = new SqlCommand(sql, conn)) {
@@ -216,8 +215,8 @@ namespace Close_Portal.Pages.Admin {
         private string BuildLocationTagsHtml(SqlConnection conn, int userId) {
             string sql = @"
                 SELECT wl.Location_Name
-                FROM Users_Location ul
-                INNER JOIN WMS_Location wl ON wl.Location_Id = ul.Location_Id
+                FROM MonthEnd_Users_Location ul
+                INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = ul.Location_Id
                 WHERE ul.User_Id = @UserId AND wl.Active = 1
                 ORDER BY wl.Location_Name";
 
@@ -238,8 +237,8 @@ namespace Close_Portal.Pages.Admin {
             using (SqlConnection conn = new SqlConnection(_connStr)) {
                 string sql = @"
                     SELECT u.Email, u.Username, r.Role_Name, r.Role_Id
-                    FROM Users u
-                    INNER JOIN Users_Roles r ON u.Role_Id = r.Role_Id
+                    FROM MonthEnd_Users u
+                    INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
                     WHERE u.User_Id = @UserId";
 
                 using (SqlCommand cmd = new SqlCommand(sql, conn)) {
@@ -264,10 +263,10 @@ namespace Close_Portal.Pages.Admin {
         // ============================================================
         // WEBMETHOD — GetUserDetail
         // Devuelve:
-        //   OmsList      → OMS visibles al admin (mismo WMS padre), con Assigned
-        //                  del target en Users_OMS
-        //   LocationList → Locaciones visibles al admin (tienen OMS del admin),
-        //                  con Assigned del target en Users_Location y OmsIds[]
+        //   OmsList      → MonthEnd_OMS visibles al admin (mismo MonthEnd_WMS padre), con Assigned
+        //                  del target en MonthEnd_Users_WMS
+        //   LocationList → Locaciones visibles al admin (tienen MonthEnd_OMS del admin),
+        //                  con Assigned del target en MonthEnd_Users_Location y OmsIds[]
         //                  para filtrado dinámico en JS
         // ============================================================
         [WebMethod(EnableSession = true)]
@@ -286,9 +285,9 @@ namespace Close_Portal.Pages.Admin {
                         SELECT u.User_Id, u.Email, u.Username, u.Active, u.Locked,
                                u.Login_Type, u.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
-                        FROM Users u
-                        INNER JOIN Users_Roles r ON u.Role_Id = r.Role_Id
-                        LEFT  JOIN Departments d ON d.Department_Id = u.Department_Id
+                        FROM MonthEnd_Users u
+                        INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
+                        LEFT  JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                         WHERE u.User_Id = @UserId";
 
                     UserManagementModel user = null;
@@ -316,45 +315,30 @@ namespace Close_Portal.Pages.Admin {
                     if (user == null)
                         return new { Success = false, Message = "Usuario no encontrado" };
 
-                    // ── 2. OMS visibles al admin, con Assigned del target ────
-                    //    Owner  → todos los OMS activos
-                    //    Otros  → OMS cuyo WMS_Id está en los WMS del admin
-                    //             (derivado de Users_OMS del admin)
-                    string sqlOms = @"
+                    // ── 2. WMS asignados al usuario target (Assigned) + todos los activos
+                    //    Owner  → todos los WMS activos
+                    //    Otros  → todos los WMS activos (sin restricción — OMS ya no filtra)
+                    string sqlWms = @"
                         SELECT
-                            o.OMS_Id,
-                            o.OMS_Code,
-                            o.OMS_Name,
                             w.WMS_Id,
                             w.WMS_Code,
-                            CASE WHEN uo_t.User_Id IS NOT NULL THEN 1 ELSE 0 END AS Assigned
-                        FROM OMS o
-                        INNER JOIN WMS     w    ON w.WMS_Id   = o.WMS_Id
-                        LEFT  JOIN Users_OMS uo_t ON uo_t.OMS_Id = o.OMS_Id
-                                                 AND uo_t.User_Id = @UserId
+                            w.WMS_Name,
+                            CASE WHEN uw_t.User_Id IS NOT NULL THEN 1 ELSE 0 END AS Assigned
+                        FROM MonthEnd_WMS w
+                        LEFT JOIN MonthEnd_Users_WMS uw_t ON uw_t.WMS_Id = w.WMS_Id
+                                                         AND uw_t.User_Id = @UserId
                         WHERE w.Active = 1
-                        " + (isOwner ? "" : @"
-                          AND w.WMS_Id IN (
-                              SELECT DISTINCT o2.WMS_Id
-                              FROM Users_OMS uo2
-                              INNER JOIN OMS o2 ON o2.OMS_Id = uo2.OMS_Id
-                              WHERE uo2.User_Id = @CurrentUserId
-                          )") + @"
-                        ORDER BY w.WMS_Code, o.OMS_Code";
+                        ORDER BY w.WMS_Code";
 
-                    var omsList = new List<object>();
-                    using (SqlCommand cmd = new SqlCommand(sqlOms, conn)) {
+                    var wmsList = new List<object>();
+                    using (SqlCommand cmd = new SqlCommand(sqlWms, conn)) {
                         cmd.Parameters.AddWithValue("@UserId", userId);
-                        if (!isOwner)
-                            cmd.Parameters.AddWithValue("@CurrentUserId", currentUserId);
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             while (r.Read()) {
-                                omsList.Add(new {
-                                    OmsId = (int)r["OMS_Id"],
-                                    OmsCode = r["OMS_Code"].ToString(),
-                                    OmsName = r["OMS_Name"].ToString(),
+                                wmsList.Add(new {
                                     WmsId = (int)r["WMS_Id"],
                                     WmsCode = r["WMS_Code"].ToString(),
+                                    WmsName = r["WMS_Name"].ToString(),
                                     Assigned = (int)r["Assigned"] == 1
                                 });
                             }
@@ -367,8 +351,8 @@ namespace Close_Portal.Pages.Admin {
                             wl.Location_Id,
                             wl.Location_Name,
                             CASE WHEN ul.User_Id IS NOT NULL THEN 1 ELSE 0 END AS Assigned
-                        FROM WMS_Location wl
-                        LEFT JOIN Users_Location ul ON ul.Location_Id = wl.Location_Id
+                        FROM MonthEnd_Locations wl
+                        LEFT JOIN MonthEnd_Users_Location ul ON ul.Location_Id = wl.Location_Id
                                                    AND ul.User_Id     = @UserId
                         WHERE wl.Active = 1
                         ORDER BY wl.Location_Name";
@@ -382,8 +366,6 @@ namespace Close_Portal.Pages.Admin {
                                 locationList.Add(new {
                                     LocationId = (int)r["Location_Id"],
                                     LocationName = r["Location_Name"].ToString(),
-                                    OmsIds = new int[0],
-                                    OmsLabel = "—",
                                     Assigned = (int)r["Assigned"] == 1
                                 });
                             }
@@ -402,7 +384,7 @@ namespace Close_Portal.Pages.Admin {
                         DepartmentId = user.DepartmentId,
                         DepartmentCode = user.DepartmentCode,
                         DepartmentName = user.DepartmentName,
-                        OmsList = omsList,
+                        WmsList = wmsList,
                         LocationList = locationList
                     };
                 }
@@ -413,81 +395,54 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // WEBMETHOD — GetAllOms
-        // Para el modal de nuevo usuario. Misma visibilidad que GetUserDetail.
-        // Devuelve todos los OMS disponibles con Assigned = false.
+        // WEBMETHOD — GetAllWms
+        // Para el modal de usuario. Devuelve todos los WMS activos.
         // ============================================================
         [WebMethod(EnableSession = true)]
-        public static object GetAllOms() {
+        public static object GetAllWms() {
             try {
-                var session = System.Web.HttpContext.Current.Session;
-                int currentRoleId = session["RoleId"] != null ? (int)session["RoleId"] : -1;
-                int currentUserId = session["UserId"] != null ? (int)session["UserId"] : -1;
-                bool isOwner = currentRoleId >= RoleLevel.Owner;
-
-                string sql = @"
-                    SELECT
-                        o.OMS_Id,
-                        o.OMS_Code,
-                        o.OMS_Name,
-                        w.WMS_Id,
-                        w.WMS_Code
-                    FROM OMS o
-                    INNER JOIN WMS w ON w.WMS_Id = o.WMS_Id
-                    WHERE w.Active = 1
-                    " + (isOwner ? "" : @"
-                      AND w.WMS_Id IN (
-                          SELECT DISTINCT o2.WMS_Id
-                          FROM Users_OMS uo2
-                          INNER JOIN OMS o2 ON o2.OMS_Id = uo2.OMS_Id
-                          WHERE uo2.User_Id = @CurrentUserId
-                      )") + @"
-                    ORDER BY w.WMS_Code, o.OMS_Code";
-
-                var omsList = new List<object>();
+                var wmsList = new List<object>();
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
+                    string sql = @"
+                        SELECT WMS_Id, WMS_Code, WMS_Name
+                        FROM   MonthEnd_WMS
+                        WHERE  Active = 1
+                        ORDER BY WMS_Code";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
-                        if (!isOwner)
-                            cmd.Parameters.AddWithValue("@CurrentUserId", currentUserId);
                         conn.Open();
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             while (r.Read()) {
-                                omsList.Add(new {
-                                    OmsId = (int)r["OMS_Id"],
-                                    OmsCode = r["OMS_Code"].ToString(),
-                                    OmsName = r["OMS_Name"].ToString(),
+                                wmsList.Add(new {
                                     WmsId = (int)r["WMS_Id"],
                                     WmsCode = r["WMS_Code"].ToString(),
+                                    WmsName = r["WMS_Name"].ToString(),
                                     Assigned = false
                                 });
                             }
                         }
                     }
                 }
-
-                return new { Success = true, Data = omsList };
+                return new { Success = true, Data = wmsList };
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"ERROR GetAllOms: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"ERROR GetAllWms: {ex.Message}");
                 return new { Success = false, Message = ex.Message };
             }
         }
 
         // ============================================================
         // WEBMETHOD — GetAllLocations
-        // Devuelve todas las locaciones activas. Sin filtro por OMS del admin.
+        // Devuelve todas las locaciones activas.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetAllLocations() {
             try {
                 var list = new List<object>();
-
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
                     string sql = @"
                         SELECT Location_Id, Location_Name
-                        FROM WMS_Location
-                        WHERE Active = 1
+                        FROM   MonthEnd_Locations
+                        WHERE  Active = 1
                         ORDER BY Location_Name";
-
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         using (SqlDataReader r = cmd.ExecuteReader()) {
@@ -495,15 +450,12 @@ namespace Close_Portal.Pages.Admin {
                                 list.Add(new {
                                     LocationId = (int)r["Location_Id"],
                                     LocationName = r["Location_Name"].ToString(),
-                                    OmsIds = new int[0],
-                                    OmsLabel = "—",
                                     Assigned = false
                                 });
                             }
                         }
                     }
                 }
-
                 return new { Success = true, Data = list };
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"ERROR GetAllLocations: {ex.Message}");
@@ -519,7 +471,7 @@ namespace Close_Portal.Pages.Admin {
             try {
                 var list = new List<object>();
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM Departments WHERE Active = 1 ORDER BY Department_Code";
+                    string sql = "SELECT Department_Id, Department_Code, Department_Name FROM MonthEnd_Departments WHERE Active = 1 ORDER BY Department_Code";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         using (SqlDataReader r = cmd.ExecuteReader()) {
@@ -543,14 +495,14 @@ namespace Close_Portal.Pages.Admin {
         // ============================================================
         // WEBMETHOD — SaveUserChanges
         // Persiste en una sola transacción:
-        //   1. UPDATE Users
-        //   2. DELETE + INSERT Users_OMS    (scope de visibilidad)
-        //   3. DELETE + INSERT Users_Location (locaciones operativas)
+        //   1. UPDATE MonthEnd_Users
+        //   2. DELETE + INSERT MonthEnd_Users_WMS    (WMS asignados)
+        //   3. DELETE + INSERT MonthEnd_Users_Location (locaciones operativas)
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SaveUserChanges(
             int userId, int roleId, bool active, bool locked,
-            int[] omsIds,
+            int[] wmsIds,
             int[] locationIds,
             string username,
             string newPassword,
@@ -573,7 +525,7 @@ namespace Close_Portal.Pages.Admin {
                 string newRoleName = "";
                 using (SqlConnection connRole = new SqlConnection(_connStr)) {
                     using (SqlCommand cmd = new SqlCommand(
-                        "SELECT Role_Name FROM Users_Roles WHERE Role_Id = @RoleId", connRole)) {
+                        "SELECT Role_Name FROM MonthEnd_Users_Roles WHERE Role_Id = @RoleId", connRole)) {
                         cmd.Parameters.AddWithValue("@RoleId", roleId);
                         connRole.Open();
                         newRoleName = cmd.ExecuteScalar()?.ToString() ?? "";
@@ -586,14 +538,14 @@ namespace Close_Portal.Pages.Admin {
                     conn.Open();
                     using (SqlTransaction tx = conn.BeginTransaction()) {
                         try {
-                            // 1. UPDATE Users
+                            // 1. UPDATE MonthEnd_Users
                             string sqlUser;
                             SqlCommand cmdUser;
 
                             if (!string.IsNullOrEmpty(newPassword)) {
                                 string hash = ComputePasswordHash(newPassword);
                                 sqlUser = @"
-                                    UPDATE Users
+                                    UPDATE MonthEnd_Users
                                     SET Role_Id       = @RoleId,
                                         Active        = @Active,
                                         Locked        = @Locked,
@@ -606,7 +558,7 @@ namespace Close_Portal.Pages.Admin {
                                 cmdUser.Parameters.AddWithValue("@PasswordHash", hash);
                             } else {
                                 sqlUser = @"
-                                    UPDATE Users
+                                    UPDATE MonthEnd_Users
                                     SET Role_Id       = @RoleId,
                                         Active        = @Active,
                                         Locked        = @Locked,
@@ -626,34 +578,34 @@ namespace Close_Portal.Pages.Admin {
                                 departmentId > 0 ? (object)departmentId : DBNull.Value);
                             cmdUser.ExecuteNonQuery();
 
-                            // 2. Reemplazar Users_OMS (scope de visibilidad)
+                            // 2. Reemplazar MonthEnd_Users_WMS
                             using (SqlCommand cmd = new SqlCommand(
-                                "DELETE FROM Users_OMS WHERE User_Id = @UserId", conn, tx)) {
+                                "DELETE FROM MonthEnd_Users_WMS WHERE User_Id = @UserId", conn, tx)) {
                                 cmd.Parameters.AddWithValue("@UserId", userId);
                                 cmd.ExecuteNonQuery();
                             }
-                            if (omsIds != null && omsIds.Length > 0) {
-                                foreach (int omsId in omsIds) {
+                            if (wmsIds != null && wmsIds.Length > 0) {
+                                foreach (int wmsId in wmsIds) {
                                     using (SqlCommand cmd = new SqlCommand(
-                                        "INSERT INTO Users_OMS (User_Id, OMS_Id) VALUES (@UserId, @OmsId)",
+                                        "INSERT INTO MonthEnd_Users_WMS (User_Id, WMS_Id) VALUES (@UserId, @WmsId)",
                                         conn, tx)) {
                                         cmd.Parameters.AddWithValue("@UserId", userId);
-                                        cmd.Parameters.AddWithValue("@OmsId", omsId);
+                                        cmd.Parameters.AddWithValue("@WmsId", wmsId);
                                         cmd.ExecuteNonQuery();
                                     }
                                 }
                             }
 
-                            // 3. Reemplazar Users_Location (locaciones operativas)
+                            // 3. Reemplazar MonthEnd_Users_Location (locaciones operativas)
                             using (SqlCommand cmd = new SqlCommand(
-                                "DELETE FROM Users_Location WHERE User_Id = @UserId", conn, tx)) {
+                                "DELETE FROM MonthEnd_Users_Location WHERE User_Id = @UserId", conn, tx)) {
                                 cmd.Parameters.AddWithValue("@UserId", userId);
                                 cmd.ExecuteNonQuery();
                             }
                             if (locationIds != null && locationIds.Length > 0) {
                                 foreach (int locationId in locationIds) {
                                     using (SqlCommand cmd = new SqlCommand(
-                                        "INSERT INTO Users_Location (User_Id, Location_Id) VALUES (@UserId, @LocationId)",
+                                        "INSERT INTO MonthEnd_Users_Location (User_Id, Location_Id) VALUES (@UserId, @LocationId)",
                                         conn, tx)) {
                                         cmd.Parameters.AddWithValue("@UserId", userId);
                                         cmd.Parameters.AddWithValue("@LocationId", locationId);
@@ -690,12 +642,12 @@ namespace Close_Portal.Pages.Admin {
 
         // ============================================================
         // WEBMETHOD — CreateUser
-        // Alta de nuevo usuario. Migrado desde UserRegistration.aspx.cs.
+        // Alta de nuevo usuario.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object CreateUser(
             string email, string username, int roleId,
-            int[] omsIds, int[] locationIds, int departmentId) {
+            int[] wmsIds, int[] locationIds, int departmentId) {
             try {
                 var session = System.Web.HttpContext.Current.Session;
                 int currentRole = session["RoleId"] != null ? (int)session["RoleId"] : -1;
@@ -708,33 +660,10 @@ namespace Close_Portal.Pages.Admin {
                 if (roleId >= currentRole)
                     return new { Success = false, Message = "No tienes permisos para asignar ese rol" };
 
-                // Admin solo puede asignar OMS dentro de sus WMS
-                if (currentRole < RoleLevel.Owner && omsIds != null && omsIds.Length > 0) {
-                    string ids = string.Join(",", omsIds);
-                    string sqlCheck = $@"
-                        SELECT COUNT(DISTINCT o.OMS_Id)
-                        FROM OMS o
-                        INNER JOIN WMS w ON w.WMS_Id = o.WMS_Id
-                        WHERE o.OMS_Id IN ({ids})
-                          AND w.WMS_Id IN (
-                              SELECT DISTINCT o2.WMS_Id
-                              FROM Users_OMS uo2
-                              INNER JOIN OMS o2 ON o2.OMS_Id = uo2.OMS_Id
-                              WHERE uo2.User_Id = @CreatorId
-                          )";
-                    using (var c = new SqlConnection(_connStr)) {
-                        using (var cmd = new SqlCommand(sqlCheck, c)) {
-                            cmd.Parameters.AddWithValue("@CreatorId", currentUser);
-                            c.Open();
-                            if ((int)cmd.ExecuteScalar() != omsIds.Length)
-                                return new { Success = false, Message = "Solo puedes asignar OMS a los que tienes acceso" };
-                        }
-                    }
-                }
-
                 // Email duplicado
                 using (var c = new SqlConnection(_connStr)) {
-                    using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Users WHERE Email = @Email", c)) {
+                    using (var cmd = new SqlCommand(
+                        "SELECT COUNT(*) FROM MonthEnd_Users WHERE Email = @Email", c)) {
                         cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
                         c.Open();
                         if ((int)cmd.ExecuteScalar() > 0)
@@ -744,7 +673,8 @@ namespace Close_Portal.Pages.Admin {
 
                 string roleName = "";
                 using (var c = new SqlConnection(_connStr)) {
-                    using (var cmd = new SqlCommand("SELECT Role_Name FROM Users_Roles WHERE Role_Id = @RoleId", c)) {
+                    using (var cmd = new SqlCommand(
+                        "SELECT Role_Name FROM MonthEnd_Users_Roles WHERE Role_Id = @RoleId", c)) {
                         cmd.Parameters.AddWithValue("@RoleId", roleId);
                         c.Open();
                         roleName = cmd.ExecuteScalar()?.ToString() ?? "";
@@ -757,25 +687,29 @@ namespace Close_Portal.Pages.Admin {
                     using (var tx = conn.BeginTransaction()) {
                         try {
                             string sqlInsert = @"
-                                INSERT INTO Users (Email, Username, Login_Type, Role_Id, Active, Locked, Department_Id)
+                                INSERT INTO MonthEnd_Users
+                                    (Email, Username, Login_Type, Role_Id, Active, Locked, Department_Id)
                                 VALUES (@Email, @Username, 'Google', @RoleId, 1, 0, @DeptId);
                                 SELECT SCOPE_IDENTITY();";
                             using (var cmd = new SqlCommand(sqlInsert, conn, tx)) {
-                                cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
+                                cmd.Parameters.AddWithValue("@Email",
+                                    email.Trim().ToLower());
                                 cmd.Parameters.AddWithValue("@Username",
-                                    string.IsNullOrWhiteSpace(username) ? email.Split('@')[0] : username.Trim());
+                                    string.IsNullOrWhiteSpace(username)
+                                        ? email.Split('@')[0] : username.Trim());
                                 cmd.Parameters.AddWithValue("@RoleId", roleId);
                                 cmd.Parameters.AddWithValue("@DeptId",
                                     departmentId > 0 ? (object)departmentId : DBNull.Value);
                                 newUserId = Convert.ToInt32(cmd.ExecuteScalar());
                             }
 
-                            if (omsIds != null) {
-                                foreach (int omsId in omsIds) {
+                            if (wmsIds != null) {
+                                foreach (int wmsId in wmsIds) {
                                     using (var cmd = new SqlCommand(
-                                        "INSERT INTO Users_OMS (User_Id, OMS_Id) VALUES (@UserId, @OmsId)", conn, tx)) {
+                                        "INSERT INTO MonthEnd_Users_WMS (User_Id, WMS_Id) VALUES (@UserId, @WmsId)",
+                                        conn, tx)) {
                                         cmd.Parameters.AddWithValue("@UserId", newUserId);
-                                        cmd.Parameters.AddWithValue("@OmsId", omsId);
+                                        cmd.Parameters.AddWithValue("@WmsId", wmsId);
                                         cmd.ExecuteNonQuery();
                                     }
                                 }
@@ -784,7 +718,8 @@ namespace Close_Portal.Pages.Admin {
                             if (locationIds != null) {
                                 foreach (int locationId in locationIds) {
                                     using (var cmd = new SqlCommand(
-                                        "INSERT INTO Users_Location (User_Id, Location_Id) VALUES (@UserId, @LocationId)", conn, tx)) {
+                                        "INSERT INTO MonthEnd_Users_Location (User_Id, Location_Id) VALUES (@UserId, @LocationId)",
+                                        conn, tx)) {
                                         cmd.Parameters.AddWithValue("@UserId", newUserId);
                                         cmd.Parameters.AddWithValue("@LocationId", locationId);
                                         cmd.ExecuteNonQuery();
@@ -830,7 +765,7 @@ namespace Close_Portal.Pages.Admin {
                     return new { Success = false, Message = "No tienes permisos para modificar este usuario" };
 
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "UPDATE Users SET Active = @Active WHERE User_Id = @UserId";
+                    string sql = "UPDATE MonthEnd_Users SET Active = @Active WHERE User_Id = @UserId";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@UserId", userId);
                         cmd.Parameters.AddWithValue("@Active", active);

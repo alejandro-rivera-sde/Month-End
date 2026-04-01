@@ -27,7 +27,7 @@ function loadMyLocations() {
                 d.data.forEach(function (loc) {
                     var opt = document.createElement('option');
                     opt.value = loc.locationId;
-                    opt.textContent = loc.locationName + '  (' + loc.omsLabel + ')';
+                    opt.textContent = loc.locationName;
                     sel.appendChild(opt);
                 });
                 sel.onchange = function () { onLocationChange(this.value); };
@@ -87,7 +87,7 @@ function sendRequest() {
         return;
     }
     if (!rc_managerId) {
-        showFormMsg('Esta locacion no tiene un Manager asignado.', 'error');
+        showFormMsg('Esta locación no tiene un Administrador asignado.', 'error');
         return;
     }
 
@@ -181,16 +181,10 @@ function renderHistory() {
                 : '';
 
             var reviewHtml = (r.reviewNotes || r.reviewedByName)
-                ? '<div class="rc-review-notes"><strong>' + escHtml(r.reviewedByName || 'Manager') + ':</strong> ' +
+                ? '<div class="rc-review-notes"><strong>' + escHtml(r.reviewedByName || 'Administrador') + ':</strong> ' +
                 escHtml(r.reviewNotes || '-') +
                 (r.reviewedAt ? ' <span style="color:var(--text-muted)">- ' + r.reviewedAt + '</span>' : '') +
                 '</div>'
-                : '';
-
-            var omsHtml = r.omsLabel && r.omsLabel !== '-'
-                ? r.omsLabel.split(',').map(function (c) {
-                    return '<span class="rc-oms-pill">' + escHtml(c.trim()) + '</span>';
-                }).join('')
                 : '';
 
             return '<div class="rc-history-item">' +
@@ -199,7 +193,6 @@ function renderHistory() {
                 '<span class="rc-status-badge ' + r.status + '">' + label + '</span>' +
                 '<span class="rc-history-date">' + r.createdAt + '</span>' +
                 '</div>' +
-                (omsHtml ? '<div class="rc-oms-row">' + omsHtml + '</div>' : '') +
                 notesHtml +
                 reviewHtml +
                 '</div>';

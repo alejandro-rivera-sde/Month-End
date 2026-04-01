@@ -23,7 +23,7 @@ namespace Close_Portal.Pages {
         // ============================================================
         // GET MY LOCATIONS
         // Devuelve las locaciones asignadas al usuario en sesión
-        // (via Users_Location) junto con el OmsLabel para el dropdown.
+        // (via MonthEnd_Users_Location) disponibles para solicitar cierre.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetMyLocations() {
@@ -32,65 +32,58 @@ namespace Close_Portal.Pages {
                 var session = System.Web.HttpContext.Current.Session;
                 int userId = (int)session["UserId"];
 
-                // Una fila por OMS asociado a la locación — agrupar en C#
-                string sql = @"
-                    SELECT
-                        wl.Location_Id,
-                        wl.Location_Name,
-                        o.OMS_Code
-                    FROM WMS_Location wl
-                    INNER JOIN Users_Location ul ON ul.Location_Id = wl.Location_Id
-                    LEFT  JOIN Location_OMS   lo ON lo.Location_Id = wl.Location_Id
-                    LEFT  JOIN OMS             o  ON o.OMS_Id       = lo.OMS_Id
-                    WHERE ul.User_Id = @UserId
-                      AND wl.Active  = 1
-                      AND NOT EXISTS (
-                          -- Bloquear solo si la solicitud MÁS RECIENTE del usuario
-                          -- para esa locación está en Pending o Approved
-                          SELECT 1
-                          FROM Closure_Requests cr
-                          WHERE cr.Location_Id  = wl.Location_Id
-                            AND cr.Requested_By = @UserId
-                            AND cr.Status       IN ('Pending', 'Approved')
-                            AND cr.Created_At   = (
-                                SELECT MAX(cr2.Created_At)
-                                FROM Closure_Requests cr2
-                                WHERE cr2.Location_Id  = wl.Location_Id
-                                  AND cr2.Requested_By = @UserId
-                            )
-                      )
-                    ORDER BY wl.Location_Name, o.OMS_Code";
-
-                var locMap = new Dictionary<int, (string Name, List<string> Codes)>();
-
                 using (var conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+
+                    // Resolver guardia activa confirmada
+                    int guardId = 0;
+                    using (var cmd = new SqlCommand(@"
+                        SELECT TOP 1 Guard_Id FROM MonthEnd_Guard_Schedule
+                        WHERE End_Time IS NULL AND Is_Confirmed = 1
+                        ORDER BY Created_At DESC", conn)) {
+                        var val = cmd.ExecuteScalar();
+                        if (val == null || val == System.DBNull.Value)
+                            return new { success = true, data = new List<object>(), guardActive = false };
+                        guardId = (int)val;
+                    }
+
+                    // Locaciones asignadas al usuario que pertenecen a la guardia activa
+                    // y que aún no tienen solicitud Pending o Approved en esta guardia
+                    string sql = @"
+                        SELECT
+                            wl.Location_Id,
+                            wl.Location_Name
+                        FROM MonthEnd_Locations wl
+                        INNER JOIN MonthEnd_Users_Location ul ON ul.Location_Id = wl.Location_Id
+                        INNER JOIN MonthEnd_Guard_Locations gl ON gl.Location_Id = wl.Location_Id
+                                                               AND gl.Guard_Id   = @GuardId
+                        WHERE ul.User_Id = @UserId
+                          AND wl.Active  = 1
+                          AND NOT EXISTS (
+                              SELECT 1 FROM MonthEnd_Closure_Requests cr
+                              WHERE cr.Location_Id  = wl.Location_Id
+                                AND cr.Requested_By = @UserId
+                                AND cr.Guard_Id     = @GuardId
+                                AND cr.Status       IN ('Pending', 'Approved')
+                          )
+                        ORDER BY wl.Location_Name";
+
+                    var list = new List<object>();
                     using (var cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@UserId", userId);
-                        conn.Open();
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         using (var r = cmd.ExecuteReader()) {
                             while (r.Read()) {
-                                int locId = (int)r["Location_Id"];
-                                if (!locMap.ContainsKey(locId))
-                                    locMap[locId] = (r["Location_Name"].ToString(), new List<string>());
-                                if (r["OMS_Code"] != DBNull.Value)
-                                    locMap[locId].Codes.Add(r["OMS_Code"].ToString());
+                                list.Add(new {
+                                    locationId = (int)r["Location_Id"],
+                                    locationName = r["Location_Name"].ToString()
+                                });
                             }
                         }
                     }
-                }
 
-                var list = new List<object>();
-                foreach (var kv in locMap) {
-                    list.Add(new {
-                        locationId = kv.Key,
-                        locationName = kv.Value.Name,
-                        omsLabel = kv.Value.Codes.Count > 0
-                                       ? string.Join(", ", kv.Value.Codes)
-                                       : "—"
-                    });
+                    return new { success = true, data = list, guardActive = true };
                 }
-
-                return new { success = true, data = list };
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[RequestClosure.GetMyLocations] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
@@ -99,8 +92,8 @@ namespace Close_Portal.Pages {
 
         // ============================================================
         // GET MANAGER FOR LOCATION
-        // Busca el Manager (RoleId = 2) que tiene la locación asignada
-        // directamente en Users_Location.
+        // Busca el Administrador (RoleId = 3) que tiene la locación asignada
+        // directamente en MonthEnd_Users_Location.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetManagerForLocation(int locationId) {
@@ -112,8 +105,8 @@ namespace Close_Portal.Pages {
                         u.User_Id,
                         u.Username,
                         u.Email
-                    FROM Users u
-                    INNER JOIN Users_Location ul ON ul.User_Id     = u.User_Id
+                    FROM MonthEnd_Users u
+                    INNER JOIN MonthEnd_Users_Location ul ON ul.User_Id     = u.User_Id
                     WHERE ul.Location_Id = @LocationId
                       AND u.Role_Id      = @ManagerRole
                       AND u.Active       = 1
@@ -122,7 +115,7 @@ namespace Close_Portal.Pages {
                 using (var conn = new SqlConnection(_connStr)) {
                     using (var cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
-                        cmd.Parameters.AddWithValue("@ManagerRole", RoleLevel.Manager);
+                        cmd.Parameters.AddWithValue("@ManagerRole", RoleLevel.Administrador);
                         conn.Open();
                         using (var r = cmd.ExecuteReader()) {
                             if (!r.Read())
@@ -145,10 +138,6 @@ namespace Close_Portal.Pages {
             }
         }
 
-        // ============================================================
-        // SUBMIT REQUEST
-        // Inserta la solicitud (Location_Id) y envía correo al Manager.
-        // ============================================================
         [WebMethod(EnableSession = true)]
         public static object SubmitRequest(int locationId, string notes) {
             try {
@@ -161,9 +150,21 @@ namespace Close_Portal.Pages {
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // 1. Validar que la locación está asignada al solicitante
+                    // 1. Resolver guardia activa confirmada — bloquear si no hay
+                    int guardId = 0;
                     using (var cmd = new SqlCommand(@"
-                        SELECT COUNT(*) FROM Users_Location
+                        SELECT TOP 1 Guard_Id FROM MonthEnd_Guard_Schedule
+                        WHERE End_Time IS NULL AND Is_Confirmed = 1
+                        ORDER BY Created_At DESC", conn)) {
+                        var val = cmd.ExecuteScalar();
+                        if (val == null || val == System.DBNull.Value)
+                            return new { success = false, message = "No hay una guardia activa en este momento. No se puede enviar una solicitud de cierre." };
+                        guardId = (int)val;
+                    }
+
+                    // 2. Validar que la locación está asignada al solicitante
+                    using (var cmd = new SqlCommand(@"
+                        SELECT COUNT(*) FROM MonthEnd_Users_Location
                         WHERE User_Id = @UserId AND Location_Id = @LocationId", conn)) {
                         cmd.Parameters.AddWithValue("@UserId", requestedBy);
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
@@ -171,57 +172,52 @@ namespace Close_Portal.Pages {
                             return new { success = false, message = "No tienes acceso a esa locación." };
                     }
 
-                    // 2. Verificar que no haya solicitud Pending para esa locación del mismo usuario
+                    // 3. Validar que la locación pertenece a la guardia activa
                     using (var cmd = new SqlCommand(@"
-                        SELECT COUNT(*) FROM Closure_Requests
+                        SELECT COUNT(*) FROM MonthEnd_Guard_Locations
+                        WHERE Guard_Id = @GuardId AND Location_Id = @LocationId", conn)) {
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
+                        cmd.Parameters.AddWithValue("@LocationId", locationId);
+                        if ((int)cmd.ExecuteScalar() == 0)
+                            return new { success = false, message = "Esa locación no forma parte de la guardia activa." };
+                    }
+
+                    // 4. Verificar que no haya solicitud Pending/Approved para esta guardia
+                    using (var cmd = new SqlCommand(@"
+                        SELECT COUNT(*) FROM MonthEnd_Closure_Requests
                         WHERE Requested_By = @UserId
                           AND Location_Id  = @LocationId
-                          AND Status       = 'Pending'", conn)) {
+                          AND Guard_Id     = @GuardId
+                          AND Status       IN ('Pending', 'Approved')", conn)) {
                         cmd.Parameters.AddWithValue("@UserId", requestedBy);
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         if ((int)cmd.ExecuteScalar() > 0)
-                            return new { success = false, message = "Ya tienes una solicitud pendiente para esa locación." };
+                            return new { success = false, message = "Ya tienes una solicitud pendiente o aprobada para esa locación en esta guardia." };
                     }
 
-                    // 3. Obtener datos de la locación + OMS codes
+                    // 5. Obtener nombre de la locación
                     string locationName = "";
-                    string omsLabel = "";
-                    using (var cmd = new SqlCommand(@"
-                        SELECT
-                            wl.Location_Name,
-                            STUFF((
-                                SELECT ', ' + o.OMS_Code
-                                FROM Location_OMS lo
-                                INNER JOIN OMS o ON o.OMS_Id = lo.OMS_Id
-                                WHERE lo.Location_Id = wl.Location_Id
-                                FOR XML PATH('')
-                            ), 1, 2, '') AS OmsLabel
-                        FROM WMS_Location wl
-                        WHERE wl.Location_Id = @LocationId", conn)) {
+                    using (var cmd = new SqlCommand(
+                        "SELECT Location_Name FROM MonthEnd_Locations WHERE Location_Id = @LocationId", conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
-                        using (var r = cmd.ExecuteReader()) {
-                            if (r.Read()) {
-                                locationName = r["Location_Name"].ToString();
-                                omsLabel = r["OmsLabel"]?.ToString() ?? "—";
-                            }
-                        }
+                        locationName = cmd.ExecuteScalar()?.ToString() ?? "";
                     }
 
-                    // 4. Buscar Manager de la locación via Users_Location
+                    // 6. Buscar Administrador de la locación
                     int managerId = 0;
                     string managerEmail = "";
                     string managerName = "";
                     using (var cmd = new SqlCommand(@"
-                        SELECT TOP 1
-                            u.User_Id, u.Email, u.Username
-                        FROM Users u
-                        INNER JOIN Users_Location ul ON ul.User_Id     = u.User_Id
+                        SELECT TOP 1 u.User_Id, u.Email, u.Username
+                        FROM MonthEnd_Users u
+                        INNER JOIN MonthEnd_Users_Location ul ON ul.User_Id = u.User_Id
                         WHERE ul.Location_Id = @LocationId
                           AND u.Role_Id      = @ManagerRole
                           AND u.Active       = 1
                         ORDER BY u.Username", conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
-                        cmd.Parameters.AddWithValue("@ManagerRole", RoleLevel.Manager);
+                        cmd.Parameters.AddWithValue("@ManagerRole", RoleLevel.Administrador);
                         using (var r = cmd.ExecuteReader()) {
                             if (r.Read()) {
                                 managerId = (int)r["User_Id"];
@@ -232,35 +228,34 @@ namespace Close_Portal.Pages {
                     }
 
                     if (managerId == 0)
-                        return new { success = false, message = "Esta locación no tiene un Manager asignado. Contacta a tu Administrador." };
+                        return new { success = false, message = "Esta locación no tiene un Administrador asignado. Contacta con tu Owner." };
 
-                    // 5. Insertar solicitud
+                    // 7. Insertar solicitud con Guard_Id
                     int requestId;
                     using (var cmd = new SqlCommand(@"
-                        INSERT INTO Closure_Requests (Location_Id, Requested_By, Notes, Status)
+                        INSERT INTO MonthEnd_Closure_Requests (Location_Id, Requested_By, Notes, Status, Guard_Id)
                         OUTPUT INSERTED.Request_Id
-                        VALUES (@LocationId, @RequestedBy, @Notes, 'Pending')", conn)) {
+                        VALUES (@LocationId, @RequestedBy, @Notes, 'Pending', @GuardId)", conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
                         cmd.Parameters.AddWithValue("@RequestedBy", requestedBy);
                         cmd.Parameters.AddWithValue("@Notes", string.IsNullOrWhiteSpace(notes)
                                                                ? (object)DBNull.Value : notes.Trim());
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         requestId = (int)cmd.ExecuteScalar();
                     }
 
                     System.Diagnostics.Debug.WriteLine(
-                        $"[RequestClosure.SubmitRequest] RequestId={requestId} Location={locationName} by UserId={requestedBy}");
+                        $"[RequestClosure.SubmitRequest] RequestId={requestId} Location={locationName} GuardId={guardId} by UserId={requestedBy}");
 
-                    // Marcar como leídas notificaciones de respuestas anteriores
-                    // de esta misma locación — el nuevo request implica que el usuario
-                    // ya vio el resultado anterior.
+                    // Marcar notificaciones anteriores de esta locación como leídas
                     using (var cmd = new SqlCommand(@"
-                        UPDATE Notifications
+                        UPDATE MonthEnd_Notifications
                         SET Is_Read = 1
                         WHERE User_Id  = @UserId
                           AND Type     = 'request_reviewed'
                           AND Is_Read  = 0
                           AND Reference_Id IN (
-                              SELECT Request_Id FROM Closure_Requests
+                              SELECT Request_Id FROM MonthEnd_Closure_Requests
                               WHERE Location_Id = @LocationId
                           )", conn)) {
                         cmd.Parameters.AddWithValue("@UserId", requestedBy);
@@ -268,25 +263,23 @@ namespace Close_Portal.Pages {
                         cmd.ExecuteNonQuery();
                     }
 
-                    // Notificar en tiempo real a managers en ValidateRequest
                     LocationHub.NotifyNewRequest(managerId, requestId, locationName, requesterName);
 
-                    // 6. Notificar al Manager por correo
                     System.Threading.Tasks.Task.Run(() => {
                         EmailService.NotifyClosureRequest(
                             managerEmail: managerEmail,
                             managerName: managerName,
                             requesterName: requesterName,
                             requesterEmail: requesterEmail,
-                            wmsCode: omsLabel,       // reutiliza el parámetro para OMS codes
-                            wmsName: locationName,   // reutiliza el parámetro para nombre de locación
+                            wmsCode: locationName,
+                            wmsName: locationName,
                             notes: notes,
                             requestId: requestId
                         );
                     });
                 }
 
-                return new { success = true, message = "Solicitud enviada. El Manager recibirá una notificación." };
+                return new { success = true, message = "Solicitud enviada. El Administrador recibirá una notificación." };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[RequestClosure.SubmitRequest] ERROR: {ex.Message}");
@@ -316,17 +309,10 @@ namespace Close_Portal.Pages {
                             cr.Review_Notes,
                             cr.Reviewed_At,
                             wl.Location_Name,
-                            STUFF((
-                                SELECT ', ' + o.OMS_Code
-                                FROM Location_OMS lo2
-                                INNER JOIN OMS o ON o.OMS_Id = lo2.OMS_Id
-                                WHERE lo2.Location_Id = cr.Location_Id
-                                FOR XML PATH('')
-                            ), 1, 2, '') AS OmsLabel,
                             rev.Username AS ReviewedByName
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl  ON wl.Location_Id = cr.Location_Id
-                        LEFT  JOIN Users        rev ON rev.User_Id     = cr.Reviewed_By
+                        FROM MonthEnd_Closure_Requests cr
+                        INNER JOIN MonthEnd_Locations wl  ON wl.Location_Id = cr.Location_Id
+                        LEFT  JOIN MonthEnd_Users        rev ON rev.User_Id     = cr.Reviewed_By
                         WHERE cr.Requested_By = @UserId
                         ORDER BY cr.Created_At DESC";
 
@@ -342,10 +328,9 @@ namespace Close_Portal.Pages {
                                     createdAt = ((DateTime)r["Created_At"]).ToString("dd/MM/yyyy HH:mm"),
                                     reviewNotes = r["Review_Notes"]?.ToString() ?? "",
                                     reviewedAt = r["Reviewed_At"] != DBNull.Value
-                                                     ? ((DateTime)r["Reviewed_At"]).ToString("dd/MM/yyyy HH:mm")
-                                                     : null,
+                                                         ? ((DateTime)r["Reviewed_At"]).ToString("dd/MM/yyyy HH:mm")
+                                                         : null,
                                     locationName = r["Location_Name"].ToString(),
-                                    omsLabel = r["OmsLabel"]?.ToString() ?? "—",
                                     reviewedByName = r["ReviewedByName"]?.ToString() ?? ""
                                 });
                             }

@@ -95,9 +95,6 @@ function loadDashboard() {
             renderStats(d.summary);
             db_allLocations = d.locations || [];
             filterLocations(db_currentFilter);
-
-            // Verificar cierre automático si guardia activa y todas las locaciones cerradas
-            checkAutoClose(d.guard, d.summary);
         },
         error: () => {
             grid.innerHTML = `<div class="db-empty">
@@ -144,40 +141,13 @@ function renderGuardBanner(guard) {
         <span class="db-guard-pill">${dbT('db.guard.live')}</span>`;
 }
 
-// ─── AUTO CLOSE ─────────────────────────────────────────────
-// Se dispara después de cada carga del dashboard.
-// Si la guardia está activa y todas las locaciones están Approved,
-// llama a TryCloseGuard para que el servidor la cierre.
+// ─── AUTO CLOSE (DESHABILITADO) ─────────────────────────────
+// El cierre de la guardia es ahora 100% manual desde Guard.aspx
+// (Tab "Finalizar guardia"). Esta función ya no se invoca.
+// Se conserva TryCloseGuard en el servidor por referencia.
+// eslint-disable-next-line no-unused-vars
 function checkAutoClose(guard, summary) {
-    if (!guard || !guard.isActive) return;
-    if (!summary || summary.total === 0) return;
-
-    // Todas las locaciones deben estar Approved (y ninguna Active/Pending/Rejected)
-    const allApproved = summary.approved > 0
-        && summary.active === 0
-        && summary.pending === 0
-        && summary.rejected === 0
-        && summary.approved === summary.total;
-
-    if (!allApproved) return;
-
-    $.ajax({
-        type: 'POST',
-        url: window.DashboardPageUrl + '/TryCloseGuard',
-        data: '{}',
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        success: (resp) => {
-            const d = resp.d !== undefined ? resp.d : resp;
-            if (d.success && d.closed) {
-                // Guardia cerrada — recargar para reflejar el nuevo estado
-                setTimeout(() => loadDashboard(), 800);
-            }
-        },
-        error: (xhr) => {
-            console.error('[live.js] TryCloseGuard error:', xhr.responseText);
-        }
-    });
+    // No-op: cierre manual habilitado en Guard.aspx → Tab 3
 }
 
 // ─── STATS ──────────────────────────────────────────────────

@@ -48,7 +48,7 @@ namespace Close_Portal.Pages.Admin {
                             COUNT(*)                                          AS Total,
                             SUM(CASE WHEN Active = 1 THEN 1 ELSE 0 END)      AS Activas,
                             SUM(CASE WHEN Active = 0 THEN 1 ELSE 0 END)      AS Inactivas
-                        FROM WMS_Location";
+                        FROM MonthEnd_Locations";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         using (SqlDataReader r = cmd.ExecuteReader()) {
@@ -60,7 +60,7 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
-                    string sqlUsers = "SELECT COUNT(DISTINCT User_Id) FROM Users_Location";
+                    string sqlUsers = "SELECT COUNT(DISTINCT User_Id) FROM MonthEnd_Users_Location";
                     using (SqlCommand cmd = new SqlCommand(sqlUsers, conn)) {
                         litUsersAssigned.Text = cmd.ExecuteScalar().ToString();
                     }
@@ -80,9 +80,9 @@ namespace Close_Portal.Pages.Admin {
                         wl.Location_Id,
                         wl.Location_Name,
                         wl.Active,
-                        (SELECT COUNT(*) FROM Users_Location ul
+                        (SELECT COUNT(*) FROM MonthEnd_Users_Location ul
                          WHERE ul.Location_Id = wl.Location_Id) AS UserCount
-                    FROM WMS_Location wl
+                    FROM MonthEnd_Locations wl
                     ORDER BY wl.Location_Name";
 
                 var list = new List<LocationViewModel>();
@@ -120,7 +120,7 @@ namespace Close_Portal.Pages.Admin {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
                     string sql = @"
                         SELECT Location_Id, Location_Name, Active
-                        FROM WMS_Location
+                        FROM MonthEnd_Locations
                         WHERE Location_Id = @LocationId";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
@@ -163,7 +163,7 @@ namespace Close_Portal.Pages.Admin {
                         try {
                             if (locationId == 0) {
                                 string sqlIns = @"
-                                    INSERT INTO WMS_Location (Location_Name, Active)
+                                    INSERT INTO MonthEnd_Locations (Location_Name, Active)
                                     VALUES (@LocationName, @Active);
                                     SELECT SCOPE_IDENTITY();";
 
@@ -174,7 +174,7 @@ namespace Close_Portal.Pages.Admin {
                                 }
                             } else {
                                 string sqlUpd = @"
-                                    UPDATE WMS_Location
+                                    UPDATE MonthEnd_Locations
                                     SET Location_Name = @LocationName,
                                         Active        = @Active
                                     WHERE Location_Id = @LocationId";
@@ -216,7 +216,7 @@ namespace Close_Portal.Pages.Admin {
         public static object ToggleLocationActive(int locationId, bool active) {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "UPDATE WMS_Location SET Active = @Active WHERE Location_Id = @LocationId";
+                    string sql = "UPDATE MonthEnd_Locations SET Active = @Active WHERE Location_Id = @LocationId";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
                         cmd.Parameters.AddWithValue("@Active", active);

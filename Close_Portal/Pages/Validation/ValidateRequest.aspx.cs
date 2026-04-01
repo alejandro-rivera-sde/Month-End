@@ -9,7 +9,7 @@ using System.Web.Services;
 namespace Close_Portal.Pages {
     public partial class ValidateRequest : SecurePage {
 
-        protected override int RequiredRoleId => RoleLevel.Manager;
+        protected override int RequiredRoleId => RoleLevel.Administrador;
 
         private static readonly string _connStr =
             ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
@@ -20,88 +20,44 @@ namespace Close_Portal.Pages {
 
         // ============================================================
         // GET REQUESTS
-        // Manager (2) → solo solicitudes de locaciones cuyo OMS
-        //               está en sus Users_OMS
-        // Admin (3) / Owner (4) → todas
+        // Administrador / Owner → solicitudes de la guardia activa actual
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetRequests() {
             try {
-                CheckAccess(RoleLevel.Manager);
-                var session = System.Web.HttpContext.Current.Session;
-                int userId = (int)session["UserId"];
-                int roleId = (int)session["RoleId"];
+                CheckAccess(RoleLevel.Administrador);
 
-                bool isManagerOnly = roleId == RoleLevel.Manager;
+                // Resolver guardia activa
+                int guardId = GetActiveGuardId();
+                if (guardId == 0)
+                    return new { success = true, data = new List<object>(), guardActive = false };
 
-                string sql = isManagerOnly
-                    ? @"
-                        SELECT
-                            cr.Request_Id,
-                            cr.Status,
-                            cr.Notes,
-                            cr.Created_At,
-                            cr.Review_Notes,
-                            cr.Reviewed_At,
-                            wl.Location_Id,
-                            wl.Location_Name,
-                            STUFF((
-                                SELECT ', ' + o.OMS_Code
-                                FROM Location_OMS lo2
-                                INNER JOIN OMS o ON o.OMS_Id = lo2.OMS_Id
-                                WHERE lo2.Location_Id = cr.Location_Id
-                                FOR XML PATH('')
-                            ), 1, 2, '') AS OmsLabel,
-                            req.Username  AS RequesterName,
-                            req.Email     AS RequesterEmail,
-                            rev.Username  AS ReviewedByName
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
-                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
-                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
-                        WHERE EXISTS (
-                            SELECT 1
-                            FROM Users_Location ul
-                            WHERE ul.Location_Id = cr.Location_Id
-                              AND ul.User_Id     = @UserId
-                        )
-                        ORDER BY
-                            CASE cr.Status WHEN 'Pending' THEN 0 ELSE 1 END,
-                            cr.Created_At DESC"
-                    : @"
-                        SELECT
-                            cr.Request_Id,
-                            cr.Status,
-                            cr.Notes,
-                            cr.Created_At,
-                            cr.Review_Notes,
-                            cr.Reviewed_At,
-                            wl.Location_Id,
-                            wl.Location_Name,
-                            STUFF((
-                                SELECT ', ' + o.OMS_Code
-                                FROM Location_OMS lo2
-                                INNER JOIN OMS o ON o.OMS_Id = lo2.OMS_Id
-                                WHERE lo2.Location_Id = cr.Location_Id
-                                FOR XML PATH('')
-                            ), 1, 2, '') AS OmsLabel,
-                            req.Username  AS RequesterName,
-                            req.Email     AS RequesterEmail,
-                            rev.Username  AS ReviewedByName
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
-                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
-                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
-                        ORDER BY
-                            CASE cr.Status WHEN 'Pending' THEN 0 ELSE 1 END,
-                            cr.Created_At DESC";
+                string sql = @"
+                    SELECT
+                        cr.Request_Id,
+                        cr.Status,
+                        cr.Notes,
+                        cr.Created_At,
+                        cr.Review_Notes,
+                        cr.Reviewed_At,
+                        wl.Location_Id,
+                        wl.Location_Name,
+                        req.Username  AS RequesterName,
+                        req.Email     AS RequesterEmail,
+                        rev.Username  AS ReviewedByName
+                    FROM MonthEnd_Closure_Requests cr
+                    INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = cr.Location_Id
+                    INNER JOIN MonthEnd_Users req        ON req.User_Id    = cr.Requested_By
+                    LEFT  JOIN MonthEnd_Users rev        ON rev.User_Id    = cr.Reviewed_By
+                    WHERE cr.Guard_Id = @GuardId
+                    ORDER BY
+                        CASE cr.Status WHEN 'Pending' THEN 0 ELSE 1 END,
+                        cr.Created_At DESC";
 
                 var list = new List<object>();
                 using (var conn = new SqlConnection(_connStr)) {
                     using (var cmd = new SqlCommand(sql, conn)) {
-                        if (isManagerOnly)
-                            cmd.Parameters.AddWithValue("@UserId", userId);
-
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         conn.Open();
                         using (var r = cmd.ExecuteReader()) {
                             while (r.Read()) {
@@ -116,7 +72,6 @@ namespace Close_Portal.Pages {
                                                      : null,
                                     locationId = (int)r["Location_Id"],
                                     locationName = r["Location_Name"].ToString(),
-                                    omsLabel = r["OmsLabel"]?.ToString() ?? "—",
                                     requesterName = r["RequesterName"]?.ToString() ?? "",
                                     requesterEmail = r["RequesterEmail"].ToString(),
                                     reviewedByName = r["ReviewedByName"]?.ToString() ?? ""
@@ -125,7 +80,7 @@ namespace Close_Portal.Pages {
                         }
                     }
                 }
-                return new { success = true, data = list };
+                return new { success = true, data = list, guardActive = true };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ValidateRequest.GetRequests] ERROR: {ex.Message}");
@@ -136,16 +91,15 @@ namespace Close_Portal.Pages {
         // ============================================================
         // REVIEW REQUEST
         // Aprueba o rechaza una solicitud Pending.
-        // Manager valida que comparte OMS con la locación.
+        // Solo Administrador / Owner.
         // action: "Approved" | "Rejected"
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object ReviewRequest(int requestId, string action, string reviewNotes) {
             try {
-                CheckAccess(RoleLevel.Manager);
+                CheckAccess(RoleLevel.Administrador);
                 var session = System.Web.HttpContext.Current.Session;
                 int reviewerId = (int)session["UserId"];
-                int roleId = (int)session["RoleId"];
 
                 if (action != "Approved" && action != "Rejected")
                     return new { success = false, message = "Acción no válida." };
@@ -153,11 +107,12 @@ namespace Close_Portal.Pages {
                 using (var conn = new SqlConnection(_connStr)) {
                     conn.Open();
 
-                    // 1. Verificar que la solicitud existe y está Pending
+                    // 1. Verificar que la solicitud existe, está Pending y pertenece a la guardia activa
                     int locationId;
                     using (var cmd = new SqlCommand(@"
-                        SELECT Location_Id, Status FROM Closure_Requests
-                        WHERE Request_Id = @RequestId", conn)) {
+                        SELECT cr.Location_Id, cr.Status
+                        FROM MonthEnd_Closure_Requests cr
+                        WHERE cr.Request_Id = @RequestId", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         using (var r = cmd.ExecuteReader()) {
                             if (!r.Read())
@@ -168,23 +123,9 @@ namespace Close_Portal.Pages {
                         }
                     }
 
-                    // 2. Manager: verificar que tiene la locación asignada en Users_Location
-                    if (roleId == RoleLevel.Manager) {
-                        using (var cmd = new SqlCommand(@"
-                            SELECT COUNT(*)
-                            FROM Users_Location
-                            WHERE Location_Id = @LocationId
-                              AND User_Id     = @UserId", conn)) {
-                            cmd.Parameters.AddWithValue("@LocationId", locationId);
-                            cmd.Parameters.AddWithValue("@UserId", reviewerId);
-                            if ((int)cmd.ExecuteScalar() == 0)
-                                return new { success = false, message = "No tienes permiso para revisar esta solicitud." };
-                        }
-                    }
-
-                    // 3. Actualizar la solicitud
+                    // 2. Actualizar la solicitud
                     using (var cmd = new SqlCommand(@"
-                        UPDATE Closure_Requests SET
+                        UPDATE MonthEnd_Closure_Requests SET
                             Status       = @Status,
                             Reviewed_By  = @ReviewedBy,
                             Reviewed_At  = GETDATE(),
@@ -202,20 +143,18 @@ namespace Close_Portal.Pages {
                     System.Diagnostics.Debug.WriteLine(
                         $"[ValidateRequest.ReviewRequest] RequestId={requestId} → {action} by UserId={reviewerId}");
 
-                    // Notificar en tiempo real a todos los clientes en Live.aspx
                     string reviewerName = session["Username"]?.ToString() ?? session["Email"]?.ToString() ?? "";
                     string locName = "";
                     using (var cmd = new SqlCommand(
-                        "SELECT Location_Name FROM WMS_Location WHERE Location_Id = @LocationId", conn)) {
+                        "SELECT Location_Name FROM MonthEnd_Locations WHERE Location_Id = @LocationId", conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
                         locName = cmd.ExecuteScalar()?.ToString() ?? "";
                     }
                     LocationHub.NotifyLocationUpdated(locationId, locName, action, reviewerName);
 
-                    // Notificar al solicitante específico
                     int requestedByUserId;
                     using (var cmd = new SqlCommand(
-                        "SELECT Requested_By FROM Closure_Requests WHERE Request_Id = @RequestId", conn)) {
+                        "SELECT Requested_By FROM MonthEnd_Closure_Requests WHERE Request_Id = @RequestId", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         requestedByUserId = (int)cmd.ExecuteScalar();
                     }
@@ -232,56 +171,38 @@ namespace Close_Portal.Pages {
         }
         // ============================================================
         // GET CLOSED REQUESTS
-        // Solo solicitudes Approved. Manager: solo sus locaciones.
+        // Solicitudes Approved de la guardia activa actual.
+        // Solo Administrador / Owner.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object GetClosedRequests() {
             try {
-                CheckAccess(RoleLevel.Manager);
-                var session = System.Web.HttpContext.Current.Session;
-                int userId = (int)session["UserId"];
-                int roleId = (int)session["RoleId"];
-                bool isManagerOnly = roleId == RoleLevel.Manager;
+                CheckAccess(RoleLevel.Administrador);
 
-                string sql = isManagerOnly
-                    ? @"
-                        SELECT
-                            cr.Request_Id, cr.Notes, cr.Created_At,
-                            cr.Review_Notes, cr.Reviewed_At,
-                            wl.Location_Id, wl.Location_Name,
-                            req.Username  AS RequesterName,
-                            req.Email     AS RequesterEmail,
-                            rev.Username  AS ReviewedByName
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
-                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
-                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
-                        WHERE cr.Status = 'Approved'
-                          AND EXISTS (
-                              SELECT 1 FROM Users_Location ul
-                              WHERE ul.Location_Id = cr.Location_Id
-                                AND ul.User_Id     = @UserId
-                          )
-                        ORDER BY cr.Reviewed_At DESC"
-                    : @"
-                        SELECT
-                            cr.Request_Id, cr.Notes, cr.Created_At,
-                            cr.Review_Notes, cr.Reviewed_At,
-                            wl.Location_Id, wl.Location_Name,
-                            req.Username  AS RequesterName,
-                            req.Email     AS RequesterEmail,
-                            rev.Username  AS ReviewedByName
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
-                        INNER JOIN Users req        ON req.User_Id    = cr.Requested_By
-                        LEFT  JOIN Users rev        ON rev.User_Id    = cr.Reviewed_By
-                        WHERE cr.Status = 'Approved'
-                        ORDER BY cr.Reviewed_At DESC";
+                int guardId = GetActiveGuardId();
+                if (guardId == 0)
+                    return new { success = true, data = new List<object>(), guardActive = false };
+
+                string sql = @"
+                    SELECT
+                        cr.Request_Id, cr.Notes, cr.Created_At,
+                        cr.Review_Notes, cr.Reviewed_At,
+                        wl.Location_Id, wl.Location_Name,
+                        req.Username  AS RequesterName,
+                        req.Email     AS RequesterEmail,
+                        rev.Username  AS ReviewedByName
+                    FROM MonthEnd_Closure_Requests cr
+                    INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = cr.Location_Id
+                    INNER JOIN MonthEnd_Users req        ON req.User_Id    = cr.Requested_By
+                    LEFT  JOIN MonthEnd_Users rev        ON rev.User_Id    = cr.Reviewed_By
+                    WHERE cr.Status   = 'Approved'
+                      AND cr.Guard_Id = @GuardId
+                    ORDER BY cr.Reviewed_At DESC";
 
                 var list = new List<object>();
                 using (var conn = new SqlConnection(_connStr)) {
                     using (var cmd = new SqlCommand(sql, conn)) {
-                        if (isManagerOnly) cmd.Parameters.AddWithValue("@UserId", userId);
+                        cmd.Parameters.AddWithValue("@GuardId", guardId);
                         conn.Open();
                         using (var r = cmd.ExecuteReader()) {
                             while (r.Read()) {
@@ -303,7 +224,7 @@ namespace Close_Portal.Pages {
                         }
                     }
                 }
-                return new { success = true, data = list };
+                return new { success = true, data = list, guardActive = true };
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ValidateRequest.GetClosedRequests] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
@@ -313,16 +234,14 @@ namespace Close_Portal.Pages {
         // ============================================================
         // REVERT LOCATION
         // Elimina la solicitud Approved → locación vuelve a Active.
-        // El Regular puede enviar una nueva solicitud.
-        // Manager: solo puede revertir sus locaciones asignadas.
+        // Solo Administrador / Owner.
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object RevertLocation(int requestId, string reason) {
             try {
-                CheckAccess(RoleLevel.Manager);
+                CheckAccess(RoleLevel.Administrador);
                 var session = System.Web.HttpContext.Current.Session;
                 int callerId = (int)session["UserId"];
-                int roleId = (int)session["RoleId"];
 
                 if (string.IsNullOrWhiteSpace(reason))
                     return new { success = false, message = "Debes indicar el motivo de la reversión." };
@@ -335,8 +254,8 @@ namespace Close_Portal.Pages {
                     int requestedBy;
                     using (var cmd = new SqlCommand(@"
                         SELECT cr.Location_Id, cr.Requested_By, wl.Location_Name
-                        FROM Closure_Requests cr
-                        INNER JOIN WMS_Location wl ON wl.Location_Id = cr.Location_Id
+                        FROM MonthEnd_Closure_Requests cr
+                        INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = cr.Location_Id
                         WHERE cr.Request_Id = @RequestId AND cr.Status = 'Approved'", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         using (var r = cmd.ExecuteReader()) {
@@ -348,19 +267,8 @@ namespace Close_Portal.Pages {
                         }
                     }
 
-                    if (roleId == RoleLevel.Manager) {
-                        using (var cmd = new SqlCommand(@"
-                            SELECT COUNT(*) FROM Users_Location
-                            WHERE Location_Id = @LocationId AND User_Id = @UserId", conn)) {
-                            cmd.Parameters.AddWithValue("@LocationId", locationId);
-                            cmd.Parameters.AddWithValue("@UserId", callerId);
-                            if ((int)cmd.ExecuteScalar() == 0)
-                                return new { success = false, message = "No tienes permiso para revertir esta solicitud." };
-                        }
-                    }
-
                     using (var cmd = new SqlCommand(
-                        "DELETE FROM Closure_Requests WHERE Request_Id = @RequestId", conn)) {
+                        "DELETE FROM MonthEnd_Closure_Requests WHERE Request_Id = @RequestId", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
                         cmd.ExecuteNonQuery();
                     }
@@ -374,6 +282,24 @@ namespace Close_Portal.Pages {
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ValidateRequest.RevertLocation] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
+            }
+        }
+        // ============================================================
+        // HELPER — Guard activa confirmada (0 si no hay ninguna)
+        // ============================================================
+        private static int GetActiveGuardId() {
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT TOP 1 Guard_Id FROM MonthEnd_Guard_Schedule
+                    WHERE End_Time IS NULL AND Is_Confirmed = 1
+                    ORDER BY Created_At DESC", conn)) {
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != System.DBNull.Value ? (int)val : 0;
+                }
+            } catch {
+                return 0;
             }
         }
     }

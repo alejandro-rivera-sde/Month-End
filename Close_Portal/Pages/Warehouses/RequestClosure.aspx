@@ -16,7 +16,7 @@
                 <span class="material-icons rc-title-icon">lock</span>
                 <span data-translate-key="rc.title">Solicitar Cierre</span>
             </h2>
-            <p data-translate-key="rc.subtitle">Envía una solicitud de cierre de operaciones al Manager de tu locación</p>
+            <p data-translate-key="rc.subtitle">Envía una solicitud de cierre de operaciones al Administrador de tu locación</p>
         </div>
     </div>
 
@@ -51,7 +51,7 @@
                 <div class="rc-manager-card" id="rcManagerCard" style="display:none;">
                     <span class="material-icons">person</span>
                     <div>
-                        <div class="rc-manager-label" data-translate-key="rc.manager.label">Manager asignado</div>
+                        <div class="rc-manager-label" data-translate-key="rc.manager.label">Administrador asignado</div>
                         <div class="rc-manager-name" id="rcManagerName">—</div>
                         <div class="rc-manager-email" id="rcManagerEmail">—</div>
                     </div>
@@ -59,7 +59,7 @@
 
                 <div class="rc-no-manager" id="rcNoManager" style="display:none;">
                     <span class="material-icons">warning_amber</span>
-                    <span data-translate-key="rc.manager.none">Esta locación no tiene un Manager asignado. Contacta a tu Administrador.</span>
+                    <span data-translate-key="rc.manager.none">Esta locación no tiene un Administrador asignado. Contacta con tu Owner.</span>
                 </div>
 
                 <!-- Notas -->

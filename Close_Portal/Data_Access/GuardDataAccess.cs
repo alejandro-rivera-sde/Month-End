@@ -90,11 +90,11 @@ namespace Close_Portal.DataAccess {
     public class ActiveLocationViewModel {
         public int LocationId { get; set; }
         public string LocationName { get; set; }
-        // true si hay un Administrador (Role_Id=3) activo asignado en Users_Location
+        // true si hay un Administrador (Role_Id = 3) activo en Users_Location
         public bool HasAdmin { get; set; }
-        // true si hay un Regular (Role_Id=1) activo asignado en Users_Location
+        // true si hay un Regular (Role_Id = 1) activo en Users_Location
         public bool HasRegular { get; set; }
-        // Ambas condiciones cumplidas → grupo principal; si falta alguna → grupo rojo
+        // Ambas condiciones — aparece en grupo principal; si falta alguna → grupo rojo
         public bool HasResponsible => HasAdmin && HasRegular;
     }
 
@@ -134,7 +134,7 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT Department_Id, Department_Code, Department_Name
-                    FROM Departments
+                    FROM MonthEnd_Departments
                     WHERE Active = 1
                     ORDER BY Department_Code";
 
@@ -162,7 +162,7 @@ namespace Close_Portal.DataAccess {
         // ────────────────────────────────────────────────────────────────
         public int GetUserDepartmentId(int userId) {
             try {
-                string sql = "SELECT Department_Id FROM Users WHERE User_Id = @UserId";
+                string sql = "SELECT Department_Id FROM MonthEnd_Users WHERE User_Id = @UserId";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
@@ -184,8 +184,8 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT d.Department_Code
-                    FROM Users u
-                    INNER JOIN Departments d ON d.Department_Id = u.Department_Id
+                    FROM MonthEnd_Users u
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                     WHERE u.User_Id = @UserId";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
@@ -205,7 +205,7 @@ namespace Close_Portal.DataAccess {
         // ────────────────────────────────────────────────────────────────
         public int GetSpotDepartmentId(int spotId) {
             try {
-                string sql = "SELECT Department_Id FROM Guard_Spots WHERE Spot_Id = @SpotId";
+                string sql = "SELECT Department_Id FROM MonthEnd_Guard_Spots WHERE Spot_Id = @SpotId";
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     cmd.Parameters.AddWithValue("@SpotId", spotId);
@@ -228,8 +228,8 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT u.User_Id, u.Username, u.Email, d.Department_Code, d.Department_Id
-                    FROM Users u
-                    INNER JOIN Departments d ON d.Department_Id = u.Department_Id
+                    FROM MonthEnd_Users u
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                     WHERE u.Department_Id = @DeptId
                       AND u.Active  = 1
                       AND u.Locked  = 0
@@ -274,9 +274,9 @@ namespace Close_Portal.DataAccess {
                         gs.Created_At,
                         gs.Is_Confirmed,
                         cb.Username AS CreatedBy,
-                        (SELECT COUNT(*) FROM Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocationCount
-                    FROM Guard_Schedule gs
-                    LEFT JOIN Users cb ON cb.User_Id = gs.Created_By
+                        (SELECT COUNT(*) FROM MonthEnd_Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocationCount
+                    FROM MonthEnd_Guard_Schedule gs
+                    LEFT JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
                     WHERE gs.End_Time IS NULL
                     ORDER BY gs.Created_At DESC";
 
@@ -326,8 +326,8 @@ namespace Close_Portal.DataAccess {
                         gs.Estimated_End_Time,
                         gs.Created_At,
                         cb.Username AS CreatedBy
-                    FROM Guard_Schedule gs
-                    LEFT JOIN Users cb ON cb.User_Id = gs.Created_By
+                    FROM MonthEnd_Guard_Schedule gs
+                    LEFT JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
                     WHERE gs.End_Time IS NOT NULL
                     ORDER BY gs.End_Time DESC";
 
@@ -371,10 +371,10 @@ namespace Close_Portal.DataAccess {
                     u.Email,
                     ab.Username AS AssignedBy,
                     sl.Assigned_At
-                FROM Guard_Spots sl
-                INNER JOIN Departments d ON d.Department_Id = sl.Department_Id
-                LEFT  JOIN Users u  ON u.User_Id  = sl.User_Id
-                LEFT  JOIN Users ab ON ab.User_Id = sl.Assigned_By
+                FROM MonthEnd_Guard_Spots sl
+                INNER JOIN MonthEnd_Departments d ON d.Department_Id = sl.Department_Id
+                LEFT  JOIN MonthEnd_Users u  ON u.User_Id  = sl.User_Id
+                LEFT  JOIN MonthEnd_Users ab ON ab.User_Id = sl.Assigned_By
                 WHERE sl.Guard_Id = @GuardId
                 ORDER BY d.Department_Code";
 
@@ -412,7 +412,7 @@ namespace Close_Portal.DataAccess {
                     conn.Open();
 
                     using (var cmd = new SqlCommand(
-                        "SELECT COUNT(*) FROM Guard_Schedule WHERE End_Time IS NULL", conn)) {
+                        "SELECT COUNT(*) FROM MonthEnd_Guard_Schedule WHERE End_Time IS NULL", conn)) {
                         if ((int)cmd.ExecuteScalar() > 0)
                             return new GuardResult { Success = false, Message = "Ya existe una guardia abierta. Ciérrala antes de reservar una nueva fecha." };
                     }
@@ -428,7 +428,7 @@ namespace Close_Portal.DataAccess {
                             // 1. Insertar guardia como borrador
                             int guardId;
                             using (var cmd = new SqlCommand(@"
-                                INSERT INTO Guard_Schedule
+                                INSERT INTO MonthEnd_Guard_Schedule
                                     (Start_Time, Estimated_End_Time, Created_By, Created_At, Is_Confirmed)
                                 OUTPUT INSERTED.Guard_Id
                                 VALUES (@StartTime, @EstEnd, @CreatedBy, GETDATE(), 0)", conn, tx)) {
@@ -441,9 +441,9 @@ namespace Close_Portal.DataAccess {
 
                             // 2. Crear spots por departamento activo inmediatamente
                             using (var cmd = new SqlCommand(@"
-                                INSERT INTO Guard_Spots (Guard_Id, Department_Id)
+                                INSERT INTO MonthEnd_Guard_Spots (Guard_Id, Department_Id)
                                 SELECT @GuardId, Department_Id
-                                FROM Departments
+                                FROM MonthEnd_Departments
                                 WHERE Active = 1", conn, tx)) {
                                 cmd.Parameters.AddWithValue("@GuardId", guardId);
                                 cmd.ExecuteNonQuery();
@@ -476,7 +476,7 @@ namespace Close_Portal.DataAccess {
 
                     // Verificar que la guardia existe, no está confirmada y no ha cerrado
                     using (var cmd = new SqlCommand(
-                        "SELECT Is_Confirmed FROM Guard_Schedule WHERE Guard_Id = @GuardId AND End_Time IS NULL", conn)) {
+                        "SELECT Is_Confirmed FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId AND End_Time IS NULL", conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         var val = cmd.ExecuteScalar();
                         if (val == null)
@@ -489,7 +489,7 @@ namespace Close_Portal.DataAccess {
                         try {
                             // Limpiar selección previa
                             using (var cmd = new SqlCommand(
-                                "DELETE FROM Guard_Locations WHERE Guard_Id = @GuardId", conn, tx)) {
+                                "DELETE FROM MonthEnd_Guard_Locations WHERE Guard_Id = @GuardId", conn, tx)) {
                                 cmd.Parameters.AddWithValue("@GuardId", guardId);
                                 cmd.ExecuteNonQuery();
                             }
@@ -497,7 +497,7 @@ namespace Close_Portal.DataAccess {
                             // Insertar nueva selección
                             foreach (int locId in locationIds) {
                                 using (var cmd = new SqlCommand(@"
-                                    INSERT INTO Guard_Locations (Guard_Id, Location_Id)
+                                    INSERT INTO MonthEnd_Guard_Locations (Guard_Id, Location_Id)
                                     VALUES (@GuardId, @LocationId)", conn, tx)) {
                                     cmd.Parameters.AddWithValue("@GuardId", guardId);
                                     cmd.Parameters.AddWithValue("@LocationId", locId);
@@ -530,8 +530,8 @@ namespace Close_Portal.DataAccess {
                     // Verificar estado y que tenga locaciones seleccionadas
                     using (var cmd = new SqlCommand(@"
                         SELECT gs.Is_Confirmed,
-                               (SELECT COUNT(*) FROM Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocCount
-                        FROM Guard_Schedule gs
+                               (SELECT COUNT(*) FROM MonthEnd_Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocCount
+                        FROM MonthEnd_Guard_Schedule gs
                         WHERE gs.Guard_Id = @GuardId AND gs.End_Time IS NULL", conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         using (var r = cmd.ExecuteReader()) {
@@ -546,7 +546,7 @@ namespace Close_Portal.DataAccess {
 
                     // Solo marcar como confirmada — spots ya existen desde ReserveDates
                     using (var cmd = new SqlCommand(
-                        "UPDATE Guard_Schedule SET Is_Confirmed = 1 WHERE Guard_Id = @GuardId", conn)) {
+                        "UPDATE MonthEnd_Guard_Schedule SET Is_Confirmed = 1 WHERE Guard_Id = @GuardId", conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         cmd.ExecuteNonQuery();
                     }
@@ -573,8 +573,8 @@ namespace Close_Portal.DataAccess {
                     // Verificar que el usuario pertenece al departamento del spot
                     string sqlCheck = @"
                         SELECT COUNT(*)
-                        FROM Guard_Spots sl
-                        INNER JOIN Users u ON u.User_Id = @UserId
+                        FROM MonthEnd_Guard_Spots sl
+                        INNER JOIN MonthEnd_Users u ON u.User_Id = @UserId
                         WHERE sl.Spot_Id = @SpotId
                           AND sl.Department_Id = u.Department_Id";
 
@@ -587,7 +587,7 @@ namespace Close_Portal.DataAccess {
                     }
 
                     using (var cmd = new SqlCommand(@"
-                        UPDATE Guard_Spots
+                        UPDATE MonthEnd_Guard_Spots
                         SET User_Id     = @UserId,
                             Assigned_By = @AssignedBy,
                             Assigned_At = GETDATE()
@@ -615,7 +615,7 @@ namespace Close_Portal.DataAccess {
             try {
                 using (var conn = new SqlConnection(_connStr)) {
                     string sql = @"
-                        UPDATE Guard_Spots
+                        UPDATE MonthEnd_Guard_Spots
                         SET User_Id = NULL, Assigned_By = NULL, Assigned_At = NULL
                         WHERE Spot_Id = @SpotId";
                     using (var cmd = new SqlCommand(sql, conn)) {
@@ -640,7 +640,7 @@ namespace Close_Portal.DataAccess {
             try {
                 using (var conn = new SqlConnection(_connStr)) {
                     string sql = @"
-                        UPDATE Guard_Schedule SET End_Time = GETDATE()
+                        UPDATE MonthEnd_Guard_Schedule SET End_Time = GETDATE()
                         WHERE Guard_Id = @GuardId AND End_Time IS NULL";
                     using (var cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
@@ -669,7 +669,7 @@ namespace Close_Portal.DataAccess {
                     conn.Open();
 
                     // Solo se puede eliminar si la guardia no ha cerrado
-                    string sqlCheck = "SELECT End_Time FROM Guard_Schedule WHERE Guard_Id = @GuardId";
+                    string sqlCheck = "SELECT End_Time FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId";
                     using (var cmd = new SqlCommand(sqlCheck, conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         var val = cmd.ExecuteScalar();
@@ -677,7 +677,7 @@ namespace Close_Portal.DataAccess {
                             return new GuardResult { Success = false, Message = "No se puede eliminar una guardia ya cerrada." };
                     }
 
-                    string sql = "DELETE FROM Guard_Schedule WHERE Guard_Id = @GuardId";
+                    string sql = "DELETE FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId";
                     using (var cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         int rows = cmd.ExecuteNonQuery();
@@ -693,12 +693,9 @@ namespace Close_Portal.DataAccess {
         }
 
         // ────────────────────────────────────────────────────────────────
-        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del borrador.
-        // Solo locaciones activas que tengan al menos:
-        //   · Un Administrador (Role_Id = 3) activo en Users_Location
-        //   · Un Regular       (Role_Id = 1) activo en Users_Location
-        // Si falta alguno, se devuelve de todos modos con HasAdmin/HasRegular
-        // en false para que el JS lo muestre en el grupo rojo.
+        // GET ALL ACTIVE LOCATIONS — catálogo para el picker del borrador
+        // HasAdmin   = existe un Administrador (Role_Id=3) activo en MonthEnd_Users_Location
+        // HasRegular = existe un Regular       (Role_Id=1) activo en MonthEnd_Users_Location
         // ────────────────────────────────────────────────────────────────
         public List<ActiveLocationViewModel> GetAllActiveLocations() {
             var list = new List<ActiveLocationViewModel>();
@@ -708,22 +705,22 @@ namespace Close_Portal.DataAccess {
                         wl.Location_Id,
                         wl.Location_Name,
                         CASE WHEN EXISTS (
-                            SELECT 1 FROM Users_Location ul
-                            INNER JOIN Users u ON u.User_Id = ul.User_Id
+                            SELECT 1 FROM MonthEnd_Users_Location ul
+                            INNER JOIN MonthEnd_Users u ON u.User_Id = ul.User_Id
                             WHERE ul.Location_Id = wl.Location_Id
                               AND u.Role_Id = 3
                               AND u.Active  = 1
                               AND u.Locked  = 0
                         ) THEN 1 ELSE 0 END AS HasAdmin,
                         CASE WHEN EXISTS (
-                            SELECT 1 FROM Users_Location ul
-                            INNER JOIN Users u ON u.User_Id = ul.User_Id
+                            SELECT 1 FROM MonthEnd_Users_Location ul
+                            INNER JOIN MonthEnd_Users u ON u.User_Id = ul.User_Id
                             WHERE ul.Location_Id = wl.Location_Id
                               AND u.Role_Id = 1
                               AND u.Active  = 1
                               AND u.Locked  = 0
                         ) THEN 1 ELSE 0 END AS HasRegular
-                    FROM WMS_Location wl
+                    FROM MonthEnd_Locations wl
                     WHERE wl.Active = 1
                     ORDER BY wl.Location_Name";
 
@@ -749,19 +746,17 @@ namespace Close_Portal.DataAccess {
 
         // ────────────────────────────────────────────────────────────────
         // GET ACTIVE GUARD LOCATIONS — locaciones pre-definidas en la guardia
-        // enriquecidas con la última solicitud de cierre (si existe)
+        // enriquecidas con la última solicitud de cierre de esa misma guardia
+        // Scope: Guard_Id exacto, sin filtros por fecha
         // ────────────────────────────────────────────────────────────────
         public List<GuardLocationViewModel> GetActiveGuardLocations() {
             var list = new List<GuardLocationViewModel>();
             try {
                 string sql = @"
-                    DECLARE @GuardId   INT;
-                    DECLARE @GuardStart DATETIME;
+                    DECLARE @GuardId INT;
 
-                    SELECT TOP 1
-                        @GuardId    = Guard_Id,
-                        @GuardStart = Start_Time
-                    FROM Guard_Schedule
+                    SELECT TOP 1 @GuardId = Guard_Id
+                    FROM MonthEnd_Guard_Schedule
                     WHERE End_Time IS NULL
                     ORDER BY Created_At DESC;
 
@@ -772,19 +767,19 @@ namespace Close_Portal.DataAccess {
                             cr.Location_Id,
                             cr.Request_Id,
                             cr.Status,
-                            cr.Created_At        AS RequestedAt,
+                            cr.Created_At   AS RequestedAt,
                             cr.Reviewed_At,
                             cr.Review_Notes,
-                            u.Username           AS RequestedBy,
-                            ru.Username          AS ReviewedBy,
+                            u.Username      AS RequestedBy,
+                            ru.Username     AS ReviewedBy,
                             ROW_NUMBER() OVER (
                                 PARTITION BY cr.Location_Id
                                 ORDER BY cr.Created_At DESC
                             ) AS rn
-                        FROM  Closure_Requests cr
-                        INNER JOIN Users u  ON cr.Requested_By = u.User_Id
-                        LEFT  JOIN Users ru ON cr.Reviewed_By  = ru.User_Id
-                        WHERE cr.Created_At >= ISNULL(@GuardStart, '1900-01-01')
+                        FROM  MonthEnd_Closure_Requests cr
+                        INNER JOIN MonthEnd_Users u  ON cr.Requested_By = u.User_Id
+                        LEFT  JOIN MonthEnd_Users ru ON cr.Reviewed_By  = ru.User_Id
+                        WHERE cr.Guard_Id = @GuardId
                     )
                     SELECT
                         wl.Location_Id,
@@ -796,9 +791,9 @@ namespace Close_Portal.DataAccess {
                         lr.ReviewedBy,
                         lr.Reviewed_At,
                         lr.Review_Notes
-                    FROM  Guard_Locations gl
-                    INNER JOIN WMS_Location wl ON wl.Location_Id = gl.Location_Id
-                    LEFT  JOIN LatestReq   lr  ON lr.Location_Id = gl.Location_Id AND lr.rn = 1
+                    FROM  MonthEnd_Guard_Locations gl
+                    INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = gl.Location_Id
+                    LEFT  JOIN LatestReq lr ON lr.Location_Id = gl.Location_Id AND lr.rn = 1
                     WHERE gl.Guard_Id = @GuardId
                     ORDER BY
                         CASE ISNULL(lr.Status, 'NoRequest')
@@ -845,9 +840,9 @@ namespace Close_Portal.DataAccess {
             try {
                 string sql = @"
                     SELECT DISTINCT u.Email
-                    FROM Guard_Schedule gs
-                    INNER JOIN Guard_Spots sl ON sl.Guard_Id = gs.Guard_Id
-                    INNER JOIN Users u ON u.User_Id = sl.User_Id
+                    FROM MonthEnd_Guard_Schedule gs
+                    INNER JOIN MonthEnd_Guard_Spots sl ON sl.Guard_Id = gs.Guard_Id
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = sl.User_Id
                     WHERE gs.Start_Time IS NOT NULL
                       AND gs.End_Time   IS NULL
                       AND u.Active = 1";
