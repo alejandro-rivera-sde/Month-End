@@ -55,7 +55,12 @@ namespace Close_Portal.Hubs {
             });
         }
 
-        // ── Locación cambia estado → notifica Live ───────────────────
+        // ── Spot de guardia cambia (asignación / liberación) ─────────────
+        // Notifica a Live.aspx para que actualice el banner de guardia
+        public static void NotifySpotChanged(int guardId) {
+            var ctx = GlobalHost.ConnectionManager.GetHubContext<LocationHub>();
+            ctx.Clients.Group(LiveGroup).spotChanged(new { guardId });
+        }
         public static void NotifyLocationUpdated(
                 int locationId, string locationName,
                 string newStatus, string reviewedBy) {

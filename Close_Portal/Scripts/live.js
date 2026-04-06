@@ -12,9 +12,15 @@ let db_lastGuard = null;   // caché para re-renderizar el banner al cambiar idi
 // ─── SIGNALR — handlers registrados antes de start() ────────
 (function () {
     if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
+
+    // Locación actualizada → recargar todo el dashboard
     $.connection.locationHub.client.locationUpdated = function (data) {
-        console.log('[SignalR] locationUpdated:', data);
         loadDashboard();
+    };
+
+    // Spot asignado/liberado → actualizar solo el banner (más liviano)
+    $.connection.locationHub.client.spotChanged = function (data) {
+        refreshGuardBanner();
     };
 })();
 
@@ -51,18 +57,35 @@ function initSignalR() {
         });
 
         $.connection.hub.start()
-            .done(function () {
-                console.log('[SignalR] Conectado. ConnectionId:', $.connection.hub.id);
-                subscribeToGroup();
-            })
-            .fail(function (err) {
-                console.warn('[SignalR] Error al conectar:', err);
-            });
+            .done(function () { subscribeToGroup(); })
+            .fail(function () { });
         // Reconexión manejada por dashboard_layout.js
 
-    } catch (err) {
-        console.warn('[SignalR] No disponible:', err);
-    }
+    } catch (err) { }
+}
+
+// ─── REFRESH GUARD BANNER (solo spots, sin recargar grid) ───
+function refreshGuardBanner() {
+    $.ajax({
+        type: 'POST',
+        url: window.DashboardPageUrl + '/GetGuardSpots',
+        data: '{}',
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: (resp) => {
+            const d = resp.d !== undefined ? resp.d : resp;
+            if (!d.success) return;
+
+            // Construir un objeto guard compatible con renderGuardBanner
+            const guard = d.isActive
+                ? { isActive: true, startTime: d.startTime, spots: d.spots }
+                : null;
+
+            renderGuardBanner(guard);
+            db_lastGuard = guard;
+        },
+        error: () => { }
+    });
 }
 
 // ─── LOAD ───────────────────────────────────────────────────

@@ -345,7 +345,7 @@ function loadNotifications() {
 function renderNotifications(items) {
     var list = document.getElementById('notifList');
     if (items.length === 0) {
-        list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>';
+        list.innerHTML = '<div class="notif-empty">Sin notificaciones de la guardia activa</div>';
         return;
     }
 
@@ -357,14 +357,47 @@ function renderNotifications(items) {
     list.innerHTML = items.map(function (n) {
         var icon = iconMap[n.type] || 'notifications';
         var unreadClass = n.isRead ? '' : ' notif-item-unread';
-        return '<div class="notif-item' + unreadClass + '">' +
+        var clickable = n.url ? ' notif-item-link' : '';
+        var dataUrl = n.url ? ' data-url="' + escapeNotif(n.url) + '"' : '';
+        var dataId = n.notificationId ? ' data-id="' + n.notificationId + '"' : '';
+        var dataType = n.type ? ' data-type="' + escapeNotif(n.type) + '"' : '';
+        var dataRef = n.referenceId ? ' data-ref="' + n.referenceId + '"' : '';
+
+        return '<div class="notif-item' + unreadClass + clickable + '"' +
+            dataUrl + dataId + dataType + dataRef +
+            ' onclick="onNotifClick(this)">' +
             '  <span class="material-icons notif-item-icon">' + icon + '</span>' +
             '  <div class="notif-item-body">' +
             '    <p class="notif-item-msg">' + escapeNotif(n.message) + '</p>' +
             '    <span class="notif-item-time">' + n.createdAt + '</span>' +
             '  </div>' +
+            (n.url ? '  <span class="material-icons notif-item-arrow">chevron_right</span>' : '') +
             '</div>';
     }).join('');
+}
+
+function onNotifClick(el) {
+    var url = el.getAttribute('data-url');
+    var refId = el.getAttribute('data-ref');
+    var type = el.getAttribute('data-type');
+
+    if (!url) return;
+
+    // Marcar como leída antes de navegar
+    if (refId && type) {
+        $.ajax({
+            type: 'POST',
+            url: window.AppRoot + 'Pages/Main/Live.aspx/MarkAsRead',
+            data: JSON.stringify({ referenceId: parseInt(refId), type: type }),
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            complete: function () {
+                window.location.href = window.AppRoot + url;
+            }
+        });
+    } else {
+        window.location.href = window.AppRoot + url;
+    }
 }
 
 function markAllRead() {

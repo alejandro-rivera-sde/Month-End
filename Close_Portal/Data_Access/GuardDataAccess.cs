@@ -219,6 +219,23 @@ namespace Close_Portal.DataAccess {
             }
         }
 
+        // ── Obtener Guard_Id de un spot (para notificaciones SignalR) ────
+        public int GetSpotGuardId(int spotId) {
+            try {
+                string sql = "SELECT Guard_Id FROM MonthEnd_Guard_Spots WHERE Spot_Id = @SpotId";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@SpotId", spotId);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value ? (int)val : 0;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[GetSpotGuardId] ERROR: {ex.Message}");
+                return 0;
+            }
+        }
+
         // ────────────────────────────────────────────────────────────────
         // GET USERS BY DEPARTMENT — usuarios activos de un departamento
         // Para el picker de asignación de spot
@@ -669,20 +686,39 @@ namespace Close_Portal.DataAccess {
                     conn.Open();
 
                     // Solo se puede eliminar si la guardia no ha cerrado
-                    string sqlCheck = "SELECT End_Time FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId";
-                    using (var cmd = new SqlCommand(sqlCheck, conn)) {
+                    using (var cmd = new SqlCommand(
+                        "SELECT End_Time FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId", conn)) {
                         cmd.Parameters.AddWithValue("@GuardId", guardId);
                         var val = cmd.ExecuteScalar();
                         if (val != null && val != DBNull.Value)
                             return new GuardResult { Success = false, Message = "No se puede eliminar una guardia ya cerrada." };
                     }
 
-                    string sql = "DELETE FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId";
-                    using (var cmd = new SqlCommand(sql, conn)) {
-                        cmd.Parameters.AddWithValue("@GuardId", guardId);
-                        int rows = cmd.ExecuteNonQuery();
-                        if (rows == 0)
-                            return new GuardResult { Success = false, Message = "Guardia no encontrada." };
+                    using (var tx = conn.BeginTransaction()) {
+                        try {
+                            // 1. Eliminar solicitudes de cierre asociadas (FK_ClosureRequests_Guard)
+                            using (var cmd = new SqlCommand(
+                                "DELETE FROM MonthEnd_Closure_Requests WHERE Guard_Id = @GuardId", conn, tx)) {
+                                cmd.Parameters.AddWithValue("@GuardId", guardId);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            // 2. Eliminar la guardia (CASCADE elimina Guard_Locations y Guard_Spots)
+                            using (var cmd = new SqlCommand(
+                                "DELETE FROM MonthEnd_Guard_Schedule WHERE Guard_Id = @GuardId", conn, tx)) {
+                                cmd.Parameters.AddWithValue("@GuardId", guardId);
+                                int rows = cmd.ExecuteNonQuery();
+                                if (rows == 0) {
+                                    tx.Rollback();
+                                    return new GuardResult { Success = false, Message = "Guardia no encontrada." };
+                                }
+                            }
+
+                            tx.Commit();
+                        } catch {
+                            tx.Rollback();
+                            throw;
+                        }
                     }
                 }
                 return new GuardResult { Success = true };

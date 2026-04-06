@@ -406,6 +406,13 @@ namespace Close_Portal.Pages.Admin {
                 var da = new GuardDataAccess();
                 var result = da.AssignSpot(spotId, userId, assignedBy);
 
+                if (result.Success) {
+                    // Resolver guardId del spot para notificar a Live.aspx
+                    int guardId = da.GetSpotGuardId(spotId);
+                    if (guardId > 0)
+                        Hubs.LocationHub.NotifySpotChanged(guardId);
+                }
+
                 return result.Success
                     ? (object)new { success = true }
                     : new { success = false, message = result.Message };
@@ -435,6 +442,12 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var result = da.UnassignSpot(spotId);
+
+                if (result.Success) {
+                    int guardId = da.GetSpotGuardId(spotId);
+                    if (guardId > 0)
+                        Hubs.LocationHub.NotifySpotChanged(guardId);
+                }
 
                 return result.Success
                     ? (object)new { success = true }

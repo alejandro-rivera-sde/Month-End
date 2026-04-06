@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Web;
 using System.Web.Services;
 using Close_Portal.Core;
@@ -254,6 +255,43 @@ namespace Close_Portal.Pages.Main {
         }
 
         // ════════════════════════════════════════════════════════════════
+        // WEBMETHOD — GetGuardSpots
+        // Devuelve solo los spots de la guardia activa para actualizar
+        // el banner en tiempo real sin recargar todo el dashboard.
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object GetGuardSpots() {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false };
+
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                using (var conn = new SqlConnection(cs)) {
+                    conn.Open();
+                    var guard = GetActiveGuard(conn);
+                    if (guard == null)
+                        return new { success = true, isActive = false, spots = new object[0] };
+
+                    var spots = guard.Spots.Select(s => new {
+                        deptCode = s.DeptCode,
+                        deptName = s.DeptName,
+                        username = s.Username
+                    }).ToArray();
+
+                    return new {
+                        success = true,
+                        isActive = true,
+                        startTime = guard.StartTime.ToString("dd/MM/yyyy HH:mm"),
+                        spots
+                    };
+                }
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[GetGuardSpots] ERROR: {ex.Message}");
+                return new { success = false };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
         // WEBMETHOD — GetUnreadCount
         // ════════════════════════════════════════════════════════════════
         [WebMethod(EnableSession = true)]
@@ -265,8 +303,15 @@ namespace Close_Portal.Pages.Main {
                 string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
                 int count = 0;
                 using (var conn = new SqlConnection(cs))
-                using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM MonthEnd_Notifications WHERE User_Id = @UserId AND Is_Read = 0", conn)) {
+                using (var cmd = new SqlCommand(@"
+                    DECLARE @GuardStart DATETIME = (
+                        SELECT TOP 1 Created_At FROM MonthEnd_Guard_Schedule
+                        WHERE End_Time IS NULL ORDER BY Created_At DESC
+                    )
+                    SELECT COUNT(*) FROM MonthEnd_Notifications
+                    WHERE User_Id  = @UserId
+                      AND Is_Read  = 0
+                      AND Created_At >= ISNULL(@GuardStart, Created_At)", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     conn.Open();
                     count = (int)cmd.ExecuteScalar();
@@ -288,27 +333,40 @@ namespace Close_Portal.Pages.Main {
                 var session = HttpContext.Current.Session;
                 if (session["UserId"] == null) return new { success = false };
                 int userId = Convert.ToInt32(session["UserId"]);
+                int roleId = session["RoleId"] != null ? Convert.ToInt32(session["RoleId"]) : 1;
                 string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+
                 var list = new System.Collections.Generic.List<object>();
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(@"
+                    DECLARE @GuardStart DATETIME = (
+                        SELECT TOP 1 Created_At FROM MonthEnd_Guard_Schedule
+                        WHERE End_Time IS NULL ORDER BY Created_At DESC
+                    )
                     SELECT TOP 20
-                        Notification_Id, Type, Reference_Id, Message, Is_Read,
-                        Created_At
+                        Notification_Id, Type, Reference_Id, Message, Is_Read, Created_At
                     FROM MonthEnd_Notifications
-                    WHERE User_Id = @UserId
+                    WHERE User_Id   = @UserId
+                      AND Created_At >= ISNULL(@GuardStart, Created_At)
                     ORDER BY Created_At DESC", conn)) {
                     cmd.Parameters.AddWithValue("@UserId", userId);
                     conn.Open();
                     using (var r = cmd.ExecuteReader()) {
                         while (r.Read()) {
+                            string type = r["Type"].ToString();
+                            int? refId = r["Reference_Id"] as int?;
+
+                            // URL de destino según tipo y rol
+                            string url = ResolveNotifUrl(type, roleId);
+
                             list.Add(new {
                                 notificationId = (int)r["Notification_Id"],
-                                type = r["Type"].ToString(),
-                                referenceId = r["Reference_Id"] as int?,
+                                type,
+                                referenceId = refId,
                                 message = r["Message"].ToString(),
                                 isRead = (bool)r["Is_Read"],
-                                createdAt = ((DateTime)r["Created_At"]).ToString("dd/MM HH:mm")
+                                createdAt = ((DateTime)r["Created_At"]).ToString("dd/MM HH:mm"),
+                                url
                             });
                         }
                     }
@@ -317,6 +375,20 @@ namespace Close_Portal.Pages.Main {
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[GetNotifications] ERROR: {ex.Message}");
                 return new { success = false };
+            }
+        }
+
+        // Resuelve la URL de destino según el tipo de notificación y el rol del usuario
+        private static string ResolveNotifUrl(string type, int roleId) {
+            switch (type) {
+                case "new_request":
+                    // Administrador/Owner → ValidateRequest
+                    return "Pages/Admin/ValidateRequest.aspx";
+                case "request_reviewed":
+                    // Regular → RequestClosure (ve el historial de sus solicitudes)
+                    return "Pages/Warehouses/RequestClosure.aspx";
+                default:
+                    return null;
             }
         }
 

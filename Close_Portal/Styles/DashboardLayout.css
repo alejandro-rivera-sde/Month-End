@@ -822,6 +822,21 @@
     color: var(--text-muted);
 }
 
+.notif-item-link {
+    cursor: pointer;
+}
+
+    .notif-item-link:hover {
+        background: var(--surface-hover);
+    }
+
+.notif-item-arrow {
+    font-size: 18px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    align-self: center;
+}
+
 @keyframes notif-spin {
     from {
         transform: rotate(0deg);
