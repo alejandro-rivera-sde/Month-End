@@ -250,6 +250,15 @@ namespace Close_Portal.Pages.Admin {
                 var da = new GuardDataAccess();
                 var result = da.ReserveDates(createdBy, start, estEnd);
 
+                if (result.Success) {
+                    int capturedGuardId = result.GuardId;
+                    DateTime capturedStart = start;
+                    string creatorEmail = HttpContext.Current.Session["Email"]?.ToString();
+                    System.Threading.Tasks.Task.Run(() =>
+                        Services.EmailService.NotifyGuardDraft(
+                            capturedGuardId, capturedStart, creatorEmail));
+                }
+
                 return result.Success
                     ? (object)new { success = true, guardId = result.GuardId }
                     : new { success = false, message = result.Message };
@@ -302,6 +311,25 @@ namespace Close_Portal.Pages.Admin {
 
                 var da = new GuardDataAccess();
                 var result = da.ConfirmGuard(guardId);
+
+                if (result.Success) {
+                    var guardForEmail = da.GetCurrentGuard();
+                    var capturedSpots = new List<(string, string, string, string)>();
+                    if (guardForEmail != null)
+                        foreach (var s in guardForEmail.Spots)
+                            capturedSpots.Add((s.DepartmentCode, s.DepartmentName,
+                                               s.Username, s.Email));
+
+                    DateTime? capturedStart = guardForEmail?.StartTime;
+                    string confirmerEmail = HttpContext.Current.Session["Email"]?.ToString();
+                    int capturedGuardId = guardId;
+
+                    System.Threading.Tasks.Task.Run(() => {
+                        Services.EmailService.NotifyGuardConfirmed(
+                            capturedGuardId, capturedStart, confirmerEmail, capturedSpots);
+                        Services.EmailService.NotifyDefaultSpotReminders(capturedGuardId);
+                    });
+                }
 
                 return result.Success
                     ? (object)new { success = true }
@@ -428,7 +456,36 @@ namespace Close_Portal.Pages.Admin {
                     return new { success = false, message = "Acceso no autorizado." };
 
                 var da = new GuardDataAccess();
+
+                // Capturar info antes de eliminar para poder notificar después
+                bool wasDraft = false;
+                DateTime? guardStart = null;
+                string audienceEmails = null;
+                var currentGuard = da.GetCurrentGuard();
+                if (currentGuard != null && currentGuard.GuardId == guardId) {
+                    wasDraft = currentGuard.IsDraft;
+                    guardStart = currentGuard.StartTime;
+                    if (!wasDraft)
+                        audienceEmails = new DataAccess.EmailDataAccess()
+                                            .GetGuardAudienceEmails(guardId);
+                }
+
                 var result = da.RemoveGuard(guardId);
+
+                if (result.Success) {
+                    string callerEmail = HttpContext.Current.Session["Email"]?.ToString();
+                    DateTime? capturedStart = guardStart;
+                    string capturedAudience = audienceEmails;
+                    bool capturedWasDraft = wasDraft;
+
+                    System.Threading.Tasks.Task.Run(() => {
+                        if (capturedWasDraft)
+                            Services.EmailService.NotifyGuardDraftCancelled(capturedStart, callerEmail);
+                        else
+                            Services.EmailService.NotifyGuardCancelled(
+                                capturedStart, callerEmail, capturedAudience);
+                    });
+                }
 
                 return result.Success
                     ? (object)new { success = true }

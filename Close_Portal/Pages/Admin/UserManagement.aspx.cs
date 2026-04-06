@@ -519,6 +519,17 @@ namespace Close_Portal.Pages.Admin {
                 if (targetRoleId >= currentRoleId)
                     return new { Success = false, Message = "No tienes permisos para modificar este usuario" };
 
+                // Capturar estado previo de Locked para detectar cambio
+                bool previouslyLocked = false;
+                using (var c = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(
+                    "SELECT Locked FROM MonthEnd_Users WHERE User_Id = @UserId", c)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    c.Open();
+                    var val = cmd.ExecuteScalar();
+                    previouslyLocked = val != null && val != DBNull.Value && (bool)val;
+                }
+
                 if (string.IsNullOrWhiteSpace(username))
                     return new { Success = false, Message = "El username no puede estar vacío" };
 
@@ -631,6 +642,15 @@ namespace Close_Portal.Pages.Admin {
                     newRole: newRoleName,
                     performedByEmail: performedBy
                 );
+
+                // Notificaciones de bloqueo/desbloqueo si cambió el estado
+                if (locked && !previouslyLocked) {
+                    System.Threading.Tasks.Task.Run(() =>
+                        EmailService.NotifyUserBlocked(targetEmail, targetUsername, performedBy));
+                } else if (!locked && previouslyLocked) {
+                    System.Threading.Tasks.Task.Run(() =>
+                        EmailService.NotifyUserUnblocked(targetEmail, targetUsername, performedBy));
+                }
 
                 return new { Success = true, Message = "Cambios guardados correctamente" };
 

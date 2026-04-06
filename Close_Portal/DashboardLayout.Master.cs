@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
 namespace Close_Portal {
     public partial class DashboardLayout : System.Web.UI.MasterPage {
         protected void Page_Load(object sender, EventArgs e) {

@@ -33,7 +33,7 @@
 
                 <!-- Locación -->
                 <div class="rc-field-group">
-                    <label>
+                    <label for="rcLocation">
                         <span data-translate-key="rc.location.label">Locación</span>
                         <span class="rc-required">*</span>
                     </label>
@@ -64,7 +64,7 @@
 
                 <!-- Notas -->
                 <div class="rc-field-group">
-                    <label>
+                    <label for="rcNotes">
                         <span data-translate-key="rc.notes.label">Notas adicionales</span>
                         <span class="rc-optional" data-translate-key="rc.notes.optional">(opcional)</span>
                     </label>

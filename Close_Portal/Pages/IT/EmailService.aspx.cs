@@ -53,6 +53,8 @@ namespace Close_Portal.Pages.IT {
                 // Grupos desde DB
                 var groups = da.GetGroups();
                 var groupDto = new List<object>();
+                // Lista simplificada para los dropdowns de alerta
+                var availableGroupsDto = new List<object>();
                 foreach (var g in groups) {
                     var members = new List<object>();
                     foreach (var m in g.Members)
@@ -68,25 +70,39 @@ namespace Close_Portal.Pages.IT {
                         description = g.Description,
                         icon = g.Icon,
                         color = g.Color,
+                        groupType = g.GroupType,
+                        isDynamic = g.IsDynamic,
                         members
+                    });
+                    availableGroupsDto.Add(new {
+                        groupKey = g.GroupKey,
+                        label = g.Label
                     });
                 }
 
-                // Alertas desde DB con metadata estática
+                // Alertas
                 var alertMeta = GetAlertMeta();
                 var alertSettings = da.GetAlertSettings();
-                var alertMap = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                foreach (var a in alertSettings) alertMap[a.AlertKey] = a.Enabled;
+                var alertMap = new Dictionary<string, EmailAlertSettingViewModel>(StringComparer.OrdinalIgnoreCase);
+                foreach (var a in alertSettings) alertMap[a.AlertKey] = a;
 
                 var alertsDto = new List<object>();
                 foreach (var meta in alertMeta) {
-                    bool enabled = alertMap.TryGetValue(meta.Key, out bool v) ? v : true;
+                    alertMap.TryGetValue(meta.Key, out var setting);
+                    // Grupo configurado: el guardado en DB, si no, el default de la metadata
+                    string configuredGroupKey = setting?.AlertGroupKey;
+                    if (string.IsNullOrWhiteSpace(configuredGroupKey))
+                        configuredGroupKey = meta.DefaultGroupKey;
+
                     alertsDto.Add(new {
                         key = meta.Key,
                         label = meta.Label,
                         icon = meta.Icon,
-                        recipients = meta.Recipients,
-                        enabled
+                        configurableRecipient = meta.ConfigurableRecipient,
+                        groupKey = configuredGroupKey,
+                        fixedRecipientDesc = meta.FixedRecipientDesc,
+                        enabled = setting?.Enabled ?? true,
+                        thresholdMinutes = setting?.ThresholdMinutes
                     });
                 }
 
@@ -97,6 +113,7 @@ namespace Close_Portal.Pages.IT {
                     testRecipient = cfg.TestRecipient ?? "",
                     smtp,
                     groups = groupDto,
+                    availableGroups = availableGroupsDto,
                     alerts = alertsDto
                 };
             } catch (Exception ex) {
@@ -169,11 +186,58 @@ namespace Close_Portal.Pages.IT {
                     return new { success = false, message = "Acceso no autorizado." };
 
                 var r = new EmailDataAccess().SetBulkAlerts(enabled, userId);
-                if (r.Success)
-                    foreach (var key in new[] { "UserAdded", "UserRemoved", "UserUpdated",
-                                                "ClosureRequest", "GuardStarted", "GuardClosed" })
+                if (r.Success) {
+                    var allKeys = new[] {
+                        "UserAdded", "UserRemoved", "UserUpdated",
+                        "ClosureRequest", "GuardStarted", "GuardClosed",
+                        "GuardDraft", "GuardDraftCancelled", "GuardConfirmed", "GuardCancelled",
+                        "ClosureResponse", "UserBlocked", "UserUnblocked",
+                        "GuardDraftReminder", "DefaultSpotReminder"
+                    };
+                    foreach (var key in allKeys)
                         EmailService.SetAlertEnabledCache(key, enabled);
+                }
 
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // SET ALERT THRESHOLD
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object SetAlertThreshold(string alertKey, int thresholdHours) {
+            try {
+                if (!TryGetOwner(out _, out int userId))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                if (thresholdHours < 1 || thresholdHours > 720)
+                    return new { success = false, message = "El umbral debe estar entre 1 y 720 horas." };
+
+                int minutes = thresholdHours * 60;
+                var r = new EmailDataAccess().SetAlertThreshold(alertKey, minutes, userId);
+                return r.Success ? (object)new { success = true }
+                                 : new { success = false, message = r.Message };
+            } catch (Exception ex) {
+                return new { success = false, message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // SET ALERT GROUP KEY — cambia el grupo destinatario de una alerta
+        // ============================================================
+        [WebMethod(EnableSession = true)]
+        public static object SetAlertGroupKey(string alertKey, string groupKey) {
+            try {
+                if (!TryGetOwner(out _, out int userId))
+                    return new { success = false, message = "Acceso no autorizado." };
+
+                var r = new EmailDataAccess().SetAlertGroupKey(alertKey, groupKey, userId);
+                if (r.Success)
+                    EmailService.SetAlertGroupKeyCache(alertKey, groupKey);
                 return r.Success ? (object)new { success = true }
                                  : new { success = false, message = r.Message };
             } catch (Exception ex) {
@@ -330,17 +394,76 @@ namespace Close_Portal.Pages.IT {
                 case "GuardClosed":
                     EmailService.NotifyGuardClosed(DateTime.Now, performer);
                     break;
+                case "GuardDraft":
+                    EmailService.NotifyGuardDraft(0, DateTime.Now.AddHours(2), performer);
+                    break;
+                case "GuardDraftCancelled":
+                    EmailService.NotifyGuardDraftCancelled(DateTime.Now.AddHours(2), performer);
+                    break;
+                case "GuardConfirmed":
+                    EmailService.NotifyGuardConfirmed(0, DateTime.Now, performer,
+                        new List<(string, string, string, string)> {
+                            ("AR", "Cuentas por Cobrar", "Usuario AR Prueba", EmailService.TestRecipient),
+                            ("CS", "Customer Service",   "Usuario CS Prueba", EmailService.TestRecipient),
+                            ("IT", "Tecnología",          null,                null)
+                        });
+                    break;
+                case "GuardCancelled":
+                    EmailService.NotifyGuardCancelled(DateTime.Now, performer, EmailService.TestRecipient);
+                    break;
+                case "ClosureResponse":
+                    EmailService.NotifyClosureResponse(
+                        EmailService.TestRecipient, "Regular Prueba",
+                        "Bodega de Prueba", "Approved",
+                        "Todo en orden.", performer);
+                    break;
+                case "UserBlocked":
+                    EmailService.NotifyUserBlocked(EmailService.TestRecipient, "Usuario de Prueba", performer);
+                    break;
+                case "UserUnblocked":
+                    EmailService.NotifyUserUnblocked(EmailService.TestRecipient, "Usuario de Prueba", performer);
+                    break;
+                case "GuardDraftReminder":
+                    EmailService.NotifyGuardDraft(0, DateTime.Now.AddHours(-3), performer);
+                    break;
+                case "DefaultSpotReminder":
+                    EmailService.NotifyDefaultSpotReminders(0);
+                    break;
             }
         }
 
-        private static List<(string Key, string Label, string Icon, string Recipients)> GetAlertMeta() =>
-            new List<(string, string, string, string)> {
-                ("UserAdded",      "Usuario agregado",      "person_add",      "Guardia activa / Call God"),
-                ("UserRemoved",    "Usuario desactivado",   "person_remove",   "Guardia activa / Call God"),
-                ("UserUpdated",    "Usuario modificado",    "manage_accounts", "Team IT + Guardia activa"),
-                ("ClosureRequest", "Solicitud de cierre",   "lock",            "Manager de la locación"),
-                ("GuardStarted",   "Guardia iniciada",      "security",        "Responsables de spots"),
-                ("GuardClosed",    "Guardia cerrada",       "lock_clock",      "Guardia activa / Call God"),
+        // ConfigurableRecipient=true  → se muestra dropdown de grupos en la UI
+        // DefaultGroupKey             → grupo por defecto si no hay uno configurado en DB
+        // FixedRecipientDesc          → texto informativo cuando no es configurable
+        private class AlertMetaItem {
+            public string Key;
+            public string Label;
+            public string Icon;
+            public bool ConfigurableRecipient;
+            public string DefaultGroupKey;
+            public string FixedRecipientDesc;
+        }
+
+        private static List<AlertMetaItem> GetAlertMeta() =>
+            new List<AlertMetaItem> {
+                // ── Guardia ───────────────────────────────────────────────────
+                new AlertMetaItem { Key="GuardDraft",          Label="Guardia programada (draft)",        Icon="event",            ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="GuardDraftCancelled", Label="Guardia draft cancelada",            Icon="event_busy",       ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="GuardConfirmed",      Label="Guardia confirmada",                 Icon="security",         ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="Usuarios con locaciones + Spots asignados" },
+                new AlertMetaItem { Key="GuardCancelled",      Label="Guardia confirmada cancelada",       Icon="cancel",           ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="Usuarios con locaciones + Spots asignados" },
+                new AlertMetaItem { Key="GuardDraftReminder",  Label="Reminder: draft sin confirmar",      Icon="alarm",            ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="DefaultSpotReminder", Label="Reminder: spot sin asignar",         Icon="person_off",       ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="Grupos DefaultSpot por departamento" },
+                new AlertMetaItem { Key="GuardStarted",        Label="Guardia iniciada (legacy)",          Icon="rocket_launch",    ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="GuardClosed",         Label="Guardia cerrada",                    Icon="lock_clock",       ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                // ── Solicitudes ───────────────────────────────────────────────
+                new AlertMetaItem { Key="ClosureRequest",      Label="Solicitud de cierre",                Icon="lock",             ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="Administrador asignado a la locación" },
+                new AlertMetaItem { Key="ClosureResponse",     Label="Respuesta a solicitud de cierre",    Icon="mark_email_read",  ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="Regular que envió la solicitud" },
+                // ── Usuarios ──────────────────────────────────────────────────
+                new AlertMetaItem { Key="UserAdded",           Label="Usuario agregado / activado",        Icon="person_add",       ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="UserRemoved",         Label="Usuario desactivado",                Icon="person_remove",    ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="UserUpdated",         Label="Usuario modificado",                 Icon="manage_accounts",  ConfigurableRecipient=true,  DefaultGroupKey="Administradores", FixedRecipientDesc=null },
+                new AlertMetaItem { Key="UserBlocked",         Label="Usuario bloqueado",                  Icon="block",            ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="El usuario bloqueado (correo directo)" },
+                new AlertMetaItem { Key="UserUnblocked",       Label="Usuario desbloqueado",               Icon="lock_open",        ConfigurableRecipient=false, DefaultGroupKey=null,              FixedRecipientDesc="El usuario desbloqueado (correo directo)" },
             };
     }
 }

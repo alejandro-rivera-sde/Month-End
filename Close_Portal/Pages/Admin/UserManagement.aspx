@@ -225,20 +225,20 @@
                         <div id="newUserFields" style="display:none">
                             <div class="um-general-grid">
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.email">Email (@novamex.com)</label>
+                                    <label for="newEmail" data-translate-key="um.modal.email">Email (@novamex.com)</label>
                                     <input type="email" id="newEmail"
                                            data-translate-key="um.modal.email_placeholder"
                                            placeholder="usuario@novamex.com" autocomplete="off" />
                                 </div>
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.username">Username</label>
+                                    <label for="newUsername" data-translate-key="um.modal.username">Username</label>
                                     <input type="text" id="newUsername"
                                            data-translate-key="um.modal.username_placeholder"
                                            placeholder="Nombre de usuario" maxlength="80" autocomplete="off" />
                                     <span class="field-hint" data-translate-key="um.modal.username_hint">Nombre visible dentro del portal</span>
                                 </div>
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.role">Rol</label>
+                                    <label for="newModalRole" data-translate-key="um.modal.role">Rol</label>
                                     <select id="newModalRole">
                                         <asp:Repeater ID="rptRolesNew" runat="server">
                                             <ItemTemplate>
@@ -248,7 +248,7 @@
                                     </select>
                                 </div>
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.department_label">Departamento</label>
+                                    <label for="newModalDepartment" data-translate-key="um.modal.department_label">Departamento</label>
                                     <select id="newModalDepartment">
                                         <option value="" data-translate-key="um.modal.department_placeholder">Seleccionar departamento</option>
                                         <asp:Repeater ID="rptDepartmentsNew" runat="server">
@@ -269,7 +269,7 @@
                         <div id="editModeFields" style="display:none">
                             <div class="um-general-grid">
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.username">Username</label>
+                                    <label for="editUsername" data-translate-key="um.modal.username">Username</label>
                                     <input type="text" id="editUsername" placeholder="Nombre de usuario"
                                            maxlength="80" autocomplete="off" />
                                     <span class="field-hint" data-translate-key="um.modal.username_hint">
@@ -277,7 +277,7 @@
                                     </span>
                                 </div>
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.role">Rol</label>
+                                    <label for="modalRole" data-translate-key="um.modal.role">Rol</label>
                                     <select id="modalRole">
                                         <asp:Repeater ID="rptRoles" runat="server">
                                             <ItemTemplate>
@@ -287,7 +287,7 @@
                                     </select>
                                 </div>
                                 <div class="field-group">
-                                    <label data-translate-key="um.modal.department_label">Departamento</label>
+                                    <label for="modalDepartment" data-translate-key="um.modal.department_label">Departamento</label>
                                     <select id="modalDepartment">
                                         <option value="" data-translate-key="um.modal.department_placeholder">Seleccionar departamento</option>
                                         <asp:Repeater ID="rptDepartments" runat="server">
@@ -300,14 +300,14 @@
                                 <div class="field-group">
                                     <div id="statusToggles">
                                         <div class="toggle-row" style="margin-bottom:14px">
-                                            <label data-translate-key="um.modal.active">Usuario Activo</label>
+                                            <label for="modalActive" data-translate-key="um.modal.active">Usuario Activo</label>
                                             <label class="toggle">
                                                 <input type="checkbox" id="modalActive" />
                                                 <span class="slider"></span>
                                             </label>
                                         </div>
                                         <div class="toggle-row">
-                                            <label data-translate-key="um.modal.locked_label">Bloqueado</label>
+                                            <label for="modalLocked" data-translate-key="um.modal.locked_label">Bloqueado</label>
                                             <label class="toggle">
                                                 <input type="checkbox" id="modalLocked" />
                                                 <span class="slider"></span>
@@ -327,7 +327,7 @@
                                     </p>
                                     <div class="um-general-grid">
                                         <div class="field-group">
-                                            <label data-translate-key="um.modal.new_password">Nueva Contraseña</label>
+                                            <label for="editPassword1" data-translate-key="um.modal.new_password">Nueva Contraseña</label>
                                             <div class="pw-input-wrap">
                                                 <input type="password" id="editPassword1" autocomplete="off"
                                                        placeholder="Nueva contraseña" maxlength="128"
@@ -343,7 +343,7 @@
                                             </span>
                                         </div>
                                         <div class="field-group">
-                                            <label data-translate-key="um.modal.confirm_password">Confirmar Contraseña</label>
+                                            <label for="editPassword2" data-translate-key="um.modal.confirm_password">Confirmar Contraseña</label>
                                             <div class="pw-input-wrap">
                                                 <input type="password" id="editPassword2" autocomplete="off"
                                                        placeholder="Repite la contraseña" maxlength="128"

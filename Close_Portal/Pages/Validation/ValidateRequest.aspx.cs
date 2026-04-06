@@ -153,12 +153,35 @@ namespace Close_Portal.Pages {
                     LocationHub.NotifyLocationUpdated(locationId, locName, action, reviewerName);
 
                     int requestedByUserId;
-                    using (var cmd = new SqlCommand(
-                        "SELECT Requested_By FROM MonthEnd_Closure_Requests WHERE Request_Id = @RequestId", conn)) {
+                    string requesterEmail = "";
+                    string requesterName = "";
+                    using (var cmd = new SqlCommand(@"
+                        SELECT cr.Requested_By, u.Email, u.Username
+                        FROM MonthEnd_Closure_Requests cr
+                        INNER JOIN MonthEnd_Users u ON u.User_Id = cr.Requested_By
+                        WHERE cr.Request_Id = @RequestId", conn)) {
                         cmd.Parameters.AddWithValue("@RequestId", requestId);
-                        requestedByUserId = (int)cmd.ExecuteScalar();
+                        using (var r = cmd.ExecuteReader()) {
+                            r.Read();
+                            requestedByUserId = (int)r["Requested_By"];
+                            requesterEmail = r["Email"]?.ToString() ?? "";
+                            requesterName = r["Username"]?.ToString() ?? requesterEmail;
+                        }
                     }
                     LocationHub.NotifyRequestReviewed(requestedByUserId, requestId, locName, action, reviewerName);
+
+                    // Notificar por correo al solicitante
+                    string capturedRequesterEmail = requesterEmail;
+                    string capturedRequesterName = requesterName;
+                    string capturedLocName = locName;
+                    string capturedAction = action;
+                    string capturedReviewNotes = reviewNotes;
+                    string capturedReviewerName = reviewerName;
+                    System.Threading.Tasks.Task.Run(() =>
+                        Services.EmailService.NotifyClosureResponse(
+                            capturedRequesterEmail, capturedRequesterName,
+                            capturedLocName, capturedAction,
+                            capturedReviewNotes, capturedReviewerName));
                 }
 
                 string label = action == "Approved" ? "aprobada" : "rechazada";

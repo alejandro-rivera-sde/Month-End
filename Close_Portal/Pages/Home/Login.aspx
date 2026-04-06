@@ -5,7 +5,7 @@
 </asp:Content>
 
 <asp:Content ID="HeadContent" ContentPlaceHolderID="HeadContent" runat="server">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async="async" defer="defer"></script>
     <link href='<%= ResolveUrl("~/Styles/Login.css") %>' rel="stylesheet" type="text/css" />
 </asp:Content>
@@ -40,7 +40,7 @@
                 <!-- ========== STANDARD LOGIN (Oculto por defecto) ========== -->
                 <div id="standardLoginSection" style="display: none;">
                     <div class="form-field">
-                        <label for="email">Email</label>
+                        <label for="emailStandard">Email</label>
                         <input 
                             type="email" 
                             id="emailStandard" 
@@ -49,7 +49,7 @@
                     </div>
                     
                     <div class="form-field">
-                        <label for="password">Contraseña</label>
+                        <label for="passwordStandard">Contraseña</label>
                         <input 
                             type="password" 
                             id="passwordStandard" 

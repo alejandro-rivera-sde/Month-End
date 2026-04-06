@@ -16,6 +16,11 @@ namespace Close_Portal.DataAccess {
         public string Icon { get; set; }
         public string Color { get; set; }
         public bool Active { get; set; }
+        // 'static' | 'role' | 'spot'
+        public string GroupType { get; set; } = "static";
+        public int? RoleId { get; set; }    // válido cuando GroupType='role'
+        public string DeptCode { get; set; } // válido cuando GroupType='spot'
+        public bool IsDynamic => GroupType == "role" || GroupType == "spot";
         public List<EmailGroupMemberViewModel> Members { get; set; } = new List<EmailGroupMemberViewModel>();
     }
 
@@ -37,6 +42,8 @@ namespace Close_Portal.DataAccess {
         public string AlertKey { get; set; }
         public string Label { get; set; }
         public bool Enabled { get; set; }
+        public int? ThresholdMinutes { get; set; }
+        public string AlertGroupKey { get; set; }
     }
 
     public class EmailResult {
@@ -112,7 +119,30 @@ namespace Close_Portal.DataAccess {
         public List<EmailAlertSettingViewModel> GetAlertSettings() {
             var list = new List<EmailAlertSettingViewModel>();
             try {
-                string sql = "SELECT Alert_Key, Label, Enabled FROM MonthEnd_Email_Alert_Settings ORDER BY Alert_Key";
+                // Verificar qué columnas existen (resiliente a migraciones parciales)
+                bool hasThreshold = false, hasGroupKey = false;
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT
+                        CASE WHEN EXISTS(SELECT 1 FROM sys.columns
+                             WHERE object_id = OBJECT_ID('MonthEnd_Email_Alert_Settings')
+                               AND name = 'Threshold_Minutes') THEN 1 ELSE 0 END,
+                        CASE WHEN EXISTS(SELECT 1 FROM sys.columns
+                             WHERE object_id = OBJECT_ID('MonthEnd_Email_Alert_Settings')
+                               AND name = 'Alert_Group_Key')   THEN 1 ELSE 0 END", conn)) {
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        if (r.Read()) {
+                            hasThreshold = (int)r[0] == 1;
+                            hasGroupKey = (int)r[1] == 1;
+                        }
+                    }
+                }
+
+                string thresholdSel = hasThreshold ? ", Threshold_Minutes" : ", NULL AS Threshold_Minutes";
+                string groupKeySel = hasGroupKey ? ", Alert_Group_Key" : ", NULL AS Alert_Group_Key";
+                string sql = $"SELECT Alert_Key, Label, Enabled{thresholdSel}{groupKeySel} FROM MonthEnd_Email_Alert_Settings ORDER BY Alert_Key";
+
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
                     conn.Open();
@@ -121,7 +151,9 @@ namespace Close_Portal.DataAccess {
                             list.Add(new EmailAlertSettingViewModel {
                                 AlertKey = r["Alert_Key"].ToString(),
                                 Label = r["Label"].ToString(),
-                                Enabled = (bool)r["Enabled"]
+                                Enabled = (bool)r["Enabled"],
+                                ThresholdMinutes = r["Threshold_Minutes"] as int?,
+                                AlertGroupKey = r["Alert_Group_Key"] as string
                             });
                     }
                 }
@@ -178,13 +210,73 @@ namespace Close_Portal.DataAccess {
         }
 
         // ============================================================
+        // SET ALERT THRESHOLD — guarda el umbral en minutos
+        // ============================================================
+        public EmailResult SetAlertThreshold(string alertKey, int? thresholdMinutes, int updatedBy) {
+            try {
+                string sql = @"
+                    UPDATE MonthEnd_Email_Alert_Settings SET
+                        Threshold_Minutes = @Threshold,
+                        Updated_At        = GETDATE(),
+                        Updated_By        = @UpdatedBy
+                    WHERE Alert_Key = @Key";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@Key", alertKey);
+                    cmd.Parameters.AddWithValue("@Threshold",
+                        thresholdMinutes.HasValue ? (object)thresholdMinutes.Value : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
+                    conn.Open();
+                    int rows = cmd.ExecuteNonQuery();
+                    if (rows == 0)
+                        return new EmailResult { Success = false, Message = $"Alerta '{alertKey}' no encontrada." };
+                }
+                return new EmailResult { Success = true };
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.SetAlertThreshold] ERROR: {ex.Message}");
+                return new EmailResult { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ============================================================
+        // SET ALERT GROUP KEY — configura qué grupo recibe esta alerta
+        // ============================================================
+        public EmailResult SetAlertGroupKey(string alertKey, string groupKey, int updatedBy) {
+            try {
+                string sql = @"
+                    UPDATE MonthEnd_Email_Alert_Settings SET
+                        Alert_Group_Key = @GroupKey,
+                        Updated_At      = GETDATE(),
+                        Updated_By      = @UpdatedBy
+                    WHERE Alert_Key = @Key";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@Key", alertKey);
+                    cmd.Parameters.AddWithValue("@GroupKey",
+                        string.IsNullOrWhiteSpace(groupKey) ? (object)DBNull.Value : groupKey.Trim());
+                    cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
+                    conn.Open();
+                    int rows = cmd.ExecuteNonQuery();
+                    if (rows == 0)
+                        return new EmailResult { Success = false, Message = $"Alerta '{alertKey}' no encontrada." };
+                }
+                return new EmailResult { Success = true };
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.SetAlertGroupKey] ERROR: {ex.Message}");
+                return new EmailResult { Success = false, Message = ex.Message };
+            }
+        }
+
+        // ============================================================
         // GROUPS
         // ============================================================
         public List<EmailGroupViewModel> GetGroups(bool activeOnly = true) {
             var groups = new List<EmailGroupViewModel>();
             try {
                 string sql = @"
-                    SELECT Group_Id, Group_Key, Label, Description, Icon, Color, Active
+                    SELECT Group_Id, Group_Key, Label, Description, Icon, Color, Active,
+                           ISNULL(Group_Type, 'static') AS Group_Type,
+                           Role_Id, Dept_Code
                     FROM   MonthEnd_Email_Groups
                     WHERE  (@ActiveOnly = 0 OR Active = 1)
                     ORDER BY Group_Id";
@@ -193,23 +285,28 @@ namespace Close_Portal.DataAccess {
                     using (var cmd = new SqlCommand(sql, conn)) {
                         cmd.Parameters.AddWithValue("@ActiveOnly", activeOnly ? 1 : 0);
                         using (var r = cmd.ExecuteReader()) {
-                            while (r.Read())
-                                groups.Add(new EmailGroupViewModel {
+                            while (r.Read()) {
+                                var g = new EmailGroupViewModel {
                                     GroupId = (int)r["Group_Id"],
                                     GroupKey = r["Group_Key"].ToString(),
                                     Label = r["Label"].ToString(),
                                     Description = r["Description"].ToString(),
                                     Icon = r["Icon"].ToString(),
                                     Color = r["Color"].ToString(),
-                                    Active = (bool)r["Active"]
-                                });
+                                    Active = (bool)r["Active"],
+                                    GroupType = r["Group_Type"].ToString(),
+                                    RoleId = r["Role_Id"] as int?,
+                                    DeptCode = r["Dept_Code"] as string
+                                };
+                                groups.Add(g);
+                            }
                         }
                     }
 
-                    // Load members
-                    foreach (var g in groups) {
-                        g.Members = GetGroupMembers(conn, g.GroupId);
-                    }
+                    // Solo cargar miembros para grupos estáticos
+                    foreach (var g in groups)
+                        if (!g.IsDynamic)
+                            g.Members = GetGroupMembers(conn, g.GroupId);
                 }
             } catch (Exception ex) {
                 Debug.WriteLine($"[EmailDataAccess.GetGroups] ERROR: {ex.Message}");
@@ -387,9 +484,96 @@ namespace Close_Portal.DataAccess {
         }
 
         // ============================================================
-        // RESOLVE GROUP EMAILS — string "a@x.com;b@x.com" para Send()
+        // RESOLVE GROUP EMAILS
+        // Ramifica según Group_Type:
+        //   static → miembros en MonthEnd_Email_Group_Members
+        //   role   → usuarios activos con Role_Id del grupo
+        //   spot   → usuario asignado al spot del depto en guardia activa
         // ============================================================
         public string ResolveGroupEmails(string groupKey) {
+            try {
+                // 1. Obtener metadata del grupo
+                string groupType = "static";
+                int? roleId = null;
+                string deptCode = null;
+
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT ISNULL(Group_Type,'static') AS Group_Type, Role_Id, Dept_Code
+                    FROM MonthEnd_Email_Groups
+                    WHERE Group_Key = @Key AND Active = 1", conn)) {
+                    cmd.Parameters.AddWithValue("@Key", groupKey);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        if (!r.Read()) return null;
+                        groupType = r["Group_Type"].ToString();
+                        roleId = r["Role_Id"] as int?;
+                        deptCode = r["Dept_Code"] as string;
+                    }
+                }
+
+                // 2. Resolver según tipo
+                if (groupType == "role" && roleId.HasValue)
+                    return ResolveByRole(roleId.Value);
+
+                if (groupType == "spot" && !string.IsNullOrWhiteSpace(deptCode))
+                    return ResolveBySpot(deptCode);
+
+                // static (default)
+                return ResolveStaticMembers(groupKey);
+
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.ResolveGroupEmails] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        private string ResolveByRole(int roleId) {
+            try {
+                var emails = new List<string>();
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT Email FROM MonthEnd_Users
+                    WHERE Role_Id = @RoleId AND Active = 1 AND Locked = 0
+                      AND Email IS NOT NULL AND Email <> ''", conn)) {
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) emails.Add(r["Email"].ToString().Trim());
+                }
+                return emails.Count > 0 ? string.Join(";", emails) : null;
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.ResolveByRole] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        private string ResolveBySpot(string deptCode) {
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT u.Email
+                    FROM MonthEnd_Guard_Spots gs
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = gs.Department_Id
+                    INNER JOIN MonthEnd_Users u        ON u.User_Id       = gs.User_Id
+                    INNER JOIN MonthEnd_Guard_Schedule gs2 ON gs2.Guard_Id = gs.Guard_Id
+                    WHERE d.Department_Code = @DeptCode
+                      AND gs2.End_Time IS NULL
+                      AND gs.User_Id IS NOT NULL
+                      AND u.Active = 1 AND u.Locked = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@DeptCode", deptCode);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value
+                        ? val.ToString().Trim() : null;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.ResolveBySpot] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        private string ResolveStaticMembers(string groupKey) {
             try {
                 string sql = @"
                     SELECT m.Email
@@ -402,12 +586,180 @@ namespace Close_Portal.DataAccess {
                     cmd.Parameters.AddWithValue("@Key", groupKey);
                     conn.Open();
                     using (var r = cmd.ExecuteReader())
-                        while (r.Read())
-                            emails.Add(r["Email"].ToString().Trim());
+                        while (r.Read()) emails.Add(r["Email"].ToString().Trim());
                 }
                 return emails.Count > 0 ? string.Join(";", emails) : null;
             } catch (Exception ex) {
-                Debug.WriteLine($"[EmailDataAccess.ResolveGroupEmails] ERROR: {ex.Message}");
+                Debug.WriteLine($"[EmailDataAccess.ResolveStaticMembers] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        // ============================================================
+        // GET GUARD AUDIENCE EMAILS
+        // Usuarios con locaciones en la guardia (cualquier rol) +
+        // usuarios asignados a spots (para IT sin locaciones)
+        // ============================================================
+        public string GetGuardAudienceEmails(int guardId) {
+            try {
+                string sql = @"
+                    SELECT DISTINCT u.Email
+                    FROM MonthEnd_Users_Location ul
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = ul.User_Id
+                    INNER JOIN MonthEnd_Guard_Locations gl
+                           ON gl.Location_Id = ul.Location_Id AND gl.Guard_Id = @GuardId
+                    WHERE u.Active = 1 AND u.Locked = 0
+                      AND u.Email IS NOT NULL AND u.Email <> ''
+
+                    UNION
+
+                    SELECT DISTINCT u.Email
+                    FROM MonthEnd_Guard_Spots gs
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = gs.User_Id
+                    WHERE gs.Guard_Id = @GuardId
+                      AND gs.User_Id IS NOT NULL
+                      AND u.Active = 1 AND u.Locked = 0
+                      AND u.Email IS NOT NULL AND u.Email <> ''";
+
+                var emails = new List<string>();
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) emails.Add(r["Email"].ToString().Trim());
+                }
+                return emails.Count > 0 ? string.Join(";", emails) : null;
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.GetGuardAudienceEmails] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        // ============================================================
+        // GET UNFILLED SPOT DEPT CODES — spots vacíos al confirmar
+        // Retorna los códigos de departamento cuyos spots no tienen usuario
+        // ============================================================
+        public List<string> GetUnfilledSpotDeptCodes(int guardId) {
+            var list = new List<string>();
+            try {
+                string sql = @"
+                    SELECT d.Department_Code
+                    FROM MonthEnd_Guard_Spots gs
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = gs.Department_Id
+                    WHERE gs.Guard_Id = @GuardId AND gs.User_Id IS NULL
+                    ORDER BY d.Department_Code";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) list.Add(r["Department_Code"].ToString());
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.GetUnfilledSpotDeptCodes] ERROR: {ex.Message}");
+            }
+            return list;
+        }
+
+        // ============================================================
+        // GET DRAFT GUARDS FOR REMINDER
+        // Guardias draft sin confirmar y sin reminder enviado,
+        // cuya Created_At supera el threshold en minutos
+        // ============================================================
+        public List<(int GuardId, DateTime CreatedAt)> GetDraftGuardsForReminder(int thresholdMinutes) {
+            var list = new List<(int, DateTime)>();
+            try {
+                string sql = @"
+                    SELECT Guard_Id, Created_At
+                    FROM MonthEnd_Guard_Schedule
+                    WHERE Is_Confirmed    = 0
+                      AND End_Time        IS NULL
+                      AND Reminder_Sent_At IS NULL
+                      AND DATEDIFF(MINUTE, Created_At, GETDATE()) >= @Threshold";
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@Threshold", thresholdMinutes);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read())
+                            list.Add(((int)r["Guard_Id"], (DateTime)r["Created_At"]));
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.GetDraftGuardsForReminder] ERROR: {ex.Message}");
+            }
+            return list;
+        }
+
+        // ============================================================
+        // MARK REMINDER SENT
+        // ============================================================
+        public void MarkReminderSent(int guardId) {
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    UPDATE MonthEnd_Guard_Schedule
+                    SET Reminder_Sent_At = GETDATE()
+                    WHERE Guard_Id = @GuardId", conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.MarkReminderSent] ERROR: {ex.Message}");
+            }
+        }
+
+        // ============================================================
+        // GET REMINDER THRESHOLD MINUTES
+        // Lee de MonthEnd_Email_Alert_Settings el threshold de GuardDraftReminder
+        // ============================================================
+        public int GetReminderThresholdMinutes(int defaultMinutes = 120) {
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT ISNULL(Threshold_Minutes, @Default)
+                    FROM MonthEnd_Email_Alert_Settings
+                    WHERE Alert_Key = 'GuardDraftReminder'", conn)) {
+                    cmd.Parameters.AddWithValue("@Default", defaultMinutes);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar();
+                    return val != null && val != DBNull.Value ? (int)val : defaultMinutes;
+                }
+            } catch {
+                return defaultMinutes;
+            }
+        }
+
+        // ============================================================
+        // GET UNFILLED SPOT DEPT ADMIN EMAILS
+        // Para el reminder: admins (Role_Id=3) de cada depto con spot vacío
+        // ============================================================
+        public string GetDeptAdminEmails(int guardId) {
+            try {
+                string sql = @"
+                    SELECT DISTINCT u.Email
+                    FROM MonthEnd_Guard_Spots gs
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = gs.Department_Id
+                    INNER JOIN MonthEnd_Users u
+                           ON u.Department_Id = gs.Department_Id
+                    WHERE gs.Guard_Id  = @GuardId
+                      AND gs.User_Id   IS NULL
+                      AND u.Role_Id    = 3
+                      AND u.Active     = 1
+                      AND u.Locked     = 0
+                      AND u.Email IS NOT NULL AND u.Email <> ''";
+                var emails = new List<string>();
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) emails.Add(r["Email"].ToString().Trim());
+                }
+                return emails.Count > 0 ? string.Join(";", emails) : null;
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailDataAccess.GetDeptAdminEmails] ERROR: {ex.Message}");
                 return null;
             }
         }

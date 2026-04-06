@@ -11,9 +11,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Dashboard CSS -->
-    <link href='<%= ResolveUrl("~/Styles/DashboardLayout.css") %>' rel="stylesheet" type="text/css" />
-    
+
     <!-- Content Placeholder para CSS adicional de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalCSS" runat="server">
     </asp:ContentPlaceHolder>
@@ -251,16 +249,16 @@
 
 <asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
     <!-- jQuery PRIMERO - requerido para $.ajax -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <!-- Bootstrap 5 Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Translations ANTES de dashboard_layout.js -->
-    <script src='<%= ResolveUrl("~/Scripts/translations.js") %>'></script>
+    <script src='<%= ResolveUrl("~/Scripts/translations.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
 
     <!-- SignalR ANTES de dashboard_layout.js para que los handlers se registren a tiempo -->
-    <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>'></script>
+    <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
     <script src='<%= ResolveUrl("~/signalr/hubs") %>'></script>
 
     <!-- Exponer rol y userId del usuario para SignalR handlers -->
@@ -270,7 +268,7 @@
     </script>
 
     <!-- Dashboard JS -->
-    <script src='<%= ResolveUrl("~/Scripts/dashboard_layout.js") %>'></script>
+    <script src='<%= ResolveUrl("~/Scripts/dashboard_layout.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
 
     <!-- Content Placeholder para scripts adicionales de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalScripts" runat="server">

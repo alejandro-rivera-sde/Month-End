@@ -35,7 +35,7 @@ function loadConfig() {
         if (!resp.success) { esToast(resp.message, 'error'); return; }
         renderServiceControl(resp);
         renderGroups(resp.groups || []);
-        renderAlerts(resp.alerts || []);
+        renderAlerts(resp.alerts || [], resp.availableGroups || []);
         renderSmtp(resp.smtp);
         updateStatusBadge(resp);
     });
@@ -138,8 +138,10 @@ function debounceSaveTestEmail(value) {
 // ─── GROUPS ────────────────────────────────────────────────
 const COLOR_MAP = {
     red: '#dc2626', blue: '#2563eb', green: '#16a34a',
-    amber: '#d97706', purple: '#7c3aed', teal: '#0891b2'
+    amber: '#d97706', purple: '#7c3aed', teal: '#0891b2', cyan: '#0891b2'
 };
+
+const DYNAMIC_TYPE_LABEL = { role: 'Dinámico · Rol', spot: 'Dinámico · Spot activo' };
 
 function renderGroups(groups) {
     const grid = document.getElementById('esGroupsGrid');
@@ -158,6 +160,30 @@ function renderGroups(groups) {
 
     grid.innerHTML = groups.map(g => {
         const color = COLOR_MAP[g.color] || '#6366f1';
+
+        // ── Grupos dinámicos: solo lectura ──────────────────
+        if (g.isDynamic) {
+            const typeLabel = DYNAMIC_TYPE_LABEL[g.groupType] || 'Dinámico';
+            return `
+        <div class="es-group-card es-group-dynamic" data-group-id="${g.groupId}">
+            <div class="es-group-header">
+                <span class="material-icons es-group-icon" style="color:${color}">${escH(g.icon)}</span>
+                <div class="es-group-info">
+                    <div class="es-group-label">
+                        ${escH(g.label)}
+                        <span class="es-dynamic-badge">${escH(typeLabel)}</span>
+                    </div>
+                    <div class="es-group-desc">${escH(g.description)}</div>
+                </div>
+            </div>
+            <div class="es-dynamic-note">
+                <span class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:6px;">info</span>
+                Este grupo se resuelve automáticamente en tiempo real. No requiere configuración manual.
+            </div>
+        </div>`;
+        }
+
+        // ── Grupos estáticos: editable ──────────────────────
         const memberPills = (g.members || []).length > 0
             ? g.members.map(m => `
                 <span class="es-member-pill">
@@ -371,21 +397,78 @@ function confirmDeleteGroup(groupId, label) {
 }
 
 // ─── ALERTS ────────────────────────────────────────────────
-function renderAlerts(alerts) {
+function renderAlerts(alerts, availableGroups) {
     const tbody = document.getElementById('esAlertsBody');
     if (!alerts || alerts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Sin alertas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">Sin alertas configuradas.</td></tr>';
         return;
     }
-    tbody.innerHTML = alerts.map(a => `
+
+    const groupOptions = (availableGroups || []).map(g =>
+        `<option value="${escH(g.groupKey)}">${escH(g.label)}</option>`
+    ).join('');
+
+    tbody.innerHTML = alerts.map(a => {
+        // ── Celda de destinatarios ──────────────────────────
+        let recipientCell;
+        if (a.configurableRecipient) {
+            // Dropdown editable — selecciona qué grupo recibe esta alerta
+            const options = (availableGroups || []).map(g =>
+                `<option value="${escH(g.groupKey)}" ${g.groupKey === a.groupKey ? 'selected' : ''}>${escH(g.label)}</option>`
+            ).join('');
+            recipientCell = `
+                <div class="es-recipient-select-wrap">
+                    <span class="material-icons es-recipient-icon">group</span>
+                    <select class="es-recipient-select"
+                            id="recipient-${escH(a.key)}"
+                            onchange="saveAlertGroupKey('${escH(a.key)}', this)">
+                        <option value="">— Sin grupo asignado —</option>
+                        ${options}
+                    </select>
+                </div>`;
+        } else {
+            // Texto fijo informativo — no editable
+            recipientCell = `
+                <div class="es-recipient-fixed">
+                    <span class="material-icons es-recipient-icon">info</span>
+                    <span>${escH(a.fixedRecipientDesc || '—')}</span>
+                </div>`;
+        }
+
+        // ── Celda de threshold ──────────────────────────────
+        const hasThreshold = a.thresholdMinutes != null;
+        const currentHours = hasThreshold ? Math.round(a.thresholdMinutes / 60) : null;
+        const thresholdCell = hasThreshold ? `
+            <div class="es-threshold-block">
+                <div class="es-threshold-current">
+                    <span class="material-icons">schedule</span>
+                    Intervalo actual: <strong id="threshold-display-${escH(a.key)}">${currentHours} hora${currentHours !== 1 ? 's' : ''}</strong>
+                </div>
+                <div class="es-threshold-editor">
+                    <span class="es-threshold-label">Cambiar a:</span>
+                    <input type="number" class="es-threshold-input"
+                           id="threshold-${escH(a.key)}"
+                           value="${currentHours}" min="1" max="720" />
+                    <span class="es-threshold-unit">hrs</span>
+                    <button type="button" class="es-btn-threshold-save"
+                            onclick="saveThreshold('${escH(a.key)}')">
+                        <span class="material-icons">save</span> Guardar
+                    </button>
+                </div>
+            </div>` : '';
+
+        return `
         <tr class="es-alert-row ${a.enabled ? '' : 'es-alert-disabled'}">
             <td>
                 <div class="es-alert-name">
                     <span class="material-icons es-alert-icon">${escH(a.icon)}</span>
-                    ${escH(a.label)}
+                    <div>
+                        <div>${escH(a.label)}</div>
+                        ${thresholdCell}
+                    </div>
                 </div>
             </td>
-            <td class="es-alert-recipients">${escH(a.recipients)}</td>
+            <td>${recipientCell}</td>
             <td>
                 <label class="es-toggle es-toggle-sm">
                     <input type="checkbox" ${a.enabled ? 'checked' : ''}
@@ -400,7 +483,39 @@ function renderAlerts(alerts) {
                     <span class="material-icons">send</span> Probar
                 </button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
+}
+
+function saveAlertGroupKey(alertKey, selectEl) {
+    const groupKey = selectEl.value;
+    esCall('SetAlertGroupKey', { alertKey, groupKey }, (resp) => {
+        if (resp.success)
+            esToast(`Destinatario actualizado.`, 'success');
+        else {
+            esToast(resp.message || 'Error al guardar.', 'error');
+            loadConfig(); // revertir
+        }
+    });
+}
+
+function saveThreshold(alertKey) {
+    const input = document.getElementById(`threshold-${alertKey}`);
+    if (!input) return;
+    const hours = parseInt(input.value, 10);
+    if (isNaN(hours) || hours < 1 || hours > 720) {
+        esToast('El intervalo debe ser entre 1 y 720 horas.', 'error');
+        return;
+    }
+    esCall('SetAlertThreshold', { alertKey, thresholdHours: hours }, (resp) => {
+        if (resp.success) {
+            const display = document.getElementById(`threshold-display-${alertKey}`);
+            if (display) display.textContent = `${hours} hora${hours !== 1 ? 's' : ''}`;
+            esToast(`Intervalo guardado: cada ${hours} hora${hours !== 1 ? 's' : ''}.`, 'success');
+        } else {
+            esToast(resp.message || 'Error al guardar el intervalo.', 'error');
+        }
+    });
 }
 
 function setAlertEnabled(key, enabled) {

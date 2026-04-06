@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Web;
 using System.Web.UI;
 
 namespace Close_Portal.Core {
@@ -40,6 +41,14 @@ namespace Close_Portal.Core {
         /// </summary>
         protected override void OnInit(EventArgs e) {
             base.OnInit(e);
+
+            // ── Headers anti-cache: páginas autenticadas nunca deben
+            // ser servidas desde cache (previene que datos de un usuario
+            // aparezcan en la sesión de otro).
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+            Response.Cache.SetExpires(DateTime.UtcNow.AddDays(-1));
+            Response.Cache.AppendCacheExtension("must-revalidate, no-cache, no-store, private");
 
             // 1. Sin sesión → Login directamente (sin pasar por Error.aspx)
             //    Cubre logout normal, sesión expirada y cookies limpias.

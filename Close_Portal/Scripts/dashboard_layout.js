@@ -49,38 +49,18 @@ if (!window.AppRoot) {
 (function () {
     'use strict';
 
-    console.log('✅ dashboard.js cargado');
-
     // ========== LANGUAGE TOGGLE ==========
     function initLanguageToggle() {
-        console.log('🌐 Inicializando language toggle...');
         const languageToggle = document.querySelector('.nav-link.language-toggle');
-        console.log('Language toggle encontrado:', languageToggle);
 
-        if (!languageToggle) {
-            console.warn('No se encontró .nav-link.language-toggle');
-            return;
-        }
-
-        if (typeof translations === 'undefined') {
-            console.error('❌ translations.js NO está cargado');
-            return;
-        }
-
-        console.log('✅ translations.js disponible');
+        if (!languageToggle) return;
+        if (typeof translations === 'undefined') return;
 
         function translatePage(lang) {
-            console.log('📝 Traduciendo página a:', lang);
-
             const texts = translations[lang];
-            if (!texts) {
-                console.error('❌ Idioma no encontrado:', lang);
-                return;
-            }
+            if (!texts) return;
 
             const elements = document.querySelectorAll('[data-translate-key]');
-            console.log('Elementos a traducir encontrados:', elements.length);
-
             elements.forEach(element => {
                 const key = element.getAttribute('data-translate-key');
                 const translation = texts[key];
@@ -93,42 +73,31 @@ if (!window.AppRoot) {
                             element.value = translation;
                         }
                     } else {
-                        // Si tiene un hijo .nav-text, solo cambiar ese
                         const navText = element.querySelector('.nav-text');
                         if (navText) {
-                            navText.textContent = translation;  // ← solo el texto, respeta el icono
+                            navText.textContent = translation;
                         } else {
-                            element.textContent = translation;  // ← sin hijos, comportamiento normal
+                            element.textContent = translation;
                         }
                     }
                 }
             });
-
-            console.log('✅ Página traducida');
         }
 
         function applyLanguage(lang) {
-            console.log('🌐 Aplicando idioma:', lang);
             document.documentElement.setAttribute('data-language', lang);
             localStorage.setItem('language', lang);
 
             const text = languageToggle.querySelector('.nav-text');
-
             if (text) {
-                if (lang === 'es') {
-                    text.textContent = 'Switch to English';
-                } else {
-                    text.textContent = 'Cambiar a español';
-                }
+                text.textContent = lang === 'es' ? 'Switch to English' : 'Cambiar a español';
             }
 
             translatePage(lang);
 
-            // Notificar a módulos que el idioma cambió para que re-rendericen contenido dinámico
             if (typeof window.onLanguageChange === 'function') {
                 window.onLanguageChange(lang);
             }
-
             if (typeof window.updateThemeToggleText === 'function') {
                 window.updateThemeToggleText();
             }
@@ -140,11 +109,8 @@ if (!window.AppRoot) {
         languageToggle.addEventListener('click', function (e) {
             e.preventDefault();
             const currentLang = document.documentElement.getAttribute('data-language') || 'es';
-            const newLang = currentLang === 'es' ? 'en' : 'es';
-            applyLanguage(newLang);
+            applyLanguage(currentLang === 'es' ? 'en' : 'es');
         });
-
-        console.log('✅ Language toggle inicializado');
     }
 
     // ========== SIDEBAR TOGGLE ==========
@@ -165,9 +131,7 @@ if (!window.AppRoot) {
 
         if (window.innerWidth > 992) {
             const savedState = localStorage.getItem('sidebarCollapsed');
-            if (savedState === 'true') {
-                sidebar.classList.add('collapsed');
-            }
+            if (savedState === 'true') sidebar.classList.add('collapsed');
         }
 
         document.addEventListener('click', function (e) {
@@ -196,9 +160,7 @@ if (!window.AppRoot) {
     // ========== ACTIVE NAV ITEM ==========
     function setActiveNavItem() {
         const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-
-        navLinks.forEach(link => {
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             if (href && currentPath.includes(href) && href !== '#') {
                 link.classList.add('active');
@@ -208,69 +170,28 @@ if (!window.AppRoot) {
 
     // ========== LOGOUT MODAL ==========
     function initLogoutModal() {
-        console.log('🚪 Inicializando logout modal...');
-
         const logoutLink = document.getElementById('logoutLink');
         const confirmLogoutBtn = document.getElementById('confirmLogout');
 
-        console.log('logoutLink encontrado:', logoutLink);
-        console.log('confirmLogout encontrado:', confirmLogoutBtn);
-
-        if (!logoutLink) {
-            console.error('❌ No se encontró #logoutLink');
-            return;
-        }
+        if (!logoutLink) return;
 
         logoutLink.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('🖱️ Click en logout link');
-
             const modalElement = document.getElementById('logoutModal');
-            console.log('Modal element:', modalElement);
-
-            if (!modalElement) {
-                console.error('❌ No se encontró #logoutModal');
-                return;
-            }
-
-            const modal = new bootstrap.Modal(modalElement);
-            console.log('Modal creado:', modal);
-            modal.show();
-            console.log('✅ Modal mostrado');
+            if (!modalElement) return;
+            new bootstrap.Modal(modalElement).show();
         });
 
         if (confirmLogoutBtn) {
             confirmLogoutBtn.addEventListener('click', function () {
-                console.log('========================================');
-                console.log('🚪 LOGOUT CONFIRMADO');
-                console.log('========================================');
-
-                // Limpiar session storage
-                console.log('Limpiando sessionStorage...');
                 sessionStorage.clear();
-                console.log('sessionStorage limpiado');
-
-                // Limpiar datos específicos
-                console.log('Session keys antes de limpiar:', Object.keys(sessionStorage));
-
-                // Redirigir
-                console.log('Redirigiendo a Login...');
                 window.location.href = window.AppRoot + 'Pages/Home/Logout.aspx';
             });
-            console.log('✅ Listener de confirmLogout agregado');
-        } else {
-            console.error('❌ No se encontró #confirmLogout');
         }
-
-        console.log('✅ Logout modal inicializado');
     }
 
     // ========== INICIALIZACIÓN ==========
     function init() {
-        console.log('========================================');
-        console.log('🚀 Dashboard Init');
-        console.log('========================================');
-
         initLanguageToggle();
         initSidebarToggle();
         handleResize();
@@ -278,10 +199,6 @@ if (!window.AppRoot) {
         initLogoutModal();
         initOsNotifications();
         loadUnreadCount();
-
-        console.log('========================================');
-        console.log('✅ Dashboard inicializado');
-        console.log('========================================');
     }
 
     if (document.readyState === 'loading') {

@@ -30,12 +30,23 @@ namespace Close_Portal.Services {
         private static readonly object _alertLock = new object();
         private static readonly Dictionary<string, bool> _alertEnabled =
             new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase) {
-                { "UserAdded",      true }, { "UserRemoved",    true },
-                { "UserUpdated",    true }, { "ClosureRequest", true },
-                { "GuardStarted",   true }, { "GuardClosed",    true },
+                // existentes
+                { "UserAdded",           true }, { "UserRemoved",         true },
+                { "UserUpdated",         true }, { "ClosureRequest",      true },
+                { "GuardStarted",        true }, { "GuardClosed",         true },
+                // nuevos
+                { "GuardDraft",          true }, { "GuardDraftCancelled", true },
+                { "GuardConfirmed",      true }, { "GuardCancelled",      true },
+                { "ClosureResponse",     true },
+                { "UserBlocked",         true }, { "UserUnblocked",       true },
+                { "GuardDraftReminder",  true }, { "DefaultSpotReminder", true },
             };
 
-        // ── Cargar desde DB al arrancar (llamar en Application_Start o Page_Load) ─
+        // Cache de grupo destinatario por alerta (clave = alertKey, valor = groupKey)
+        private static readonly Dictionary<string, string> _alertGroupKeys =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // ── Cargar desde DB al arrancar ───────────────────────────────────
         public static void LoadConfig() {
             try {
                 var da = new EmailDataAccess();
@@ -47,9 +58,12 @@ namespace Close_Portal.Services {
                 }
                 var alerts = da.GetAlertSettings();
                 lock (_alertLock) {
-                    foreach (var a in alerts)
+                    foreach (var a in alerts) {
                         if (_alertEnabled.ContainsKey(a.AlertKey))
                             _alertEnabled[a.AlertKey] = a.Enabled;
+                        if (!string.IsNullOrWhiteSpace(a.AlertGroupKey))
+                            _alertGroupKeys[a.AlertKey] = a.AlertGroupKey;
+                    }
                 }
                 Debug.WriteLine($"[EmailService.LoadConfig] Enabled:{_notificationsEnabled} Test:{_testMode}");
             } catch (Exception ex) {
@@ -73,8 +87,25 @@ namespace Close_Portal.Services {
         public static void SetAlertEnabledCache(string key, bool enabled) {
             lock (_alertLock) { if (_alertEnabled.ContainsKey(key)) _alertEnabled[key] = enabled; }
         }
+        public static void SetAlertGroupKeyCache(string key, string groupKey) {
+            lock (_alertLock) { _alertGroupKeys[key] = groupKey ?? ""; }
+        }
         public static Dictionary<string, bool> GetAlertStates() {
             lock (_alertLock) { return new Dictionary<string, bool>(_alertEnabled); }
+        }
+
+        // ── Resolver destinatarios configurables ─────────────────────────
+        // Primero busca el grupo configurado en cache/DB para esa alerta.
+        // Si no hay, usa fallbackGroupKey. Permite al Owner cambiar
+        // destinatarios sin tocar código.
+        private static string GetAlertRecipients(string alertKey, string fallbackGroupKey) {
+            string groupKey;
+            lock (_alertLock) {
+                _alertGroupKeys.TryGetValue(alertKey, out groupKey);
+            }
+            if (string.IsNullOrWhiteSpace(groupKey))
+                groupKey = fallbackGroupKey;
+            return string.IsNullOrWhiteSpace(groupKey) ? null : ResolveGroup(groupKey);
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -103,7 +134,7 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: ResolveGuardRecipients(),
+                recipientList: GetAlertRecipients("UserAdded", "Administradores"),
                 alertKey: "UserAdded");
         }
 
@@ -117,7 +148,7 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: ResolveGuardRecipients(),
+                recipientList: GetAlertRecipients("UserRemoved", "Administradores"),
                 alertKey: "UserRemoved");
         }
 
@@ -132,7 +163,7 @@ namespace Close_Portal.Services {
                     $"<b>Realizado por:</b> {performedByEmail}",
                     $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
                 }),
-                recipientList: MergeGroups(ResolveGroup("TeamIT"), ResolveGuardRecipients()),
+                recipientList: GetAlertRecipients("UserUpdated", "Administradores"),
                 alertKey: "UserUpdated");
         }
 
@@ -212,8 +243,268 @@ namespace Close_Portal.Services {
                     $"<b>Cierre registrado:</b> {closedAt:dd/MM/yyyy HH:mm} hrs",
                     $"<b>Disparado por:</b> {triggeredByEmail ?? "Sistema"}"
                 }),
-                recipientList: ResolveGuardRecipients(),
+                recipientList: GetAlertRecipients("GuardClosed", "Administradores"),
                 alertKey: "GuardClosed");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // GUARDIA — DRAFT PROGRAMADA
+        // Destinatarios: grupo dinámico "Administradores" (Role_Id=3)
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyGuardDraft(int guardId, DateTime startTime, string createdByEmail) {
+            Send(
+                subject: $"[Close Portal] Guardia programada — {startTime:dd/MM/yyyy HH:mm} hrs",
+                body: BuildTemplate("Guardia programada", "#f59e0b", "&#128197;", new[] {
+                    "<b>Se ha programado una nueva guardia de cierre.</b>",
+                    $"<b>Inicio programado:</b> {startTime:dd/MM/yyyy HH:mm} hrs",
+                    $"<b>Creada por:</b> {createdByEmail ?? "Sistema"}",
+                    $"<b>Fecha de notificación:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs",
+                    "<span style='color:#64748b;font-size:13px;'>La guardia se encuentra en estado borrador. Aún puede cancelarse o modificarse.</span>"
+                }),
+                recipientList: GetAlertRecipients("GuardDraft", "Administradores"),
+                alertKey: "GuardDraft");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // GUARDIA — DRAFT CANCELADA
+        // Destinatarios: grupo dinámico "Administradores"
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyGuardDraftCancelled(DateTime? startTime, string cancelledByEmail) {
+            string fechaStr = startTime.HasValue
+                ? startTime.Value.ToString("dd/MM/yyyy HH:mm") + " hrs" : "—";
+            Send(
+                subject: $"[Close Portal] Guardia cancelada (draft) — {fechaStr}",
+                body: BuildTemplate("Guardia draft cancelada", "#ef4444", "&#10006;", new[] {
+                    "<b>La guardia programada en borrador ha sido cancelada.</b>",
+                    $"<b>Inicio que estaba programado:</b> {fechaStr}",
+                    $"<b>Cancelada por:</b> {cancelledByEmail ?? "Sistema"}",
+                    $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                }),
+                recipientList: GetAlertRecipients("GuardDraftCancelled", "Administradores"),
+                alertKey: "GuardDraftCancelled");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // GUARDIA — CONFIRMADA (creada)
+        // Destinatarios: usuarios con locaciones involucradas + spots
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyGuardConfirmed(
+                int guardId, DateTime? startTime,
+                string confirmedByEmail,
+                List<(string DeptCode, string DeptName, string Username, string Email)> spots) {
+
+            string audience = new EmailDataAccess().GetGuardAudienceEmails(guardId);
+            if (string.IsNullOrWhiteSpace(audience)) return;
+
+            string fechaStr = startTime.HasValue
+                ? startTime.Value.ToString("dd/MM/yyyy HH:mm") + " hrs" : "—";
+
+            var spotRows = new System.Text.StringBuilder();
+            foreach (var s in spots)
+                spotRows.Append($@"
+                <tr>
+                  <td style='padding:8px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;'>
+                    <span style='display:inline-block;background:#fef3c7;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;margin-right:8px;'>{System.Web.HttpUtility.HtmlEncode(s.DeptCode)}</span>
+                    {System.Web.HttpUtility.HtmlEncode(s.DeptName)}
+                  </td>
+                  <td style='padding:8px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;font-weight:600;'>
+                    {System.Web.HttpUtility.HtmlEncode(s.Username ?? s.Email ?? "Sin asignar")}
+                  </td>
+                </tr>");
+
+            string spotsTable = spots.Count > 0
+                ? $@"<table width='100%' cellpadding='0' cellspacing='0' style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-top:16px;'>
+                      <thead><tr style='background:#f8fafc;'>
+                        <th style='padding:8px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;'>Departamento</th>
+                        <th style='padding:8px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;'>Responsable</th>
+                      </tr></thead>
+                      <tbody>{spotRows}</tbody></table>"
+                : "";
+
+            string body = $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
+<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
+<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
+<table width='560' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
+  <tr><td style='background:#10b981;padding:28px 32px;text-align:center;'>
+    <div style='font-size:40px;color:#fff;margin-bottom:8px;'>&#128737;</div>
+    <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>Guardia confirmada</h1>
+    <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
+  </td></tr>
+  <tr><td style='padding:28px 32px;'>
+    <p style='margin:0 0 8px;font-size:15px;color:#334155;'>La guardia ha sido <strong>confirmada y está activa</strong>.</p>
+    <table width='100%' cellpadding='0' cellspacing='0'>
+      <tr><td style='padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Inicio:</b> {fechaStr}</td></tr>
+      <tr><td style='padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Confirmada por:</b> {System.Web.HttpUtility.HtmlEncode(confirmedByEmail ?? "Sistema")}</td></tr>
+    </table>
+    {spotsTable}
+  </td></tr>
+  <tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
+    <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal.</p>
+  </td></tr>
+</table></td></tr></table></body></html>";
+
+            Send(subject: $"[Close Portal] Guardia confirmada — {fechaStr}",
+                 body: body, recipientList: audience, alertKey: "GuardConfirmed");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // GUARDIA — CANCELADA (estaba confirmada)
+        // Destinatarios: misma audiencia que GuardConfirmed
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyGuardCancelled(
+                DateTime? startTime, string cancelledByEmail, string audienceEmails) {
+
+            if (string.IsNullOrWhiteSpace(audienceEmails)) return;
+
+            string fechaStr = startTime.HasValue
+                ? startTime.Value.ToString("dd/MM/yyyy HH:mm") + " hrs" : "—";
+
+            Send(
+                subject: $"[Close Portal] Guardia cancelada — {fechaStr}",
+                body: BuildTemplate("Guardia cancelada", "#ef4444", "&#10006;", new[] {
+                    "<b>La guardia activa ha sido cancelada.</b>",
+                    $"<b>Inicio que estaba programado:</b> {fechaStr}",
+                    $"<b>Cancelada por:</b> {cancelledByEmail ?? "Sistema"}",
+                    $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                }),
+                recipientList: audienceEmails,
+                alertKey: "GuardCancelled");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // SOLICITUD DE CIERRE — RESPUESTA
+        // Destinatario: el Regular que hizo la solicitud
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyClosureResponse(
+                string requesterEmail, string requesterName,
+                string locationName, string status,
+                string reviewNotes, string reviewedBy) {
+
+            bool approved = status == "Approved";
+            string color = approved ? "#10b981" : "#ef4444";
+            string icon = approved ? "&#10003;" : "&#10006;";
+            string label = approved ? "aprobada" : "rechazada";
+
+            string notesLine = !string.IsNullOrWhiteSpace(reviewNotes)
+                ? $"<b>Comentario del revisor:</b> {System.Web.HttpUtility.HtmlEncode(reviewNotes)}"
+                : null;
+
+            Send(
+                subject: $"[Close Portal] Solicitud de cierre {label} — {locationName}",
+                body: BuildTemplate($"Solicitud {label}", color, icon, new[] {
+                    $"Hola <b>{System.Web.HttpUtility.HtmlEncode(requesterName)}</b>, tu solicitud de cierre fue <b>{label}</b>.",
+                    $"<b>Locación:</b> {System.Web.HttpUtility.HtmlEncode(locationName)}",
+                    $"<b>Estado:</b> {(approved ? "Aprobada ✓" : "Rechazada ✗")}",
+                    $"<b>Revisado por:</b> {System.Web.HttpUtility.HtmlEncode(reviewedBy ?? "—")}",
+                    $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs",
+                    notesLine
+                }),
+                recipientList: requesterEmail,
+                alertKey: "ClosureResponse");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // USUARIO BLOQUEADO
+        // Destinatario: el propio usuario bloqueado
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyUserBlocked(
+                string targetEmail, string targetUsername, string performedByEmail) {
+            Send(
+                subject: "[Close Portal] Tu cuenta ha sido bloqueada",
+                body: BuildTemplate("Cuenta bloqueada", "#ef4444", "&#128274;", new[] {
+                    $"Hola <b>{System.Web.HttpUtility.HtmlEncode(targetUsername ?? targetEmail)}</b>.",
+                    "Tu cuenta de <b>Close Portal</b> ha sido bloqueada temporalmente.",
+                    "Si crees que esto es un error, contacta al administrador del sistema.",
+                    $"<b>Acción realizada por:</b> {System.Web.HttpUtility.HtmlEncode(performedByEmail ?? "Sistema")}",
+                    $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                }),
+                recipientList: targetEmail,
+                alertKey: "UserBlocked");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // USUARIO DESBLOQUEADO
+        // Destinatario: el propio usuario desbloqueado
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyUserUnblocked(
+                string targetEmail, string targetUsername, string performedByEmail) {
+            Send(
+                subject: "[Close Portal] Tu cuenta ha sido desbloqueada",
+                body: BuildTemplate("Cuenta desbloqueada", "#10b981", "&#128275;", new[] {
+                    $"Hola <b>{System.Web.HttpUtility.HtmlEncode(targetUsername ?? targetEmail)}</b>.",
+                    "Tu cuenta de <b>Close Portal</b> ha sido desbloqueada. Ya puedes iniciar sesión.",
+                    $"<b>Acción realizada por:</b> {System.Web.HttpUtility.HtmlEncode(performedByEmail ?? "Sistema")}",
+                    $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                }),
+                recipientList: targetEmail,
+                alertKey: "UserUnblocked");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // DEFAULT SPOT REMINDER
+        // Se envía al confirmar la guardia si hay spots sin asignar.
+        // Destinatario: grupo estático DefaultSpot{deptCode}
+        // ════════════════════════════════════════════════════════════════
+        public static void NotifyDefaultSpotReminders(int guardId) {
+            var da = new EmailDataAccess();
+            var unfilledDepts = da.GetUnfilledSpotDeptCodes(guardId);
+            if (unfilledDepts == null || unfilledDepts.Count == 0) return;
+
+            foreach (var deptCode in unfilledDepts) {
+                string groupKey = $"DefaultSpot{deptCode.ToUpper()}";
+                string recipients = ResolveGroup(groupKey);
+                if (string.IsNullOrWhiteSpace(recipients)) continue;
+
+                Send(
+                    subject: $"[Close Portal] Spot {deptCode} sin asignar — guardia activa",
+                    body: BuildTemplate($"Spot {deptCode} sin responsable", "#f59e0b", "&#9888;", new[] {
+                        $"La guardia ha sido confirmada pero el spot de <b>{deptCode}</b> no tiene responsable asignado.",
+                        "Por favor, accede a Close Portal y asigna un responsable para este departamento.",
+                        $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                    }),
+                    recipientList: recipients,
+                    alertKey: "DefaultSpotReminder");
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // GUARD DRAFT REMINDER — llamado por el timer de Startup.cs
+        // Verifica guardias draft sin confirmar que superaron el threshold
+        // ════════════════════════════════════════════════════════════════
+        public static void CheckDraftReminders() {
+            try {
+                if (!IsAlertEnabled("GuardDraftReminder")) return;
+
+                var da = new EmailDataAccess();
+                int threshold = da.GetReminderThresholdMinutes(120);
+                var drafts = da.GetDraftGuardsForReminder(threshold);
+
+                foreach (var (guardId, createdAt) in drafts) {
+                    string admins = da.GetDeptAdminEmails(guardId);
+                    if (string.IsNullOrWhiteSpace(admins)) {
+                        da.MarkReminderSent(guardId); // marcar igual para no re-intentar
+                        continue;
+                    }
+
+                    int hoursElapsed = (int)Math.Round((DateTime.Now - createdAt).TotalHours);
+
+                    Send(
+                        subject: $"[Close Portal] Recordatorio: guardia sin confirmar ({hoursElapsed}h)",
+                        body: BuildTemplate("Guardia sin confirmar", "#f59e0b", "&#9201;", new[] {
+                            $"Existe una guardia en borrador que lleva <b>{hoursElapsed} hora{(hoursElapsed != 1 ? "s" : "")}</b> sin ser confirmada.",
+                            $"<b>Programada el:</b> {createdAt:dd/MM/yyyy HH:mm} hrs",
+                            "Por favor, ingresa a Close Portal y confirma la guardia o cancélala si ya no es necesaria.",
+                            $"<b>Fecha de este recordatorio:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
+                        }),
+                        recipientList: admins,
+                        alertKey: "GuardDraftReminder");
+
+                    da.MarkReminderSent(guardId);
+                    Debug.WriteLine($"[EmailService.CheckDraftReminders] Reminder enviado para Guard {guardId}");
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[EmailService.CheckDraftReminders] ERROR: {ex.Message}");
+            }
         }
 
         // ════════════════════════════════════════════════════════════════

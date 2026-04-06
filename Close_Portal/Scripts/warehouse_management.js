@@ -34,7 +34,7 @@ function createWmModal() {
 
                     <!-- Nombre -->
                     <div class="field-group">
-                        <label data-translate-key="wm.modal.name">Nombre de la Locación</label>
+                        <label for="wmLocName" data-translate-key="wm.modal.name">Nombre de la Locación</label>
                         <input type="text" id="wmLocName" maxlength="150"
                                data-translate-key="wm.modal.name_placeholder"
                                placeholder="Ej. Bodega Norte" />
