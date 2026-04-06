@@ -12,15 +12,19 @@ if (!window.AppRoot) {
 }
 
 // ─── SIGNALR HANDLERS — deben registrarse antes de $.connection.hub.start() ─
+// Administrador (3) y Owner (4) — reciben nuevas solicitudes de cierre
 (function () {
     if (typeof $.connection === 'undefined' || typeof $.connection.locationHub === 'undefined') return;
-    if (window.CurrentRoleId !== 2) return;  // solo Manager
+    if (window.CurrentRoleId < 3) return;
 
     if (!$.connection.locationHub.client.newRequest) {
         $.connection.locationHub.client.newRequest = function (data) {
             refreshBadge();
-            showOsNotification('Nueva solicitud de cierre',
-                data.locationName + ' — ' + data.requesterName);
+            showOsNotification(
+                'Nueva solicitud de cierre',
+                data.locationName + ' — ' + data.requesterName,
+                window.AppRoot + 'validate'
+            );
         };
     }
     if (!$.connection.locationHub.client.badgeUpdate) {
@@ -36,8 +40,11 @@ if (!window.AppRoot) {
     if (!$.connection.locationHub.client.requestReviewed) {
         $.connection.locationHub.client.requestReviewed = function (data) {
             var statusLabel = data.newStatus === 'Approved' ? 'aprobada' : 'rechazada';
-            showOsNotification('Solicitud ' + statusLabel,
-                data.locationName + ' — por ' + data.reviewedBy);
+            showOsNotification(
+                'Solicitud ' + statusLabel,
+                data.locationName + ' — por ' + data.reviewedBy,
+                window.AppRoot + 'closure'
+            );
             refreshBadge();
         };
     }
@@ -219,11 +226,18 @@ function initOsNotifications() {
     }
 }
 
-function showOsNotification(title, body, icon) {
+function showOsNotification(title, body, url, icon) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
-    var options = { body: body, icon: icon || '/favicon.ico' };
+    var options = { body: body, icon: icon || (window.AppRoot + 'favicon.ico') };
     var n = new Notification(title, options);
+    if (url) {
+        n.onclick = function () {
+            window.focus();
+            window.location.href = url;
+            n.close();
+        };
+    }
     setTimeout(function () { n.close(); }, 6000);
 }
 
@@ -254,7 +268,8 @@ function subscribeToNotifGroup() {
     var userId = window.CurrentUserId;
 
     function joinGroups() {
-        if (roleId === 2) hub.server.joinValidate();
+        // Administrador (3) y Owner (4) reciben notificaciones de nuevas solicitudes
+        if (roleId >= 3) hub.server.joinValidate();
         if (userId) hub.server.joinAsRequester(String(userId));
     }
 
