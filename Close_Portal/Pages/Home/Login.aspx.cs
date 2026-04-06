@@ -11,7 +11,7 @@ namespace Close_Portal.Pages {
         protected void Page_Load(object sender, EventArgs e) {
             if (Session["UserId"] != null && !IsPostBack) {
                 System.Diagnostics.Debug.WriteLine("Ya hay sesión activa - Redirigiendo a Dashboard");
-                Response.Redirect("~/Pages/Main/Live.aspx");
+                Response.Redirect("~/live");
                 return;
             }
         }

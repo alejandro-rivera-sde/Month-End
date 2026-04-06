@@ -35,7 +35,7 @@ function loadRequests() {
         vrT('vr.loading') + '</div>';
 
     $.ajax({
-        type: 'POST', url: 'ValidateRequest.aspx/GetRequests', data: '{}',
+        type: 'POST', url: window.PageWebMethodBase + 'GetRequests', data: '{}',
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
             var d = resp.d;
@@ -247,7 +247,7 @@ function submitReview(requestId, action) {
     msgEl.style.display = 'none';
 
     $.ajax({
-        type: 'POST', url: 'ValidateRequest.aspx/ReviewRequest',
+        type: 'POST', url: window.PageWebMethodBase + 'ReviewRequest',
         data: JSON.stringify({ requestId: requestId, action: action, reviewNotes: notes }),
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
@@ -325,7 +325,7 @@ function loadClosedRequests() {
         vrT('vr.loading') + '</div>';
 
     $.ajax({
-        type: 'POST', url: 'ValidateRequest.aspx/GetClosedRequests', data: '{}',
+        type: 'POST', url: window.PageWebMethodBase + 'GetClosedRequests', data: '{}',
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
             var d = resp.d;
@@ -444,7 +444,7 @@ function submitRevert(requestId) {
     msgEl.style.display = 'none';
 
     $.ajax({
-        type: 'POST', url: 'ValidateRequest.aspx/RevertLocation',
+        type: 'POST', url: window.PageWebMethodBase + 'RevertLocation',
         data: JSON.stringify({ requestId: requestId, reason: reason }),
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {

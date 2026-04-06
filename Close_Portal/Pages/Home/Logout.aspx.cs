@@ -15,7 +15,7 @@ namespace Close_Portal.Pages {
             Response.Cookies.Clear();
 
             // Redirigir al login
-            Response.Redirect("~/Pages/Home/Login.aspx", false);
+            Response.Redirect("~/login", false);
             Context.ApplicationInstance.CompleteRequest();
         }
     }

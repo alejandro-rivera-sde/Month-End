@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // ── Cargar locaciones del usuario ─────────────────────────────────────────────
 function loadMyLocations() {
     $.ajax({
-        type: 'POST', url: 'RequestClosure.aspx/GetMyLocations', data: '{}',
+        type: 'POST', url: window.PageWebMethodBase + 'GetMyLocations', data: '{}',
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
             var d = resp.d;
@@ -56,7 +56,7 @@ function onLocationChange(locationId) {
     if (!locationId) return;
 
     $.ajax({
-        type: 'POST', url: 'RequestClosure.aspx/GetManagerForLocation',
+        type: 'POST', url: window.PageWebMethodBase + 'GetManagerForLocation',
         data: JSON.stringify({ locationId: parseInt(locationId) }),
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
@@ -97,7 +97,7 @@ function sendRequest() {
     hideFormMsg();
 
     $.ajax({
-        type: 'POST', url: 'RequestClosure.aspx/SubmitRequest',
+        type: 'POST', url: window.PageWebMethodBase + 'SubmitRequest',
         data: JSON.stringify({ locationId: locationId, notes: notes }),
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
@@ -134,7 +134,7 @@ function loadHistory() {
         '<div class="rc-loading"><span class="material-icons rc-spin">autorenew</span> Cargando...</div>';
 
     $.ajax({
-        type: 'POST', url: 'RequestClosure.aspx/GetMyHistory', data: '{}',
+        type: 'POST', url: window.PageWebMethodBase + 'GetMyHistory', data: '{}',
         contentType: 'application/json; charset=utf-8', dataType: 'json',
         success: function (resp) {
             var d = resp.d;

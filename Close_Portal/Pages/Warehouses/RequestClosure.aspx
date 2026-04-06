@@ -124,6 +124,7 @@
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
     <script>
         window.CurrentUserId = '<%= Session["UserId"] %>';
+        window.PageWebMethodBase  = '<%= ResolveUrl("~/Pages/Warehouses/RequestClosure.aspx/") %>';
     </script>
     <script src='<%= ResolveUrl("~/Scripts/request_closure.js") %>'></script>
 </asp:Content>

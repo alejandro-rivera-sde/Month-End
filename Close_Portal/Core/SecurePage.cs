@@ -53,7 +53,7 @@ namespace Close_Portal.Core {
             // 1. Sin sesión → Login directamente (sin pasar por Error.aspx)
             //    Cubre logout normal, sesión expirada y cookies limpias.
             if (Session["UserId"] == null) {
-                Response.Redirect("~/Pages/Home/Login.aspx");
+                Response.Redirect("~/login");
                 return;
             }
 

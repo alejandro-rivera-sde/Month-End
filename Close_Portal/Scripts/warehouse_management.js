@@ -122,7 +122,7 @@ function openModalEdit(locationId) {
 
     $.ajax({
         type: 'POST',
-        url: 'WarehouseManagement.aspx/GetLocationDetail',
+        url: window.PageWebMethodBase + 'GetLocationDetail',
         data: JSON.stringify({ locationId: locationId }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -164,7 +164,7 @@ function saveWmLocation() {
 
     $.ajax({
         type: 'POST',
-        url: 'WarehouseManagement.aspx/SaveLocation',
+        url: window.PageWebMethodBase + 'SaveLocation',
         data: JSON.stringify({
             locationId: mode === 'edit' ? locationId : 0,
             locationName: locationName,
@@ -199,7 +199,7 @@ function confirmToggleActive(locationId, isActive, locationName) {
 
     $.ajax({
         type: 'POST',
-        url: 'WarehouseManagement.aspx/ToggleLocationActive',
+        url: window.PageWebMethodBase + 'ToggleLocationActive',
         data: JSON.stringify({ locationId: locationId, active: !isActive }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',

@@ -1,25 +1,19 @@
 ﻿// ============================================================================
-// LOGIN.JS - Cliente JavaScript para Google OAuth y Login Estándar
+// LOGIN.JS
 // ============================================================================
 
-// AppRoot: raíz de la app derivada desde la URL actual
-if (!window.AppRoot) {
-    (function () {
-        var path = window.location.pathname;
-        var idx = path.toLowerCase().indexOf('/pages/');
-        window.AppRoot = idx !== -1 ? path.substring(0, idx + 1) : '/';
-    })();
-}
+// AppRoot y LoginWebMethodBase son inyectados por Login.aspx desde el servidor
+// usando ResolveUrl — siempre correctos independientemente de la ruta amigable.
+// window.AppRoot            = resuelto por servidor
+// window.LoginWebMethodBase = resuelto por servidor
 
 const GOOGLE_CLIENT_ID = "529272784814-e2o5s7m1fscqhssu78s5efb4feg6h2em.apps.googleusercontent.com";
 
-// Estado del toggle
 let isGoogleMode = true;
 
 // ============================================================================
 // Inicialización
 // ============================================================================
-
 window.onload = function () {
     initializeGoogleSignIn();
     initializeTabToggle();
@@ -44,119 +38,65 @@ function initializeGoogleSignIn() {
             width: 340
         }
     );
-
-    console.log("Google Sign-In inicializado");
 }
 
 // ============================================================================
 // Toggle del Tab
 // ============================================================================
-
 function initializeTabToggle() {
-    const toggleBtn = document.getElementById('toggleLoginMode');
-    const tabText = document.getElementById('tabText');
-    const googleSection = document.getElementById('googleLoginSection');
-    const standardSection = document.getElementById('standardLoginSection');
+    var toggleBtn = document.getElementById('toggleLoginMode');
+    var tabText = document.getElementById('tabText');
+    var googleSection = document.getElementById('googleLoginSection');
+    var standardSection = document.getElementById('standardLoginSection');
 
     if (toggleBtn) {
-        // DOBLE CLICK para activar toggle
         toggleBtn.addEventListener('dblclick', function () {
             isGoogleMode = !isGoogleMode;
-
-            if (isGoogleMode) {
-                // Mostrar Google
-                googleSection.style.display = 'block';
-                standardSection.style.display = 'none';
-                tabText.textContent = 'Login';
-                hideMessages();
-            } else {
-                // Mostrar campos estándar
-                googleSection.style.display = 'none';
-                standardSection.style.display = 'block';
-                tabText.textContent = 'Google';
-                hideMessages();
-            }
-
-            console.log('Modo cambiado a:', isGoogleMode ? 'Google' : 'Estándar');
+            googleSection.style.display = isGoogleMode ? 'block' : 'none';
+            standardSection.style.display = isGoogleMode ? 'none' : 'block';
+            tabText.textContent = isGoogleMode ? 'Login' : 'Google';
+            hideMessages();
         });
     }
 
-    // Login estándar
-    const btnStandardLogin = document.getElementById('btnStandardLogin');
-    if (btnStandardLogin) {
-        btnStandardLogin.addEventListener('click', function () {
-            validateStandardLogin();
-        });
-    }
+    var btnStandardLogin = document.getElementById('btnStandardLogin');
+    if (btnStandardLogin)
+        btnStandardLogin.addEventListener('click', validateStandardLogin);
 
-    // Enter en password para submit
-    const passwordInput = document.getElementById('passwordStandard');
-    if (passwordInput) {
+    var passwordInput = document.getElementById('passwordStandard');
+    if (passwordInput)
         passwordInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                validateStandardLogin();
-            }
+            if (e.key === 'Enter') validateStandardLogin();
         });
-    }
 }
 
 // ============================================================================
 // Login Estándar
 // ============================================================================
-
 function validateStandardLogin() {
-    const email = document.getElementById('emailStandard').value;
-    const password = document.getElementById('passwordStandard').value;
+    var email = document.getElementById('emailStandard').value;
+    var password = document.getElementById('passwordStandard').value;
 
-    console.log('=== validateStandardLogin EJECUTADA ===');
+    if (!email || !password) { showError("Por favor ingresa email y contraseña"); return; }
+    if (!email.endsWith('@novamex.com')) { showError("Por favor usa tu email corporativo @novamex.com"); return; }
 
-    // Validaciones básicas
-    if (!email || !password) {
-        showError("Por favor ingresa email y contraseña");
-        return;
-    }
-
-    if (!email.endsWith('@novamex.com')) {
-        showError("Por favor usa tu email corporativo @novamex.com");
-        return;
-    }
-
-    // Mostrar loading
     showLoading(true);
     hideMessages();
 
-    // Preparar request
-    const requestData = {
-        request: {
-            Email: email,
-            Password: password
-        }
-    };
-
-    // AJAX al WebMethod
     $.ajax({
         type: "POST",
-        url: "Login.aspx/ValidarLoginEstandar",
-        data: JSON.stringify(requestData),
+        url: window.LoginWebMethodBase + 'ValidarLoginEstandar',
+        data: JSON.stringify({ request: { Email: email, Password: password } }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (response) {
-            console.log("=== RESPUESTA LOGIN ESTÁNDAR ===");
-            console.log(response);
-
             showLoading(false);
-
-            let result = response.d;
-            if (result && result.Result) {
-                result = result.Result;
-            }
-
+            var result = response.d;
+            if (result && result.Result) result = result.Result;
             handleLoginResponse(result);
         },
-        error: function (xhr, status, error) {
+        error: function () {
             showLoading(false);
-            console.error("Error en login estándar:", error);
-            console.error("Response:", xhr.responseText);
             showError("Error de comunicación. Intente nuevamente.");
         }
     });
@@ -165,119 +105,58 @@ function validateStandardLogin() {
 // ============================================================================
 // Callback de Google
 // ============================================================================
-
 function handleGoogleResponse(response) {
-    console.log("=== Google response recibida ===");
-    const idToken = response.credential;
-
-    if (!idToken) {
-        showError("No se recibió token de Google");
-        return;
-    }
-
-    validateGoogleLogin(idToken);
+    if (!response.credential) { showError("No se recibió token de Google"); return; }
+    validateGoogleLogin(response.credential);
 }
 
-// ============================================================================
-// Comunicación con Backend
-// ============================================================================
-
 function validateGoogleLogin(idToken) {
-    console.log("=== Validando con backend ===");
     showLoading(true);
     hideMessages();
 
-    const requestData = {
-        request: {
-            IdToken: idToken
-        }
-    };
-
     $.ajax({
         type: "POST",
-        url: "Login.aspx/ValidarLoginGoogle",
-        data: JSON.stringify(requestData),
+        url: window.LoginWebMethodBase + 'ValidarLoginGoogle',
+        data: JSON.stringify({ request: { IdToken: idToken } }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (response) {
             showLoading(false);
-            let result = response.d;
-            if (result && result.Result) {
-                result = result.Result;
-            }
+            var result = response.d;
+            if (result && result.Result) result = result.Result;
             handleLoginResponse(result);
         },
-        error: function (xhr, status, error) {
+        error: function () {
             showLoading(false);
-            console.error("Error AJAX:", error);
             showError("Error de comunicación. Intente nuevamente.");
         }
     });
 }
 
 function handleLoginResponse(result) {
-    console.log("========================================");
-    console.log("=== handleLoginResponse ===");
-    console.log("Result:", result);
-    console.log("Success:", result.Success);
-    console.log("Message:", result.Message);
-    console.log("UserId:", result.UserId);
-    console.log("Email:", result.Email);
-    console.log("RoleName:", result.RoleName);
-    console.log("========================================");
-
-    if (result.Success) {
-        // Login exitoso
-        console.log("✓ Login exitoso - Guardando en sessionStorage...");
-
-        showSuccess(`¡Bienvenido! ${result.Email || result.Username || ''}`);
-
-        // Guardar datos del usuario en sessionStorage
-        try {
-            sessionStorage.setItem("userId", result.UserId);
-            sessionStorage.setItem("email", result.Email);
-            sessionStorage.setItem("username", result.Username || result.Email);
-            sessionStorage.setItem("roleName", result.RoleName);
-
-            console.log("SessionStorage guardado:");
-            console.log("- userId:", sessionStorage.getItem("userId"));
-            console.log("- email:", sessionStorage.getItem("email"));
-            console.log("- username:", sessionStorage.getItem("username"));
-            console.log("- roleName:", sessionStorage.getItem("roleName"));
-        } catch (e) {
-            console.error("Error guardando en sessionStorage:", e);
-        }
-
-        // Redirigir al dashboard después de 1 segundo
-        console.log("Preparando redirección al dashboard...");
-
+    if (result && result.Success) {
+        showSuccess('¡Bienvenido! ' + (result.Email || result.Username || ''));
         setTimeout(function () {
-            var dashboardUrl = window.AppRoot + 'Pages/Main/Live.aspx';
-            console.log("Redirigiendo a:", dashboardUrl);
-            window.location.href = dashboardUrl;
+            window.location.href = window.AppRoot + 'live';
         }, 1000);
-
     } else {
-        // Login fallido
-        console.log("✗ Login fallido");
-        showError(result.Message || "Error al iniciar sesión");
+        showError((result && result.Message) || "Error al iniciar sesión");
     }
 }
 
 // ============================================================================
-// Funciones de UI
+// UI
 // ============================================================================
-
 function showError(message) {
-    const errorDiv = document.getElementById("errorMessage");
-    errorDiv.textContent = message;
-    errorDiv.style.display = "block";
+    var el = document.getElementById("errorMessage");
+    el.textContent = message;
+    el.style.display = "block";
 }
 
 function showSuccess(message) {
-    const successDiv = document.getElementById("successMessage");
-    successDiv.textContent = message;
-    successDiv.style.display = "block";
+    var el = document.getElementById("successMessage");
+    el.textContent = message;
+    el.style.display = "block";
 }
 
 function hideMessages() {
@@ -286,8 +165,6 @@ function hideMessages() {
 }
 
 function showLoading(show) {
-    const loadingDiv = document.getElementById("loading");
-    if (loadingDiv) {
-        loadingDiv.style.display = show ? "block" : "none";
-    }
+    var el = document.getElementById("loading");
+    if (el) el.style.display = show ? "block" : "none";
 }

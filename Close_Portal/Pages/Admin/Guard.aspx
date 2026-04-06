@@ -237,5 +237,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
+    <script>window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Admin/Guard.aspx/") %>';</script>
     <script src='<%= ResolveUrl("~/Scripts/guard.js") %>'></script>
 </asp:Content>

@@ -360,21 +360,21 @@ function createGuard() {
             <div class="gd-modal-body">
                 <div class="gd-modal-error" id="gdModalError" style="display:none;"></div>
                 <div class="gd-field-group">
-                    <label>${t('gd.modal.start_label', 'Inicio de la guardia')}</label>
+                    <label for="gdCreateStartTime">${t('gd.modal.start_label', 'Inicio de la guardia')}</label>
                     <div class="gd-datetime-row">
-                        <input type="datetime-local" id="gdCreateStartTime" value="${defaultDt}" />
+                        <input type="datetime-local" id="gdCreateStartTime" name="gdCreateStartTime" value="${defaultDt}" />
                     </div>
                     <div class="gd-field-error" id="gdStartError" style="display:none;">
                         ${t('gd.err.start_required', 'Fecha de inicio requerida.')}
                     </div>
                 </div>
                 <div class="gd-field-group">
-                    <label>
+                    <label for="gdCreateEstEndTime">
                         ${t('gd.modal.est_end_label', 'Cierre estimado')}
                         <span class="gd-field-hint">(${t('gd.modal.optional', 'opcional')})</span>
                     </label>
                     <div class="gd-datetime-row">
-                        <input type="datetime-local" id="gdCreateEstEndTime" />
+                        <input type="datetime-local" id="gdCreateEstEndTime" name="gdCreateEstEndTime" />
                     </div>
                     <span class="gd-field-hint">
                         ${t('gd.modal.est_end_hint', 'Referencia informativa. El cierre real es manual.')}
@@ -567,7 +567,8 @@ function renderLocationPicker(gridEl, allLocations) {
                 </p>
                 <div class="gd-loc-picker-search">
                     <span class="material-icons">search</span>
-                    <input type="text" class="gd-loc-picker-search-input"
+                    <input type="text" id="gdLocPickerSearch" name="gdLocPickerSearch"
+                           class="gd-loc-picker-search-input"
                            placeholder="${t('gd.loc.search_placeholder', 'Buscar locación...')}"
                            oninput="gdFilterLocPicker(this.value)" />
                 </div>

@@ -116,6 +116,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Global.asax" />
     <Content Include="Pages\Admin\Guard.aspx" />
     <Content Include="Pages\Admin\UserManagement.aspx" />
     <Content Include="Pages\Admin\WarehouseManagement.aspx" />
@@ -170,6 +171,9 @@
     <Compile Include="Data_Access\EmailDataAccess.cs" />
     <Compile Include="Data_Access\GuardDataAccess.cs" />
     <Compile Include="Data_Access\UserDataAccess.cs" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
     <Compile Include="Hubs\LocationHub.cs" />
     <Compile Include="Models\GoogleLoginRequest.cs" />
     <Compile Include="Models\LoginResult.cs" />
@@ -253,6 +257,7 @@
       <DependentUpon>ValidateRequest.aspx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RouteConfig.cs" />
     <Compile Include="Services\EmailService.cs" />
     <Compile Include="Services\GoogleAuthService.cs" />
     <Compile Include="Services\GoogleTestService.cs" />

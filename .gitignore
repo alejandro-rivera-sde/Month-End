@@ -11,6 +11,9 @@
 !.gitignore
 !Close_Portal.sln
 !Startup.cs
+!RouteConfig.cs
+!Global.asax
+!Global.asax.cs
 
 # Proyecto principal
 !Close_Portal/

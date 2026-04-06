@@ -402,5 +402,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
+    <script>window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Admin/UserManagement.aspx/") %>';</script>
     <script src='<%= ResolveUrl("~/Scripts/user_management.js") %>'></script>
 </asp:Content>

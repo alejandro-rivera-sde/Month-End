@@ -143,5 +143,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
+    <script>window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Admin/WarehouseManagement.aspx/") %>';</script>
     <script src='<%= ResolveUrl("~/Scripts/warehouse_management.js") %>'></script>
 </asp:Content>

@@ -29,7 +29,7 @@
                     <div class="nav-section-title" data-translate-key="sidebar.navigation">Navigation</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Main/Live.aspx" runat="server">
+                            <a class="nav-link" href="~/live" runat="server">
                                 <span class="material-icons">dashboard</span>
                                 <span class="nav-text" data-translate-key="dashboard.title">Dashboard</span>
                             </a>
@@ -42,13 +42,13 @@
                     <div class="nav-section-title" data-translate-key="sidebar.admin">Admin</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Admin/UserManagement.aspx" runat="server">
+                            <a class="nav-link" href="~/users" runat="server">
                                 <span class="material-icons">manage_accounts</span>
                                 <span class="nav-text" data-translate-key="admin.user_management">Administración de Usuarios</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Admin/WarehouseManagement.aspx" runat="server">
+                            <a class="nav-link" href="~/locations" runat="server">
                                 <span class="material-icons">warehouse</span>
                                 <span class="nav-text" data-translate-key="admin.warehouse_management">Gestión de Bodegas</span>
                             </a>
@@ -61,7 +61,7 @@
                     <div class="nav-section-title" data-translate-key="sidebar.guard">Guardia</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Admin/Guard.aspx" runat="server">
+                            <a class="nav-link" href="~/guard" runat="server">
                                 <span class="material-icons">security</span>
                                 <span class="nav-text" data-translate-key="guard.nav">Gestión de Guardia</span>
                             </a>
@@ -74,7 +74,7 @@
                     <div class="nav-section-title" data-translate-key="sidebar.validation">Validation</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Validation/ValidateRequest.aspx" runat="server">
+                            <a class="nav-link" href="~/validate" runat="server">
                                 <span class="material-icons">check_circle</span>
                                 <span class="nav-text" data-translate-key="validation.request">Validar Solicitud</span>
                             </a>
@@ -87,7 +87,7 @@
                     <div class="nav-section-title" data-translate-key="sidebar.warehouses">Warehouses</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/Warehouses/RequestClosure.aspx" runat="server">
+                            <a class="nav-link" href="~/closure" runat="server">
                                 <span class="material-icons">lock</span>
                                 <span class="nav-text" data-translate-key="warehouses.request_closure">Solicitar Cierre</span>
                             </a>
@@ -100,15 +100,15 @@
                     <div class="nav-section-title">IT</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/IT/EmailService.aspx" runat="server">
+                            <a class="nav-link" href="~/email" runat="server">
                                 <span class="material-icons">mail</span>
                                 <span class="nav-text">Email Service</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="~/Pages/IT/Processes.aspx" runat="server">
+                            <a class="nav-link" href="~/processes" runat="server">
                                 <span class="material-icons">settings_suggest</span>
-                                <span class="nav-text">Procesos</span>
+                                <span class="nav-text">Processes</span>
                             </a>
                         </li>
                     </ul>
@@ -261,10 +261,12 @@
     <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
     <script src='<%= ResolveUrl("~/signalr/hubs") %>'></script>
 
-    <!-- Exponer rol y userId del usuario para SignalR handlers -->
+    <!-- Variables globales resueltas por servidor — inmunes a rutas amigables -->
     <script>
-        window.CurrentRoleId = <%= Session["RoleId"] ?? "0" %>;
-        window.CurrentUserId = '<%= Session["UserId"] ?? "0" %>';
+        window.AppRoot          = '<%= ResolveUrl("~/") %>';
+        window.CurrentRoleId    = <%= Session["RoleId"] ?? "0" %>;
+        window.CurrentUserId    = '<%= Session["UserId"] ?? "0" %>';
+        window.DashboardPageUrl = '<%= ResolveUrl("~/Pages/Main/Live.aspx") %>';
     </script>
 
     <!-- Dashboard JS -->

@@ -92,7 +92,7 @@ function openModalEdit(userId) {
 
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetUserDetail',
+        url: window.PageWebMethodBase + 'GetUserDetail',
         data: JSON.stringify({ userId }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -238,7 +238,7 @@ function buildLocationChecklist(locationList) {
 function loadAllOms() {
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetAllWms',
+        url: window.PageWebMethodBase + 'GetAllWms',
         data: JSON.stringify({}),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -258,7 +258,7 @@ function loadAllOms() {
 function loadAllOmsForNew() {
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetAllWms',
+        url: window.PageWebMethodBase + 'GetAllWms',
         data: JSON.stringify({}),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -306,7 +306,7 @@ function buildWmsChecklistInto(containerId, wmsList, assignedIds) {
 function loadAllLocations() {
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/GetAllLocations',
+        url: window.PageWebMethodBase + 'GetAllLocations',
         data: JSON.stringify({}),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
@@ -398,7 +398,7 @@ function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, de
 
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/SaveUserChanges',
+        url: window.PageWebMethodBase + 'SaveUserChanges',
         data: JSON.stringify({
             userId,
             roleId,
@@ -455,7 +455,7 @@ function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
 
     $.ajax({
         type: 'POST',
-        url: 'UserManagement.aspx/CreateUser',
+        url: window.PageWebMethodBase + 'CreateUser',
         // Always Google OAuth — no password needed
         data: JSON.stringify({ email, username, roleId, wmsIds: wmsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
         contentType: 'application/json; charset=utf-8',
@@ -485,7 +485,7 @@ function confirmToggleActive(userId, isActive) {
     if (confirm(`¿Deseas ${isActive ? 'desactivar' : 'activar'} este usuario?`)) {
         $.ajax({
             type: 'POST',
-            url: 'UserManagement.aspx/ToggleUserActive',
+            url: window.PageWebMethodBase + 'ToggleUserActive',
             data: JSON.stringify({ userId, active: !isActive }),
             contentType: 'application/json; charset=utf-8',
             dataType: 'json',

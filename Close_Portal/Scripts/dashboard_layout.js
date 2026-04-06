@@ -185,7 +185,7 @@ if (!window.AppRoot) {
         if (confirmLogoutBtn) {
             confirmLogoutBtn.addEventListener('click', function () {
                 sessionStorage.clear();
-                window.location.href = window.AppRoot + 'Pages/Home/Logout.aspx';
+                window.location.href = window.AppRoot + 'logout';
             });
         }
     }

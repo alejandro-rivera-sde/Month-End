@@ -77,5 +77,10 @@
 </asp:Content>
 
 <asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
+    <script>
+        // URLs resueltas por el servidor — inmunes a rutas amigables
+        window.AppRoot = '<%= ResolveUrl("~/") %>';
+        window.LoginWebMethodBase = '<%= ResolveUrl("~/Pages/Home/Login.aspx/") %>';
+    </script>
     <script src='<%= ResolveUrl("~/Scripts/login.js") %>'></script>
 </asp:Content>

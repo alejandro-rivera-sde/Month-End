@@ -142,5 +142,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
+    <script>window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/IT/EmailService.aspx/") %>';</script>
     <script src='<%= ResolveUrl("~/Scripts/email_service.js") %>'></script>
 </asp:Content>

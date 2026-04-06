@@ -382,11 +382,9 @@ namespace Close_Portal.Pages.Main {
         private static string ResolveNotifUrl(string type, int roleId) {
             switch (type) {
                 case "new_request":
-                    // Administrador/Owner → ValidateRequest
-                    return "Pages/Admin/ValidateRequest.aspx";
+                    return "validate";
                 case "request_reviewed":
-                    // Regular → RequestClosure (ve el historial de sus solicitudes)
-                    return "Pages/Warehouses/RequestClosure.aspx";
+                    return "closure";
                 default:
                     return null;
             }

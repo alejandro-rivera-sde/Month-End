@@ -71,5 +71,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
+    <script>window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Validation/ValidateRequest.aspx/") %>';</script>
     <script src='<%= ResolveUrl("~/Scripts/validate_request.js") %>'></script>
 </asp:Content>

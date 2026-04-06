@@ -9,7 +9,7 @@ namespace Close_Portal {
     public partial class DashboardLayout : System.Web.UI.MasterPage {
         protected void Page_Load(object sender, EventArgs e) {
             if (Session["UserId"] == null) {
-                Response.Redirect("~/Pages/Home/Login.aspx");
+                Response.Redirect("~/login");
                 return;
             }
             if (!IsPostBack) {
