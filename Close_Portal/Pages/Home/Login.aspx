@@ -69,7 +69,7 @@
                 
                 <!-- Footer -->
                 <div class="login-footer">
-                    <p>¿Necesitas una cuenta? <a href="mailto:admin@novamex.com">Contacta a tu administrador</a></p>
+                    <p>¿Necesitas acceso al portal para tu cuenta @novamex.com? <a href="https://servicedesk.novamex.com:8080/" target="_blank" rel="noopener">Levanta tu ticket aquí</a></p>
                 </div>
             </div>
         </div>
