@@ -66,9 +66,15 @@
     <div class="toolbar">
         <div class="search-box">
             <span class="material-icons">search</span>
-            <input type="text" id="searchInput" 
+            <%-- Honeypot: Chrome hace autofill aquí en lugar del buscador --%>
+            <input type="text"     style="display:none" aria-hidden="true" tabindex="-1" />
+            <input type="password" style="display:none" aria-hidden="true" tabindex="-1" />
+            <input type="search" id="searchInput"
+                   name="um-search-filter"
+                   autocomplete="off"
+                   data-form-type="other"
                    data-translate-key="um.search.placeholder"
-                   placeholder="Buscar por nombre, email..." 
+                   placeholder="Buscar por nombre, email..."
                    oninput="filterTable()" />
         </div>
         <select class="filter-select" id="filterRole" onchange="filterTable()">
@@ -329,10 +335,13 @@
                                         <div class="field-group">
                                             <label for="editPassword1" data-translate-key="um.modal.new_password">Nueva Contraseña</label>
                                             <div class="pw-input-wrap">
-                                                <input type="password" id="editPassword1" autocomplete="off"
+                                                <%-- type=text en el HTML inicial — Chrome no activa autofill de credenciales.
+                                                     Se convierte a password en JS al abrir el modal. --%>
+                                                <input type="text" id="editPassword1" autocomplete="new-password"
                                                        placeholder="Nueva contraseña" maxlength="128"
                                                        onkeypress="return validatePwChar(event)"
-                                                       onpaste="return false" oncopy="return false" oncut="return false" />
+                                                       onpaste="return false" oncopy="return false" oncut="return false"
+                                                       style="display:none" />
                                                 <button type="button" class="btn-pw-toggle"
                                                         onclick="togglePwVisibility('editPassword1', this)" tabindex="-1">
                                                     <span class="material-icons">visibility</span>
@@ -345,11 +354,12 @@
                                         <div class="field-group">
                                             <label for="editPassword2" data-translate-key="um.modal.confirm_password">Confirmar Contraseña</label>
                                             <div class="pw-input-wrap">
-                                                <input type="password" id="editPassword2" autocomplete="off"
+                                                <input type="text" id="editPassword2" autocomplete="new-password"
                                                        placeholder="Repite la contraseña" maxlength="128"
                                                        onkeypress="return validatePwChar(event)"
                                                        oninput="checkPwMatch()"
-                                                       onpaste="return false" oncopy="return false" oncut="return false" />
+                                                       onpaste="return false" oncopy="return false" oncut="return false"
+                                                       style="display:none" />
                                                 <button type="button" class="btn-pw-toggle"
                                                         onclick="togglePwVisibility('editPassword2', this)" tabindex="-1">
                                                     <span class="material-icons">visibility</span>

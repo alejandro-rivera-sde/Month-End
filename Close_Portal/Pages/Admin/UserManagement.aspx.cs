@@ -94,12 +94,16 @@ namespace Close_Portal.Pages.Admin {
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
                         DataTable dt = new DataTable();
                         da.Fill(dt);
-                        rptRoles.DataSource = dt;
-                        rptRoles.DataBind();
-                        // New user form: never allow creating Owners (Role_Id = 4)
+
+                        // Ni edit ni new permiten asignar Owner (Role_Id = 4)
                         dt.DefaultView.RowFilter = "Role_Id < 4";
-                        rptRolesNew.DataSource = dt.DefaultView.ToTable();
+                        DataTable filtered = dt.DefaultView.ToTable();
+
+                        rptRoles.DataSource = filtered;
+                        rptRoles.DataBind();
+                        rptRolesNew.DataSource = filtered;
                         rptRolesNew.DataBind();
+
                         dt.DefaultView.RowFilter = "";
                     }
                 }
@@ -379,6 +383,7 @@ namespace Close_Portal.Pages.Admin {
                         Username = user.Username ?? user.Email.Split('@')[0],
                         Initials = user.Initials,
                         RoleId = user.RoleId,
+                        LoginType = user.LoginType,
                         Active = user.Active,
                         Locked = user.Locked,
                         DepartmentId = user.DepartmentId,

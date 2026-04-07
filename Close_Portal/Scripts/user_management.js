@@ -41,6 +41,17 @@ function closeModal() {
     const overlay = document.getElementById('modalOverlay');
     if (overlay) overlay.classList.remove('active');
     switchTab('general');
+
+    // Devolver inputs de password a su estado inicial (type=text oculto)
+    // para que Chrome no los detecte como campos de credenciales
+    ['editPassword1', 'editPassword2'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.type = 'text';
+            el.value = '';
+            el.style.display = 'none';
+        }
+    });
 }
 
 function filterTable() {
@@ -68,6 +79,13 @@ function filterTable() {
     });
 }
 
+// Limpiar el buscador al cargar — evita que el browser inyecte
+// valores cacheados de autocomplete antes de que el JS arranque
+document.addEventListener('DOMContentLoaded', function () {
+    var s = document.getElementById('searchInput');
+    if (s) s.value = '';
+});
+
 // ============================================================
 // ABRIR MODAL EDICIÓN
 // ============================================================
@@ -80,8 +98,16 @@ function openModalEdit(userId) {
     document.getElementById('newUserFields').style.display = 'none';
     document.getElementById('editModeFields').style.display = 'block';
 
-    document.getElementById('editPassword1').value = '';
-    document.getElementById('editPassword2').value = '';
+    // Activar campos de password — en el DOM inicial son type="text" ocultos
+    // para que Chrome no active autofill de credenciales en la página
+    ['editPassword1', 'editPassword2'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.type = 'password';
+            el.value = '';
+            el.style.display = '';
+        }
+    });
     document.getElementById('pwMatchMsg').style.display = 'none';
 
     const loadingHtml = `<div style="color:var(--text-muted);font-size:13px;padding:8px">${getTranslation('common.loading')}</div>`;
@@ -173,6 +199,11 @@ function populateModal(data) {
     // Primero WMS, luego locaciones
     buildWmsChecklist(data.WmsList);
     buildLocationChecklist(data.LocationList);
+
+    // Mostrar/ocultar sección de contraseña según tipo de login
+    const isGoogle = (data.LoginType || '').toLowerCase() === 'google';
+    const pwSection = document.getElementById('editExtraFields');
+    if (pwSection) pwSection.style.display = isGoogle ? 'none' : 'block';
 
     document.getElementById('modalOverlay').dataset.userId = data.UserId;
     document.getElementById('modalOverlay').dataset.mode = 'edit';
