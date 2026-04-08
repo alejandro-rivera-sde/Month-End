@@ -79,15 +79,6 @@
     <!-- ── PANEL PRINCIPAL ─────────────────────────────────── -->
     <div class="db-panel">
 
-        <!-- Filter tabs -->
-        <div class="db-filter-tabs">
-            <button type="button" class="db-tab active" data-filter="all"      onclick="filterLocations('all')"      data-translate-key="db.filter.all">Todas</button>
-            <button type="button" class="db-tab"        data-filter="Active"   onclick="filterLocations('Active')"   data-translate-key="db.filter.active">Activas</button>
-            <button type="button" class="db-tab"        data-filter="Pending"  onclick="filterLocations('Pending')"  data-translate-key="db.filter.pending">En validación</button>
-            <button type="button" class="db-tab"        data-filter="Rejected" onclick="filterLocations('Rejected')" data-translate-key="db.filter.rejected">Rechazadas</button>
-            <button type="button" class="db-tab"        data-filter="Approved" onclick="filterLocations('Approved')" data-translate-key="db.filter.approved">Cerradas</button>
-        </div>
-
         <!-- Location grid -->
         <div id="dbLocationGrid" class="db-location-grid">
             <div class="db-loading">

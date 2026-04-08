@@ -187,11 +187,6 @@ function renderStats(summary) {
 function filterLocations(filter) {
     db_currentFilter = filter;
 
-    // Tabs
-    document.querySelectorAll('.db-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.filter === filter);
-    });
-
     // Stat cards
     document.querySelectorAll('.db-stat-card').forEach(card => {
         card.classList.toggle('active', card.dataset.filter === filter);
