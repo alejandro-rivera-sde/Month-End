@@ -23,24 +23,27 @@
 }
 
 .btn-new {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s ease;
+    padding: 9px 18px;
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 
     .btn-new:hover {
-        background: var(--primary-hover);
+        opacity: .88;
         transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
+    }
+
+    .btn-new:active {
+        transform: translateY(0);
     }
 
     .btn-new .material-icons {
@@ -50,7 +53,7 @@
 /* ========== STATS ROW ========== */
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-bottom: 24px;
 }

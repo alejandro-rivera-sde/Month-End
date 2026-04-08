@@ -24,7 +24,7 @@
 
     <!-- ========== STATS ROW ========== -->
     <div class="stats-row">
-        <div class="stat-card">
+        <div class="stat-card" data-filter="all">
             <div class="stat-icon purple">
                 <span class="material-icons">warehouse</span>
             </div>
@@ -33,7 +33,7 @@
                 <h3><asp:Literal ID="litTotal" runat="server">0</asp:Literal></h3>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" data-filter="Activa">
             <div class="stat-icon green">
                 <span class="material-icons">check_circle</span>
             </div>
@@ -42,7 +42,7 @@
                 <h3><asp:Literal ID="litActive" runat="server">0</asp:Literal></h3>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" data-filter="Inactiva">
             <div class="stat-icon red">
                 <span class="material-icons">do_not_disturb_on</span>
             </div>
@@ -51,13 +51,13 @@
                 <h3><asp:Literal ID="litInactive" runat="server">0</asp:Literal></h3>
             </div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" data-filter="unassigned">
             <div class="stat-icon amber">
-                <span class="material-icons">people</span>
+                <span class="material-icons">person_off</span>
             </div>
             <div class="stat-info">
-                <p data-translate-key="wm.stat.users">Usuarios Asignados</p>
-                <h3><asp:Literal ID="litUsersAssigned" runat="server">0</asp:Literal></h3>
+                <p data-translate-key="wm.stat.unassigned">Sin usuario asignado</p>
+                <h3><asp:Literal ID="litUnassigned" runat="server">0</asp:Literal></h3>
             </div>
         </div>
     </div>
@@ -71,11 +71,6 @@
                    data-translate-key="wm.search.placeholder"
                    oninput="filterTable()" />
         </div>
-        <select class="filter-select" id="filterStatus" onchange="filterTable()">
-            <option value="" data-translate-key="wm.filter.all_status">Todos los estados</option>
-            <option value="Activa"   data-translate-key="wm.status.active">Activa</option>
-            <option value="Inactiva" data-translate-key="wm.status.inactive">Inactiva</option>
-        </select>
     </div>
 
     <!-- ========== TABLE ========== -->
@@ -92,7 +87,7 @@
             <tbody>
                 <asp:Repeater ID="rptLocations" runat="server">
                     <ItemTemplate>
-                        <tr data-status="<%# Eval("StatusLabel") %>">
+                        <tr data-status="<%# Eval("StatusLabel") %>" data-usercount="<%# Eval("UserCount") %>">
                             <td>
                                 <div class="location-cell">
                                     <div class="location-icon">

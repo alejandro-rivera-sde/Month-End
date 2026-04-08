@@ -72,12 +72,18 @@
     align-items: center;
     gap: 14px;
     transition: all var(--transition-normal);
-    cursor: default;
+    cursor: pointer;
+    user-select: none;
 }
 
     .stat-card:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+    }
+
+    .stat-card.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
 
 .stat-icon {
@@ -168,22 +174,6 @@
         .search-box input::placeholder {
             color: var(--text-muted);
         }
-
-.filter-select {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--text-primary);
-    cursor: pointer;
-    outline: none;
-    transition: border-color var(--transition-fast);
-}
-
-    .filter-select:focus {
-        border-color: var(--input-focus);
-    }
 
 /* ── TABLE WRAPPER ────────────────────────────────────────── */
 .table-wrapper {

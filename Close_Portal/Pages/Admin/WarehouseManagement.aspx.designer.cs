@@ -40,13 +40,13 @@ namespace Close_Portal.Pages.Admin {
         protected global::System.Web.UI.WebControls.Literal litInactive;
 
         /// <summary>
-        /// litUsersAssigned control.
+        /// litUnassigned control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litUsersAssigned;
+        protected global::System.Web.UI.WebControls.Literal litUnassigned;
 
         /// <summary>
         /// rptLocations control.

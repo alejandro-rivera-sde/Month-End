@@ -213,17 +213,37 @@ function confirmToggleActive(locationId, isActive, locationName) {
 }
 
 // ============================================================
-// FILTRO DE TABLA
+// FILTRO — stat-cards + búsqueda
 // ============================================================
+var wm_currentFilter = 'all';
+
+function wmSetFilter(filter) {
+    wm_currentFilter = filter;
+    document.querySelectorAll('.stat-card[data-filter]').forEach(function (card) {
+        card.classList.toggle('active', card.dataset.filter === filter);
+    });
+    filterTable();
+}
+
 function filterTable() {
     var search = document.getElementById('searchInput').value.toLowerCase();
-    var filterStat = document.getElementById('filterStatus').value;
 
     document.querySelectorAll('#warehouseTable tbody tr').forEach(function (row) {
         var text = row.innerText.toLowerCase();
         var status = (row.dataset.status || '');
-        var ok = (!search || text.includes(search)) && (!filterStat || status === filterStat);
-        row.style.display = ok ? '' : 'none';
+        var userCount = parseInt(row.dataset.usercount || '0');
+
+        var matchSearch = !search || text.includes(search);
+        var matchFilter;
+        if (wm_currentFilter === 'all') {
+            matchFilter = true;
+        } else if (wm_currentFilter === 'unassigned') {
+            matchFilter = userCount === 0;
+        } else {
+            matchFilter = status === wm_currentFilter;
+        }
+
+        row.style.display = (matchSearch && matchFilter) ? '' : 'none';
     });
 }
 
@@ -259,6 +279,16 @@ function showWmToast(message, type) {
 
 document.addEventListener('DOMContentLoaded', function () {
     createWmModal();
+
+    // Stat cards actúan como filtro
+    document.querySelectorAll('.stat-card[data-filter]').forEach(function (card) {
+        card.addEventListener('click', function () {
+            wmSetFilter(card.dataset.filter);
+        });
+    });
+
+    // Activar "all" por defecto
+    wmSetFilter('all');
 
     // Re-traducir el modal al cambiar idioma
     window.onLanguageChange = function () {

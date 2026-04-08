@@ -60,9 +60,15 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
-                    string sqlUsers = "SELECT COUNT(DISTINCT User_Id) FROM MonthEnd_Users_Location";
-                    using (SqlCommand cmd = new SqlCommand(sqlUsers, conn)) {
-                        litUsersAssigned.Text = cmd.ExecuteScalar().ToString();
+                    string sqlUnassigned = @"
+                        SELECT COUNT(*)
+                        FROM MonthEnd_Locations wl
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM MonthEnd_Users_Location ul
+                            WHERE ul.Location_Id = wl.Location_Id
+                        )";
+                    using (SqlCommand cmd = new SqlCommand(sqlUnassigned, conn)) {
+                        litUnassigned.Text = cmd.ExecuteScalar().ToString();
                     }
                 }
             } catch (Exception ex) {
