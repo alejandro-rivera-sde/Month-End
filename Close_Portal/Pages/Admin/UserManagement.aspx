@@ -67,8 +67,8 @@
         <div class="search-box">
             <span class="material-icons">search</span>
             <%-- Honeypot: Chrome hace autofill aquí en lugar del buscador --%>
-            <input type="text"     style="display:none" aria-hidden="true" tabindex="-1" />
-            <input type="password" style="display:none" aria-hidden="true" tabindex="-1" />
+            <input type="text"     id="um-hp-user" name="um-hp-user"     style="display:none" aria-hidden="true" tabindex="-1" />
+            <input type="password" id="um-hp-pass" name="um-hp-pass"     style="display:none" aria-hidden="true" tabindex="-1" />
             <input type="search" id="searchInput"
                    name="um-search-filter"
                    autocomplete="off"
