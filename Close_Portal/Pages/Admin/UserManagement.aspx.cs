@@ -51,10 +51,7 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
-                    string sqlWms = "SELECT COUNT(*) FROM MonthEnd_WMS WHERE Active = 1";
-                    using (SqlCommand cmd = new SqlCommand(sqlWms, conn)) {
-                        litActiveWms.Text = cmd.ExecuteScalar().ToString();
-                    }
+
                 }
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"ERROR LoadStats: {ex.Message}");

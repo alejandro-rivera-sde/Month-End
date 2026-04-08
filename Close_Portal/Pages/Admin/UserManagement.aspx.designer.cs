@@ -40,15 +40,6 @@ namespace Close_Portal.Pages.Admin {
         protected global::System.Web.UI.WebControls.Literal litLockedUsers;
 
         /// <summary>
-        /// litActiveWms control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litActiveWms;
-
-        /// <summary>
         /// rptLocationsFilter control.
         /// </summary>
         /// <remarks>

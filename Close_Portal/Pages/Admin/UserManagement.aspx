@@ -51,15 +51,6 @@
                 <h3><asp:Literal ID="litLockedUsers" runat="server">0</asp:Literal></h3>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon amber">
-                <span class="material-icons">warehouse</span>
-            </div>
-            <div class="stat-info">
-                <p data-translate-key="um.stat.wms">WMS Activos</p>
-                <h3><asp:Literal ID="litActiveWms" runat="server">0</asp:Literal></h3>
-            </div>
-        </div>
     </div>
 
     <!-- ========== TOOLBAR ========== -->
