@@ -49,13 +49,13 @@ namespace Close_Portal.Pages.Admin {
         protected global::System.Web.UI.WebControls.Literal litActiveWms;
 
         /// <summary>
-        /// rptWmsFilter control.
+        /// rptLocationsFilter control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Repeater rptWmsFilter;
+        protected global::System.Web.UI.WebControls.Repeater rptLocationsFilter;
 
         /// <summary>
         /// rptDepartmentsFilter control.

@@ -23,6 +23,9 @@ namespace Close_Portal.Models {
         public string WmsCodes { get; set; }      // "ELP,MTY"
         public string WmsTagsHtml { get; set; }   // "<span class='wms-tag'>ELP</span>..."
 
+        // Locations - lista separada por coma para filtro JS de toolbar
+        public string LocationNames { get; set; } // "Bodega Norte,Muelle 3"
+
         // Campos calculados para el Repeater
         public string Initials {
             get {

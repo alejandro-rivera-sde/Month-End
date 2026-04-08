@@ -20,7 +20,7 @@ namespace Close_Portal.Pages.Admin {
         protected void Page_Load(object sender, EventArgs e) {
             if (!IsPostBack) {
                 LoadStats();
-                LoadWmsFilter();
+                LoadLocationsFilter();
                 LoadRoles();
                 LoadDepartments();
                 LoadUsers();
@@ -62,23 +62,23 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ============================================================
-        // LOAD MonthEnd_WMS FILTER (toolbar)
+        // LOAD LOCATIONS FILTER (toolbar)
         // ============================================================
-        private void LoadWmsFilter() {
+        private void LoadLocationsFilter() {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
-                    string sql = "SELECT WMS_Id, WMS_Code, WMS_Name FROM MonthEnd_WMS WHERE Active = 1 ORDER BY WMS_Code";
+                    string sql = "SELECT Location_Id, Location_Name FROM MonthEnd_Locations WHERE Active = 1 ORDER BY Location_Name";
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
                         DataTable dt = new DataTable();
                         da.Fill(dt);
-                        rptWmsFilter.DataSource = dt;
-                        rptWmsFilter.DataBind();
+                        rptLocationsFilter.DataSource = dt;
+                        rptLocationsFilter.DataBind();
                     }
                 }
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"ERROR LoadWmsFilter: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"ERROR LoadLocationsFilter: {ex.Message}");
             }
         }
 
@@ -182,6 +182,7 @@ namespace Close_Portal.Pages.Admin {
                             c2.Open();
                             user.WmsCodes = GetUserWmsCodes(c2, user.UserId);
                             user.WmsTagsHtml = BuildLocationTagsHtml(c2, user.UserId);
+                            user.LocationNames = GetUserLocationNames(c2, user.UserId);
                         }
                     }
                 }
@@ -212,6 +213,25 @@ namespace Close_Portal.Pages.Admin {
                     while (r.Read()) codes.Add(r["WMS_Code"].ToString());
                 }
                 return string.Join(",", codes);
+            }
+        }
+
+        // ── LocationNames para data-location del <tr> (filtro toolbar)
+        private string GetUserLocationNames(SqlConnection conn, int userId) {
+            string sql = @"
+                SELECT wl.Location_Name
+                FROM MonthEnd_Users_Location ul
+                INNER JOIN MonthEnd_Locations wl ON wl.Location_Id = ul.Location_Id
+                WHERE ul.User_Id = @UserId AND wl.Active = 1
+                ORDER BY wl.Location_Name";
+
+            using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                var names = new List<string>();
+                using (SqlDataReader r = cmd.ExecuteReader()) {
+                    while (r.Read()) names.Add(r["Location_Name"].ToString());
+                }
+                return string.Join(",", names);
             }
         }
 

@@ -58,7 +58,8 @@ function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase().trim();
     const filterRole = document.getElementById('filterRole').value.trim();
     const filterStat = document.getElementById('filterStatus').value.trim();
-    const filterWms = document.getElementById('filterWms').value.toUpperCase().trim();
+    const filterLocEl = document.getElementById('filterLocation');
+    const filterLoc = filterLocEl ? filterLocEl.value.trim() : '';
     const filterDeptEl = document.getElementById('filterDepartment');
     const filterDept = filterDeptEl ? filterDeptEl.value.toUpperCase().trim() : '';
 
@@ -66,16 +67,16 @@ function filterTable() {
         const text = row.innerText.toLowerCase();
         const roleId = parseInt(row.dataset.roleid || '0');
         const status = (row.dataset.status || '').trim();
-        const wms = (row.dataset.wms || '').toUpperCase();
+        const locs = (row.dataset.location || '').split(',').map(s => s.trim());
         const dept = (row.dataset.department || '').toUpperCase().trim();
 
         const matchSearch = !search || text.includes(search);
         const matchRole = !filterRole || roleId === parseInt(filterRole);
         const matchStatus = !filterStat || status === filterStat;
-        const matchWms = !filterWms || wms.split(',').map(s => s.trim()).includes(filterWms);
+        const matchLoc = !filterLoc || locs.includes(filterLoc);
         const matchDept = !filterDept || dept === filterDept;
 
-        row.style.display = (matchSearch && matchRole && matchStatus && matchWms && matchDept) ? '' : 'none';
+        row.style.display = (matchSearch && matchRole && matchStatus && matchLoc && matchDept) ? '' : 'none';
     });
 }
 

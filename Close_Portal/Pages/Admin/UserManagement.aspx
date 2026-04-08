@@ -90,11 +90,11 @@
             <option value="Bloqueado" data-translate-key="um.status.locked">Bloqueado</option>
             <option value="Inactivo" data-translate-key="um.status.inactive">Inactivo</option>
         </select>
-        <select class="filter-select" id="filterWms" onchange="filterTable()">
-            <option value="" data-translate-key="um.filter.all_wms">Todos los WMS</option>
-            <asp:Repeater ID="rptWmsFilter" runat="server">
+        <select class="filter-select" id="filterLocation" onchange="filterTable()">
+            <option value="" data-translate-key="um.filter.all_locations">Todas las locaciones</option>
+            <asp:Repeater ID="rptLocationsFilter" runat="server">
                 <ItemTemplate>
-                    <option value="<%# Eval("WMS_Code") %>"><%# Eval("WMS_Code") %></option>
+                    <option value="<%# Eval("Location_Name") %>"><%# Eval("Location_Name") %></option>
                 </ItemTemplate>
             </asp:Repeater>
         </select>
@@ -116,7 +116,7 @@
                     <th data-translate-key="um.table.user">Usuario</th>
                     <th data-translate-key="um.table.role">Rol</th>
                     <th data-translate-key="um.table.department">Departamento</th>
-                    <th data-translate-key="um.table.wms">WMS / Locaciones</th>
+                    <th data-translate-key="um.table.locations">Locaciones</th>
                     <th data-translate-key="um.table.login">Login</th>
                     <th data-translate-key="um.table.status">Estado</th>
                     <th data-translate-key="um.table.actions">Acciones</th>
@@ -127,8 +127,9 @@
                     <ItemTemplate>
                         <tr data-role="<%# Eval("RoleName") %>"
                             data-roleid="<%# Eval("RoleId") %>"
-                            data-status="<%# Eval("StatusLabel") %>" 
+                            data-status="<%# Eval("StatusLabel") %>"
                             data-wms="<%# Eval("WmsCodes") %>"
+                            data-location="<%# Eval("LocationNames") %>"
                             data-department="<%# Eval("DepartmentCode") %>">
                             <td>
                                 <div class="user-cell">
