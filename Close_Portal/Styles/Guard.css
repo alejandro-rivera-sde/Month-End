@@ -936,13 +936,49 @@
     width: 100%;
 }
 
-.gd-loc-picker-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border-color);
+/* ─── CONFIRM LOCATIONS BUTTON (header inline) ─────────── */
+.gd-loc-confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-left: auto;
+    white-space: nowrap;
+    font-family: inherit;
 }
+
+    .gd-loc-confirm-btn .material-icons {
+        font-size: 14px;
+    }
+
+/* Estado: sin cambios pendientes — verde, deshabilitado */
+.gd-loc-confirmed-state {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+    .gd-loc-confirmed-state:disabled {
+        opacity: 1;
+        cursor: default;
+    }
+
+/* Estado: cambios sin guardar — primary, activo */
+.gd-loc-dirty-state {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+    .gd-loc-dirty-state:hover {
+        opacity: 0.88;
+    }
 
 /* ─── MODAL FORM FIELDS ────────────────────────────────── */
 .gd-field-group {
@@ -1070,10 +1106,6 @@
     cursor: pointer;
     transition: border-color 0.15s, color 0.15s;
 }
-
-    .gd-loc-toggle-all:first-of-type {
-        margin-left: auto;
-    }
 
     .gd-loc-toggle-all:hover {
         border-color: var(--gd-accent);
@@ -1292,9 +1324,14 @@
 }
 
 /* ─── TOAST ────────────────────────────────────────────── */
+@keyframes gd-toastSlideIn {
+    from { opacity: 0; transform: translateX(24px) translateY(-8px); }
+    to   { opacity: 1; transform: translateX(0)    translateY(0); }
+}
+
 .gd-toast {
     position: fixed;
-    bottom: 28px;
+    top: 24px;
     right: 28px;
     z-index: 99999;
     display: flex;
@@ -1305,7 +1342,7 @@
     font-size: 14px;
     font-weight: 600;
     box-shadow: var(--shadow-xl);
-    animation: gd-fadeIn 0.2s ease;
+    animation: gd-toastSlideIn 0.25s ease;
     max-width: 380px;
 }
 

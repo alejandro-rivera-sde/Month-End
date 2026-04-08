@@ -484,7 +484,8 @@ function renderLocationPicker(gridEl, allLocations) {
             (savedResp.success && savedResp.data && savedResp.data.length > 0)
                 ? savedResp.data.map(l => l.locationId) : []
         );
-        const defaultAll = savedIds.size === 0;
+        // Default: todo desmarcado; si ya hay guardadas, marcar solo esas
+        const defaultAll = false;
 
         // Separar: con ambos responsables vs con alguno faltante
         const severityOf = (loc) => {
@@ -553,6 +554,11 @@ function renderLocationPicker(gridEl, allLocations) {
                         ${t('gd.modal.loc_title', 'Locaciones involucradas')}
                         (${checkedCount}/${allLocations.length})
                     </span>
+                    <button type="button" class="gd-loc-confirm-btn gd-loc-confirmed-state"
+                            id="gdBtnSaveLocs" disabled onclick="submitSaveLocations()">
+                        <span class="material-icons">check_circle</span>
+                        ${t('gd.loc.confirmed_label', 'Locaciones confirmadas')}
+                    </button>
                     <button type="button" class="gd-loc-toggle-all"
                             onclick="gdToggleAllLocations(true)">
                         ${t('gd.modal.select_all', 'Todas')}
@@ -579,13 +585,6 @@ function renderLocationPicker(gridEl, allLocations) {
                     ${attended.map(l => makeCheckItem(l)).join('')}
                 </div>
                 ${unattendedBlock}
-                <div class="gd-loc-picker-footer">
-                    <button type="button" class="gd-btn-confirm" id="gdBtnSaveLocs"
-                            onclick="submitSaveLocations()">
-                        <span class="material-icons">check</span>
-                        ${t('gd.loc.save_btn', 'Confirmar locaciones')}
-                    </button>
-                </div>
             </div>`;
     });
 }
@@ -614,6 +613,14 @@ function gdUpdateLocCount() {
         `${t('gd.modal.loc_title', 'Locaciones involucradas')} (${checked}/${total})`;
     const errEl = document.getElementById('gdLocError');
     if (errEl) errEl.style.display = checked === 0 ? 'block' : 'none';
+
+    // Habilitar el botón de confirmar al detectar cambios
+    const btn = document.getElementById('gdBtnSaveLocs');
+    if (btn && btn.disabled) {
+        btn.disabled = false;
+        btn.className = 'gd-loc-confirm-btn gd-loc-dirty-state';
+        btn.innerHTML = `<span class="material-icons">check</span> ${t('gd.loc.save_btn', 'Confirmar locaciones')}`;
+    }
 }
 
 // ─── STEP 2 SUBMIT: SAVE LOCATIONS ─────────────────────────
