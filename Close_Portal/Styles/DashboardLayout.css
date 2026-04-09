@@ -401,11 +401,26 @@
         color: var(--primary-color);
     }
 
-/* ========== FOOTER ========== */
+/* ========== FOOTER (deslizante) ========== */
 .dashboard-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 260px;           /* alineado con el borde izq. del sidebar */
     background: var(--card-bg);
     border-top: 1px solid var(--border-color);
-    margin-top: auto;
+    z-index: 900;
+    transform: translateY(110%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-footer.footer-visible {
+    transform: translateY(0);
+}
+
+/* Ajuste cuando el sidebar está colapsado */
+.sidebar.collapsed ~ .main-content .dashboard-footer {
+    right: 70px;
 }
 
 /* ========== THEME OVERRIDES ========== */

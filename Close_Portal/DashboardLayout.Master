@@ -207,14 +207,12 @@
                 </asp:ContentPlaceHolder>
             </main>
 
-            <!-- Footer (FIJO) -->
-            <footer class="dashboard-footer text-center py-3 mt-auto">
+            <!-- Footer (deslizante — aparece al acercar cursor al borde inferior) -->
+            <footer id="dashFooter" class="dashboard-footer text-center py-3 mt-auto">
                 <p class="text-muted mb-2" data-translate-key="footer.developed_by">
                     Cierre de mes | Desarrollado por: Alex Rivera
                 </p>
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="#" class="text-muted text-decoration-none small" data-translate-key="footer.home">Home</a>
-                    <a href="#" class="text-muted text-decoration-none small" data-translate-key="footer.documentation">Documentation</a>
                     <a href="#" class="text-muted text-decoration-none small" data-translate-key="footer.support">Support</a>
                 </div>
             </footer>
@@ -275,4 +273,15 @@
     <!-- Content Placeholder para scripts adicionales de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalScripts" runat="server">
     </asp:ContentPlaceHolder>
+
+    <!-- Footer deslizante -->
+    <script>
+        (function () {
+            var footer = document.getElementById('dashFooter');
+            if (!footer) return;
+            document.addEventListener('mousemove', function (e) {
+                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 60);
+            });
+        })();
+    </script>
 </asp:Content>
