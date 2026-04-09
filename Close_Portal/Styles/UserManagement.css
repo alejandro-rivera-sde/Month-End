@@ -1001,6 +1001,48 @@ input:checked + .slider {
         color: #ef4444;
     }
 
+/* ========== EMAIL PREFIX FIELD ========== */
+.um-email-row {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.um-email-row:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.um-email-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 12px 6px 12px 16px;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.um-email-domain {
+    display: flex;
+    align-items: center;
+    padding: 0 14px 0 2px;
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    font-family: inherit;
+}
+
 /* ========== DARK MODE ========== */
 [data-theme="dark"] .search-box input,
 [data-theme="dark"] .filter-select,

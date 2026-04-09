@@ -223,10 +223,12 @@
                         <div id="newUserFields" style="display:none">
                             <div class="um-general-grid">
                                 <div class="field-group">
-                                    <label for="newEmail" data-translate-key="um.modal.email">Email (@novamex.com)</label>
-                                    <input type="email" id="newEmail"
-                                           data-translate-key="um.modal.email_placeholder"
-                                           placeholder="usuario@novamex.com" autocomplete="off" />
+                                    <label for="newEmail" data-translate-key="um.modal.email">Email</label>
+                                    <div class="um-email-row">
+                                        <input type="text" id="newEmail"
+                                               placeholder="usuario" autocomplete="off" />
+                                        <span class="um-email-domain">@novamex.com</span>
+                                    </div>
                                 </div>
                                 <div class="field-group">
                                     <label for="newUsername" data-translate-key="um.modal.username">Username</label>

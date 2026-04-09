@@ -463,15 +463,16 @@ function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, de
 }
 
 function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
-    const email = (document.getElementById('newEmail').value || '').trim();
+    const emailPrefix = (document.getElementById('newEmail').value || '').trim();
+    const email = emailPrefix ? emailPrefix + '@novamex.com' : '';
     const username = (document.getElementById('newUsername').value || '').trim();
 
-    if (!email) {
+    if (!emailPrefix) {
         showToast('El email es requerido.', 'error');
         return;
     }
-    if (!email.toLowerCase().endsWith('@novamex.com')) {
-        showToast('El email debe ser @novamex.com', 'error');
+    if (emailPrefix.includes('@')) {
+        showToast('Escribe solo la parte antes del @.', 'error');
         return;
     }
     if (!username) {
