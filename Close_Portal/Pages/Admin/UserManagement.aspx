@@ -383,7 +383,17 @@
                                    placeholder="Buscar locación..."
                                    oninput="filterLocationChecklist(this.value)" />
                         </div>
-                        <p class="um-tab-hint" data-translate-key="um.tab.locations_hint">Locaciones operativas asignadas a este usuario.</p>
+                        <div class="um-loc-meta-row">
+                            <p class="um-tab-hint" data-translate-key="um.tab.locations_hint">Locaciones operativas asignadas a este usuario.</p>
+                            <div class="um-loc-bulk">
+                                <button type="button" class="um-loc-bulk-btn" onclick="toggleAllLocations(true)">
+                                    <span class="material-icons">check_box</span>Todos
+                                </button>
+                                <button type="button" class="um-loc-bulk-btn" onclick="toggleAllLocations(false)">
+                                    <span class="material-icons">check_box_outline_blank</span>Ninguno
+                                </button>
+                            </div>
+                        </div>
                         <div class="wms-checklist" id="locationsChecklist"></div>
                     </div>
 

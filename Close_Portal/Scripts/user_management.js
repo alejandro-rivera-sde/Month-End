@@ -367,6 +367,18 @@ function toggleWmsItem(checkbox) {
     checkbox.closest('label').classList.toggle('checked', checkbox.checked);
 }
 
+function toggleAllLocations(selectAll) {
+    // Solo afecta los items visibles (respeta el filtro de búsqueda activo)
+    document.querySelectorAll('#locationsChecklist .wms-check-item').forEach(function (item) {
+        if (item.style.display === 'none') return;
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb) {
+            cb.checked = selectAll;
+            item.classList.toggle('checked', selectAll);
+        }
+    });
+}
+
 // ============================================================
 // GUARDAR CAMBIOS
 // ============================================================
