@@ -841,6 +841,16 @@
     color: var(--primary-color);
 }
 
+.um-loc-restore-btn {
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #d97706;
+}
+
+.um-loc-restore-btn:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
 .um-oms-group-header {
     font-size: 12px;
     font-weight: 700;

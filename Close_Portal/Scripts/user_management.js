@@ -146,6 +146,11 @@ function openModalNew() {
     document.getElementById('newEmail').value = '';
     document.getElementById('newUsername').value = '';
 
+    // Restaurar no aplica en nuevo usuario
+    const restoreBtn = document.getElementById('btnRestoreLocs');
+    if (restoreBtn) restoreBtn.style.display = 'none';
+    _savedLocIds = new Set();
+
     const newRole = document.getElementById('newModalRole');
     if (newRole) newRole.selectedIndex = 0;
     const newDept = document.getElementById('newModalDepartment');
@@ -241,6 +246,8 @@ function buildWmsChecklist(wmsList) {
 // ============================================================
 // LOCATION CHECKLIST
 // ============================================================
+var _savedLocIds = new Set(); // estado inicial al abrir modal de edición
+
 function buildLocationChecklist(locationList) {
     const container = document.getElementById('locationsChecklist');
     container.innerHTML = '';
@@ -249,6 +256,17 @@ function buildLocationChecklist(locationList) {
         container.innerHTML =
             `<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin locaciones disponibles</div>`;
         return;
+    }
+
+    const isEdit = document.getElementById('modalOverlay').dataset.mode === 'edit';
+
+    // Guardar estado inicial solo en modo edición
+    if (isEdit) {
+        _savedLocIds = new Set(
+            locationList.filter(l => l.Assigned).map(l => l.LocationId)
+        );
+        const btn = document.getElementById('btnRestoreLocs');
+        if (btn) btn.style.display = '';
     }
 
     locationList.forEach(loc => {
@@ -376,6 +394,17 @@ function toggleAllLocations(selectAll) {
             cb.checked = selectAll;
             item.classList.toggle('checked', selectAll);
         }
+    });
+}
+
+function restoreLocations() {
+    // Restaura al estado que tenían las locaciones al abrir el modal
+    document.querySelectorAll('#locationsChecklist .wms-check-item').forEach(function (item) {
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        const wasChecked = _savedLocIds.has(parseInt(cb.value));
+        cb.checked = wasChecked;
+        item.classList.toggle('checked', wasChecked);
     });
 }
 

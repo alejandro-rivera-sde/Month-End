@@ -392,6 +392,10 @@
                                 <button type="button" class="um-loc-bulk-btn" onclick="toggleAllLocations(false)">
                                     <span class="material-icons">check_box_outline_blank</span>Ninguno
                                 </button>
+                                <button type="button" class="um-loc-bulk-btn um-loc-restore-btn" id="btnRestoreLocs"
+                                        onclick="restoreLocations()" style="display:none;">
+                                    <span class="material-icons">restore</span>Restaurar
+                                </button>
                             </div>
                         </div>
                         <div class="wms-checklist" id="locationsChecklist"></div>
