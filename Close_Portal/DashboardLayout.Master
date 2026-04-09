@@ -210,7 +210,7 @@
             <!-- Footer (deslizante — aparece al acercar cursor al borde inferior) -->
             <footer id="dashFooter" class="dashboard-footer text-center py-3 mt-auto">
                 <p class="text-muted mb-2" data-translate-key="footer.developed_by">
-                    Cierre de mes | Desarrollado por: Alex Rivera
+                    Cierre de mes | alejandro.rivera@novamex.com
                 </p>
                 <div class="d-flex justify-content-center gap-3">
                     <a href="#" class="text-muted text-decoration-none small" data-translate-key="footer.support">Support</a>
@@ -280,7 +280,7 @@
             var footer = document.getElementById('dashFooter');
             if (!footer) return;
             document.addEventListener('mousemove', function (e) {
-                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 30);
+                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 20);
             });
         })();
     </script>
