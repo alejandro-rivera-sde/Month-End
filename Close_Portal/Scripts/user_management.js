@@ -202,6 +202,10 @@ function populateModal(data) {
         }
     }
 
+    // Establecer modo antes de construir checklists (buildLocationChecklist lo lee)
+    document.getElementById('modalOverlay').dataset.userId = data.UserId;
+    document.getElementById('modalOverlay').dataset.mode = 'edit';
+
     // Primero WMS, luego locaciones
     buildWmsChecklist(data.WmsList);
     buildLocationChecklist(data.LocationList);
@@ -210,9 +214,6 @@ function populateModal(data) {
     const isGoogle = (data.LoginType || '').toLowerCase() === 'google';
     const pwSection = document.getElementById('editExtraFields');
     if (pwSection) pwSection.style.display = isGoogle ? 'none' : 'block';
-
-    document.getElementById('modalOverlay').dataset.userId = data.UserId;
-    document.getElementById('modalOverlay').dataset.mode = 'edit';
 }
 
 // ============================================================
