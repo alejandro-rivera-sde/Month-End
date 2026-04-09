@@ -42,7 +42,7 @@ function t(key, fallback) {
 }
 
 // ─── HELPER AJAX ───────────────────────────────────────────
-function gdCall(method, data, onSuccess) {
+function gdCall(method, data, onSuccess, onError) {
     $.ajax({
         type: 'POST',
         url: window.AppRoot + 'Pages/Admin/Guard.aspx/' + method,
@@ -53,6 +53,7 @@ function gdCall(method, data, onSuccess) {
         error: (xhr) => {
             console.error('[guard.js]', method, xhr.responseText);
             showToast(t('gd.toast.error', 'Error de comunicación con el servidor.'), 'error');
+            if (typeof onError === 'function') onError();
         }
     });
 }
@@ -665,17 +666,22 @@ function submitConfirmGuard() {
     btn.innerHTML = `<span class="material-icons gd-spin">autorenew</span>
         ${t('gd.modal.saving', 'Procesando...')}`;
 
+    const resetBtn = () => {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-icons">rocket_launch</span>
+            ${t('gd.btn.confirm_guard', 'Crear guardia')}`;
+    };
+
     gdCall('ConfirmGuard', { guardId }, (resp) => {
         if (resp.success) {
+            resetBtn();
             showToast(t('gd.toast.confirmed', 'Guardia creada. Asigna los responsables.'), 'success');
             loadGuardStatus();
         } else {
+            resetBtn();
             showToast(resp.message || t('gd.toast.error', 'Error.'), 'error');
-            btn.disabled = false;
-            btn.innerHTML = `<span class="material-icons">rocket_launch</span>
-                ${t('gd.btn.confirm_guard', 'Crear guardia')}`;
         }
-    });
+    }, resetBtn);
 }
 
 // ─── CIERRE MANUAL DE GUARDIA ──────────────────────────────

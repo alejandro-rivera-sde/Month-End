@@ -1331,7 +1331,7 @@
 
 .gd-toast {
     position: fixed;
-    top: 68px;            /* just below the sticky dashboard-header (~60px tall) */
+    top: 90px;            /* just below the sticky dashboard-header */
     right: 276px;         /* sidebar (260px) + 16px gap — aligns with main-content right edge */
     z-index: 99999;
     display: flex;
