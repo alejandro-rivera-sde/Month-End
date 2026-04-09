@@ -213,7 +213,7 @@
                     Cierre de mes | alejandro.rivera@novamex.com
                 </p>
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="#" class="text-muted text-decoration-none small" data-translate-key="footer.support">Support</a>
+                    <a href="https://servicedesk.novamex.com:8080/" target="_blank" rel="noopener noreferrer" class="text-muted text-decoration-none small" data-translate-key="footer.support">Support</a>
                 </div>
             </footer>
         </div>
@@ -279,15 +279,31 @@
         (function () {
             var footer = document.getElementById('dashFooter');
             if (!footer) return;
-            // Abre solo cuando el cursor llega al borde inferior
+            var TRIGGER = 20;
+            var COOLDOWN = 350; // ms — igual a la duración de la transición CSS
+            var lastToggle = 0;
+
             document.addEventListener('mousemove', function (e) {
-                if (e.clientY >= window.innerHeight - 20) {
+                var now = Date.now();
+                if (now - lastToggle < COOLDOWN) return; // ignorar durante la animación
+
+                var visible = footer.classList.contains('footer-visible');
+
+                if (!visible && e.clientY >= window.innerHeight - TRIGGER) {
+                    // Mostrar al acercarse al borde inferior
                     footer.classList.add('footer-visible');
+                    lastToggle = now;
+                    return;
                 }
-            });
-            // Cierra solo cuando el cursor sale del área del footer
-            footer.addEventListener('mouseleave', function () {
-                footer.classList.remove('footer-visible');
+
+                if (visible) {
+                    // Ocultar solo si el cursor sube POR ENCIMA del borde superior del footer
+                    var rect = footer.getBoundingClientRect();
+                    if (e.clientY < rect.top) {
+                        footer.classList.remove('footer-visible');
+                        lastToggle = now;
+                    }
+                }
             });
         })();
     </script>
