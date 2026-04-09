@@ -280,7 +280,7 @@
             var footer = document.getElementById('dashFooter');
             if (!footer) return;
             document.addEventListener('mousemove', function (e) {
-                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 60);
+                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 30);
             });
         })();
     </script>
