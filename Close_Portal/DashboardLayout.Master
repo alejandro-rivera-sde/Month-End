@@ -279,8 +279,15 @@
         (function () {
             var footer = document.getElementById('dashFooter');
             if (!footer) return;
+            // Abre solo cuando el cursor llega al borde inferior
             document.addEventListener('mousemove', function (e) {
-                footer.classList.toggle('footer-visible', e.clientY >= window.innerHeight - 20);
+                if (e.clientY >= window.innerHeight - 20) {
+                    footer.classList.add('footer-visible');
+                }
+            });
+            // Cierra solo cuando el cursor sale del área del footer
+            footer.addEventListener('mouseleave', function () {
+                footer.classList.remove('footer-visible');
             });
         })();
     </script>
