@@ -492,7 +492,7 @@ function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, de
             if (result.Success) {
                 showToast(result.Message, 'success');
                 closeModal();
-                setTimeout(() => location.reload(), 800);
+                if (result.Row) updateUserRow(result.Row);
             } else {
                 showToast(result.Message || getTranslation('common.error'), 'error');
             }
@@ -567,7 +567,7 @@ function confirmToggleActive(userId, isActive) {
             success: function (response) {
                 const result = response.d;
                 showToast(result.Message, result.Success ? 'success' : 'error');
-                if (result.Success) setTimeout(() => location.reload(), 800);
+                if (result.Success && result.Row) updateUserRow(result.Row);
             },
             error: function () { showToast(getTranslation('common.error'), 'error'); }
         });
@@ -643,6 +643,71 @@ function showToast(message, type) {
         box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:999999;`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3000);
+}
+
+// ============================================================
+// ACTUALIZAR FILA EN LA TABLA SIN RELOAD
+// ============================================================
+function updateUserRow(row) {
+    const tr = document.querySelector('tr[data-userid="' + row.UserId + '"]');
+    if (!tr) return;
+
+    // Data-attributes para filtros del toolbar
+    tr.dataset.role       = row.RoleName;
+    tr.dataset.roleid     = row.RoleId;
+    tr.dataset.status     = row.StatusLabel;
+    tr.dataset.wms        = row.WmsCodes || '';
+    tr.dataset.location   = row.LocationNames || '';
+    tr.dataset.department = row.DepartmentCode || '';
+
+    const cells = tr.querySelectorAll('td');
+
+    // [0] Avatar + nombre
+    cells[0].querySelector('.avatar').textContent         = row.Initials;
+    cells[0].querySelector('.user-name-text').textContent = row.Username;
+
+    // [1] Badge de rol
+    const roleBadge = cells[1].querySelector('.badge');
+    roleBadge.className   = 'badge badge-' + row.RoleBadge;
+    roleBadge.textContent = row.RoleName;
+
+    // [2] Departamento
+    if (row.DepartmentCode) {
+        cells[2].innerHTML =
+            "<span class='dept-badge'>" + escHtml(row.DepartmentCode) + "</span>" +
+            "<span class='dept-name'> "  + escHtml(row.DepartmentName) + "</span>";
+    } else {
+        cells[2].innerHTML = "<span style='color:var(--text-muted);font-size:11px'>—</span>";
+    }
+
+    // [3] Tags WMS/locaciones
+    cells[3].querySelector('.wms-tags').innerHTML = row.WmsTagsHtml || '';
+
+    // [4] Login type — no editable, sin cambios
+
+    // [5] Badge de estado
+    const statusBadge = cells[5].querySelector('.badge');
+    statusBadge.className   = 'badge badge-' + row.StatusBadge;
+    statusBadge.textContent = row.StatusLabel;
+
+    // [6] Acciones — reconstruir botones con el estado actual
+    if (row.RoleId < row.CurrentRoleId) {
+        const toggleTitle = row.Active ? 'Desactivar usuario' : 'Activar usuario';
+        const toggleIcon  = row.Active ? 'person_off' : 'person';
+        cells[6].innerHTML =
+            "<div class='actions'>" +
+            "<button type='button' class='btn-icon edit' onclick='openModalEdit(" + row.UserId + ")' title='Editar usuario'>" +
+            "<span class='material-icons'>edit</span></button>" +
+            "<button type='button' class='btn-icon delete' " +
+            "onclick='confirmToggleActive(" + row.UserId + ", " + row.Active + ")' " +
+            "title='" + toggleTitle + "'>" +
+            "<span class='material-icons'>" + toggleIcon + "</span></button>" +
+            "</div>";
+    } else {
+        cells[6].innerHTML =
+            "<div class='actions'><span class='um-no-action' title='Sin permisos para editar'>" +
+            "<span class='material-icons'>lock</span></span></div>";
+    }
 }
 
 function escHtml(str) {

@@ -195,7 +195,7 @@ namespace Close_Portal.Pages.Admin {
 
         // ── WmsCodes para data-wms del <tr> (filtro toolbar)
         //    Deriva WMS_Code directamente desde MonthEnd_Users_WMS
-        private string GetUserWmsCodes(SqlConnection conn, int userId) {
+        private static string GetUserWmsCodes(SqlConnection conn, int userId) {
             string sql = @"
                 SELECT DISTINCT w.WMS_Code
                 FROM MonthEnd_Users_WMS uw
@@ -214,7 +214,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ── LocationNames para data-location del <tr> (filtro toolbar)
-        private string GetUserLocationNames(SqlConnection conn, int userId) {
+        private static string GetUserLocationNames(SqlConnection conn, int userId) {
             string sql = @"
                 SELECT wl.Location_Name
                 FROM MonthEnd_Users_Location ul
@@ -233,7 +233,7 @@ namespace Close_Portal.Pages.Admin {
         }
 
         // ── Tags HTML de locaciones operativas para la columna de la tabla
-        private string BuildLocationTagsHtml(SqlConnection conn, int userId) {
+        private static string BuildLocationTagsHtml(SqlConnection conn, int userId) {
             string sql = @"
                 SELECT wl.Location_Name
                 FROM MonthEnd_Users_Location ul
@@ -252,6 +252,77 @@ namespace Close_Portal.Pages.Admin {
             return sb.Length > 0
                 ? sb.ToString()
                 : "<span style='color:var(--text-muted);font-size:11px'>Sin asignar</span>";
+        }
+
+        // ============================================================
+        // GET USER ROW DATA
+        // Retorna todos los campos necesarios para renderizar / actualizar
+        // una fila de la tabla sin recargar la página.
+        // ============================================================
+        private static object GetUserRowData(int userId) {
+            try {
+                int currentRoleId = System.Web.HttpContext.Current.Session["RoleId"] != null
+                    ? (int)System.Web.HttpContext.Current.Session["RoleId"] : -1;
+
+                var user = new UserManagementModel();
+                using (var conn = new SqlConnection(_connStr)) {
+                    conn.Open();
+
+                    using (var cmd = new SqlCommand(@"
+                        SELECT u.User_Id, u.Email, u.Username, u.Active, u.Locked,
+                               u.Login_Type, r.Role_Id, r.Role_Name,
+                               d.Department_Id, d.Department_Code, d.Department_Name
+                        FROM MonthEnd_Users u
+                        INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
+                        LEFT  JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
+                        WHERE u.User_Id = @UserId", conn)) {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+                        using (var r = cmd.ExecuteReader()) {
+                            if (!r.Read()) return null;
+                            user.UserId       = (int)r["User_Id"];
+                            user.Email        = r["Email"].ToString();
+                            user.Username     = r["Username"]?.ToString();
+                            user.Active       = (bool)r["Active"];
+                            user.Locked       = (bool)r["Locked"];
+                            user.LoginType    = r["Login_Type"].ToString();
+                            user.RoleId       = (int)r["Role_Id"];
+                            user.RoleName     = r["Role_Name"].ToString();
+                            user.DepartmentId   = r["Department_Id"] != DBNull.Value ? (int?)r["Department_Id"] : null;
+                            user.DepartmentCode = r["Department_Code"]?.ToString();
+                            user.DepartmentName = r["Department_Name"]?.ToString();
+                        }
+                    }
+
+                    user.WmsCodes      = GetUserWmsCodes(conn, userId);
+                    user.WmsTagsHtml   = BuildLocationTagsHtml(conn, userId);
+                    user.LocationNames = GetUserLocationNames(conn, userId);
+                }
+
+                return new {
+                    UserId          = user.UserId,
+                    Email           = user.Email,
+                    Username        = user.Username ?? user.Email.Split('@')[0],
+                    Initials        = user.Initials,
+                    RoleId          = user.RoleId,
+                    RoleName        = user.RoleName,
+                    RoleBadge       = user.RoleBadge,
+                    DepartmentCode  = user.DepartmentCode ?? "",
+                    DepartmentName  = user.DepartmentName ?? "",
+                    WmsCodes        = user.WmsCodes ?? "",
+                    WmsTagsHtml     = user.WmsTagsHtml,
+                    LocationNames   = user.LocationNames ?? "",
+                    LoginIcon       = user.LoginIcon,
+                    LoginTypeLabel  = user.LoginTypeLabel,
+                    StatusLabel     = user.StatusLabel,
+                    StatusBadge     = user.StatusBadge,
+                    Active          = user.Active,
+                    Locked          = user.Locked,
+                    CurrentRoleId   = currentRoleId
+                };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[GetUserRowData] ERROR: {ex.Message}");
+                return null;
+            }
         }
 
         private static (string Email, string Username, string RoleName, int RoleId) GetUserInfo(int userId) {
@@ -674,7 +745,7 @@ namespace Close_Portal.Pages.Admin {
                         EmailService.NotifyUserUnblocked(targetEmail, targetUsername, performedBy));
                 }
 
-                return new { Success = true, Message = "Cambios guardados correctamente" };
+                return new { Success = true, Message = "Cambios guardados correctamente", Row = GetUserRowData(userId) };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"ERROR SaveUserChanges: {ex.Message}");
@@ -826,7 +897,7 @@ namespace Close_Portal.Pages.Admin {
                         performedByEmail: performedBy);
                 }
 
-                return new { Success = true, Message = active ? "Usuario activado" : "Usuario desactivado" };
+                return new { Success = true, Message = active ? "Usuario activado" : "Usuario desactivado", Row = GetUserRowData(userId) };
 
             } catch (Exception ex) {
                 return new { Success = false, Message = ex.Message };

@@ -116,7 +116,8 @@
             <tbody>
                 <asp:Repeater ID="rptUsers" runat="server">
                     <ItemTemplate>
-                        <tr data-role="<%# Eval("RoleName") %>"
+                        <tr data-userid="<%# Eval("UserId") %>"
+                            data-role="<%# Eval("RoleName") %>"
                             data-roleid="<%# Eval("RoleId") %>"
                             data-status="<%# Eval("StatusLabel") %>"
                             data-wms="<%# Eval("WmsCodes") %>"
