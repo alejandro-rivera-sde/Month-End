@@ -905,5 +905,98 @@ namespace Close_Portal.DataAccess {
                 return null;
             }
         }
+
+        // ────────────────────────────────────────────────────────────────
+        // AUTO-ASSIGN DEFAULT SPOTS — llamado por timer periódico
+        // Cuando la guardia ya inició (Start_Time <= NOW) y hay spots sin
+        // usuario asignado, busca el primer usuario activo del grupo de email
+        // "DefaultSpot{DeptCode}" y lo asigna automáticamente.
+        // Retorna la lista de Guard_Id afectados (para notificar via SignalR).
+        // ────────────────────────────────────────────────────────────────
+        public static List<int> AutoAssignDefaultSpots() {
+            var affectedGuards = new List<int>();
+            try {
+                // 1. Spots sin asignar de guardias confirmadas que ya iniciaron
+                const string sqlSpots = @"
+                    SELECT gs_spot.Spot_Id, gs.Guard_Id, d.Department_Code
+                    FROM MonthEnd_Guard_Schedule gs
+                    INNER JOIN MonthEnd_Guard_Spots gs_spot ON gs_spot.Guard_Id = gs.Guard_Id
+                    INNER JOIN MonthEnd_Departments d ON d.Department_Id = gs_spot.Department_Id
+                    WHERE gs.Is_Confirmed = 1
+                      AND gs.Start_Time  <= GETDATE()
+                      AND gs.End_Time     IS NULL
+                      AND gs_spot.User_Id IS NULL";
+
+                var toAssign = new List<(int SpotId, int GuardId, string DeptCode)>();
+                using (var conn = new SqlConnection(_staticConnStr))
+                using (var cmd = new SqlCommand(sqlSpots, conn)) {
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read())
+                            toAssign.Add(((int)r["Spot_Id"], (int)r["Guard_Id"], r["Department_Code"].ToString()));
+                }
+
+                if (toAssign.Count == 0) return affectedGuards;
+                Debug.WriteLine($"[AutoAssignDefaultSpots] {toAssign.Count} spot(s) sin asignar — buscando defaults...");
+
+                // 2. Para cada spot, encontrar el usuario default del grupo y asignarlo
+                const string sqlDefaultUser = @"
+                    SELECT TOP 1 u.User_Id
+                    FROM MonthEnd_Email_Group_Members m
+                    INNER JOIN MonthEnd_Email_Groups g ON g.Group_Id = m.Group_Id
+                    INNER JOIN MonthEnd_Users u ON u.Email = m.Email
+                                               AND u.Active = 1 AND u.Locked = 0
+                    WHERE g.Group_Key = @GroupKey
+                      AND g.Active    = 1
+                      AND m.Active    = 1";
+
+                const string sqlAssign = @"
+                    UPDATE MonthEnd_Guard_Spots
+                    SET User_Id     = @UserId,
+                        Assigned_By = NULL,
+                        Assigned_At = GETDATE()
+                    WHERE Spot_Id   = @SpotId
+                      AND User_Id   IS NULL";  // doble-check: no pisar si ya fue asignado
+
+                foreach (var (spotId, guardId, deptCode) in toAssign) {
+                    try {
+                        string groupKey = $"DefaultSpot{deptCode.ToUpper()}";
+                        int? defaultUserId = null;
+
+                        using (var conn = new SqlConnection(_staticConnStr))
+                        using (var cmd = new SqlCommand(sqlDefaultUser, conn)) {
+                            cmd.Parameters.AddWithValue("@GroupKey", groupKey);
+                            conn.Open();
+                            var val = cmd.ExecuteScalar();
+                            if (val != null && val != DBNull.Value)
+                                defaultUserId = (int)val;
+                        }
+
+                        if (!defaultUserId.HasValue) {
+                            Debug.WriteLine($"[AutoAssignDefaultSpots] Sin usuario default para {groupKey} — omitido.");
+                            continue;
+                        }
+
+                        using (var conn = new SqlConnection(_staticConnStr))
+                        using (var cmd = new SqlCommand(sqlAssign, conn)) {
+                            cmd.Parameters.AddWithValue("@UserId", defaultUserId.Value);
+                            cmd.Parameters.AddWithValue("@SpotId", spotId);
+                            conn.Open();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows > 0) {
+                                Debug.WriteLine($"[AutoAssignDefaultSpots] Spot {spotId} (Guard {guardId}, {deptCode}) → UserId {defaultUserId.Value} ✓");
+                                if (!affectedGuards.Contains(guardId))
+                                    affectedGuards.Add(guardId);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        Debug.WriteLine($"[AutoAssignDefaultSpots] ERROR spot {spotId}: {ex.Message}");
+                    }
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine($"[AutoAssignDefaultSpots] ERROR: {ex.Message}");
+            }
+            return affectedGuards;
+        }
     }
 }
