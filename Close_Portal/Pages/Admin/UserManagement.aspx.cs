@@ -145,7 +145,7 @@ namespace Close_Portal.Pages.Admin {
                     string sql = @"
                         SELECT
                             u.User_Id, u.Email,
-                            RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                            COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
                             u.Active, u.Locked, u.Login_Type,
                             r.Role_Id, r.Role_Name,
                             d.Department_Id, d.Department_Code, d.Department_Name
@@ -271,7 +271,7 @@ namespace Close_Portal.Pages.Admin {
 
                     using (var cmd = new SqlCommand(@"
                         SELECT u.User_Id, u.Email,
-                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                               COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
                                u.Active, u.Locked,
                                u.Login_Type, r.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
@@ -332,7 +332,7 @@ namespace Close_Portal.Pages.Admin {
             using (SqlConnection conn = new SqlConnection(_connStr)) {
                 string sql = @"
                     SELECT u.Email,
-                           RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                           COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
                            r.Role_Name, r.Role_Id
                     FROM MonthEnd_Users u
                     INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
@@ -380,7 +380,7 @@ namespace Close_Portal.Pages.Admin {
                     // ── 1. Datos básicos del usuario ─────────────────────────
                     string sqlUser = @"
                         SELECT u.User_Id, u.Email,
-                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                               COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
                                u.Active, u.Locked,
                                u.Login_Type, u.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
