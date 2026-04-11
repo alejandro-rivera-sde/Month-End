@@ -103,14 +103,14 @@ namespace Close_Portal.Pages {
                 string sql = @"
                     SELECT TOP 1
                         u.User_Id,
-                        u.Username,
+                        RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
                         u.Email
                     FROM MonthEnd_Users u
                     INNER JOIN MonthEnd_Users_Location ul ON ul.User_Id     = u.User_Id
                     WHERE ul.Location_Id = @LocationId
                       AND u.Role_Id      = @ManagerRole
                       AND u.Active       = 1
-                    ORDER BY u.Username";
+                    ORDER BY u.First_Name, u.Last_Name";
 
                 using (var conn = new SqlConnection(_connStr)) {
                     using (var cmd = new SqlCommand(sql, conn)) {
@@ -144,7 +144,7 @@ namespace Close_Portal.Pages {
                 CheckAccess(RoleLevel.Regular);
                 var session = System.Web.HttpContext.Current.Session;
                 int requestedBy = (int)session["UserId"];
-                string requesterName = session["Username"]?.ToString() ?? "";
+                string requesterName = session["FullName"]?.ToString() ?? "";
                 string requesterEmail = session["Email"]?.ToString() ?? "";
 
                 using (var conn = new SqlConnection(_connStr)) {
@@ -209,13 +209,14 @@ namespace Close_Portal.Pages {
                     string managerEmail = "";
                     string managerName = "";
                     using (var cmd = new SqlCommand(@"
-                        SELECT TOP 1 u.User_Id, u.Email, u.Username
+                        SELECT TOP 1 u.User_Id, u.Email,
+                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username
                         FROM MonthEnd_Users u
                         INNER JOIN MonthEnd_Users_Location ul ON ul.User_Id = u.User_Id
                         WHERE ul.Location_Id = @LocationId
                           AND u.Role_Id      = @ManagerRole
                           AND u.Active       = 1
-                        ORDER BY u.Username", conn)) {
+                        ORDER BY u.First_Name, u.Last_Name", conn)) {
                         cmd.Parameters.AddWithValue("@LocationId", locationId);
                         cmd.Parameters.AddWithValue("@ManagerRole", RoleLevel.Administrador);
                         using (var r = cmd.ExecuteReader()) {

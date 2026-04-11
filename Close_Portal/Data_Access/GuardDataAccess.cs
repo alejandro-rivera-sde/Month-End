@@ -244,13 +244,15 @@ namespace Close_Portal.DataAccess {
             var list = new List<GuardUserViewModel>();
             try {
                 string sql = @"
-                    SELECT u.User_Id, u.Username, u.Email, d.Department_Code, d.Department_Id
+                    SELECT u.User_Id,
+                           RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                           u.Email, d.Department_Code, d.Department_Id
                     FROM MonthEnd_Users u
                     INNER JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                     WHERE u.Department_Id = @DeptId
                       AND u.Active  = 1
                       AND u.Locked  = 0
-                    ORDER BY u.Username";
+                    ORDER BY u.First_Name, u.Last_Name";
 
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(sql, conn)) {
@@ -290,7 +292,7 @@ namespace Close_Portal.DataAccess {
                         gs.Estimated_End_Time,
                         gs.Created_At,
                         gs.Is_Confirmed,
-                        cb.Username AS CreatedBy,
+                        RTRIM(ISNULL(cb.First_Name,'') + ' ' + ISNULL(cb.Last_Name,'')) AS CreatedBy,
                         (SELECT COUNT(*) FROM MonthEnd_Guard_Locations gl WHERE gl.Guard_Id = gs.Guard_Id) AS LocationCount
                     FROM MonthEnd_Guard_Schedule gs
                     LEFT JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
@@ -342,7 +344,7 @@ namespace Close_Portal.DataAccess {
                         gs.End_Time,
                         gs.Estimated_End_Time,
                         gs.Created_At,
-                        cb.Username AS CreatedBy
+                        RTRIM(ISNULL(cb.First_Name,'') + ' ' + ISNULL(cb.Last_Name,'')) AS CreatedBy
                     FROM MonthEnd_Guard_Schedule gs
                     LEFT JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
                     WHERE gs.End_Time IS NOT NULL
@@ -384,9 +386,9 @@ namespace Close_Portal.DataAccess {
                     d.Department_Code,
                     d.Department_Name,
                     sl.User_Id,
-                    u.Username,
+                    RTRIM(ISNULL(u.First_Name,'')  + ' ' + ISNULL(u.Last_Name,''))  AS Username,
                     u.Email,
-                    ab.Username AS AssignedBy,
+                    RTRIM(ISNULL(ab.First_Name,'') + ' ' + ISNULL(ab.Last_Name,'')) AS AssignedBy,
                     sl.Assigned_At
                 FROM MonthEnd_Guard_Spots sl
                 INNER JOIN MonthEnd_Departments d ON d.Department_Id = sl.Department_Id
@@ -806,8 +808,8 @@ namespace Close_Portal.DataAccess {
                             cr.Created_At   AS RequestedAt,
                             cr.Reviewed_At,
                             cr.Review_Notes,
-                            u.Username      AS RequestedBy,
-                            ru.Username     AS ReviewedBy,
+                            RTRIM(ISNULL(u.First_Name,'')  + ' ' + ISNULL(u.Last_Name,''))  AS RequestedBy,
+                            RTRIM(ISNULL(ru.First_Name,'') + ' ' + ISNULL(ru.Last_Name,'')) AS ReviewedBy,
                             ROW_NUMBER() OVER (
                                 PARTITION BY cr.Location_Id
                                 ORDER BY cr.Created_At DESC

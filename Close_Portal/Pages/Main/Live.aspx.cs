@@ -458,9 +458,8 @@ namespace Close_Portal.Pages.Main {
                     RTRIM(ISNULL(cb.First_Name,'') + ' ' + ISNULL(cb.Last_Name,'')) AS StartedBy
                 FROM  MonthEnd_Guard_Schedule gs
                 LEFT  JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
-                WHERE gs.Start_Time IS NOT NULL
-                  AND gs.Start_Time <= GETDATE()
-                  AND gs.End_Time   IS NULL
+                WHERE gs.Is_Confirmed = 1
+                  AND gs.End_Time     IS NULL
                 ORDER BY gs.Start_Time DESC";
 
             GuardDto guard = null;
@@ -471,7 +470,7 @@ namespace Close_Portal.Pages.Main {
                 guard = new GuardDto {
                     IsActive = true,
                     GuardId = dr.GetInt32(0),
-                    StartTime = dr.GetDateTime(1),
+                    StartTime = dr.IsDBNull(1) ? DateTime.Now : dr.GetDateTime(1),
                     StartedBy = dr.IsDBNull(2) ? "" : dr.GetString(2)
                 };
             }

@@ -143,7 +143,7 @@ namespace Close_Portal.Pages {
                     System.Diagnostics.Debug.WriteLine(
                         $"[ValidateRequest.ReviewRequest] RequestId={requestId} → {action} by UserId={reviewerId}");
 
-                    string reviewerName = session["Username"]?.ToString() ?? session["Email"]?.ToString() ?? "";
+                    string reviewerName = session["FullName"]?.ToString() ?? session["Email"]?.ToString() ?? "";
                     string locName = "";
                     using (var cmd = new SqlCommand(
                         "SELECT Location_Name FROM MonthEnd_Locations WHERE Location_Id = @LocationId", conn)) {
@@ -156,7 +156,8 @@ namespace Close_Portal.Pages {
                     string requesterEmail = "";
                     string requesterName = "";
                     using (var cmd = new SqlCommand(@"
-                        SELECT cr.Requested_By, u.Email, u.Username
+                        SELECT cr.Requested_By, u.Email,
+                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username
                         FROM MonthEnd_Closure_Requests cr
                         INNER JOIN MonthEnd_Users u ON u.User_Id = cr.Requested_By
                         WHERE cr.Request_Id = @RequestId", conn)) {
@@ -296,7 +297,7 @@ namespace Close_Portal.Pages {
                         cmd.ExecuteNonQuery();
                     }
 
-                    string callerName = session["Username"]?.ToString() ?? session["Email"]?.ToString() ?? "";
+                    string callerName = session["FullName"]?.ToString() ?? session["Email"]?.ToString() ?? "";
                     LocationHub.NotifyLocationUpdated(locationId, locationName, "Active", callerName);
                     LocationHub.NotifyRequestReviewed(requestedBy, requestId, locationName, "Reverted", callerName);
                 }
