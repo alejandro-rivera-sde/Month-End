@@ -22,15 +22,17 @@ namespace Close_Portal.DataAccess {
 
                         using (SqlDataReader reader = cmd.ExecuteReader()) {
                             if (reader.Read()) {
-                                return new LoginResult {
+                                var result = new LoginResult {
                                     Success = reader["Success"] != DBNull.Value && (bool)reader["Success"],
                                     Message = reader["Message"]?.ToString(),
                                     UserId = reader["UserId"] != DBNull.Value ? (int?)reader["UserId"] : null,
                                     RoleId = reader["RoleId"] != DBNull.Value ? (int?)reader["RoleId"] : null,
                                     Email = reader["Email"]?.ToString(),
-                                    Username = reader["Username"]?.ToString(),
                                     RoleName = reader["RoleName"]?.ToString()
                                 };
+                                if (result.Success && result.UserId.HasValue)
+                                    result.FullName = GetFullName(result.UserId.Value);
+                                return result;
                             }
                         }
                     }
@@ -64,7 +66,6 @@ namespace Close_Portal.DataAccess {
 
                 string storedHash = null;
                 int? userId = null;
-                string username = null;
                 string roleName = null;
                 int? roleId = null;
                 string returnedEmail = null;
@@ -101,7 +102,6 @@ namespace Close_Portal.DataAccess {
                                 }
 
                                 if (reader["UserId"] != DBNull.Value) userId = (int)reader["UserId"];
-                                if (reader["Username"] != DBNull.Value) username = reader["Username"].ToString();
                                 if (reader["RoleName"] != DBNull.Value) roleName = reader["RoleName"].ToString();
                                 if (reader["RoleId"] != DBNull.Value) roleId = (int)reader["RoleId"];
                                 if (reader["Email"] != DBNull.Value) returnedEmail = reader["Email"].ToString();
@@ -154,7 +154,7 @@ namespace Close_Portal.DataAccess {
                         Message = "Login exitoso",
                         UserId = userId,
                         Email = returnedEmail ?? email,
-                        Username = username,
+                        FullName = userId.HasValue ? GetFullName(userId.Value) : null,
                         RoleName = roleName,
                         RoleId = roleId
                     };
@@ -170,6 +170,19 @@ namespace Close_Portal.DataAccess {
                 System.Diagnostics.Debug.WriteLine($"ERROR GENERAL: {ex.Message}");
                 throw;
             }
+        }
+
+        private string GetFullName(int userId) {
+            try {
+                using (var conn = new SqlConnection(_connectionString))
+                using (var cmd = new SqlCommand(
+                    "SELECT RTRIM(ISNULL(First_Name,'') + ' ' + ISNULL(Last_Name,'')) FROM MonthEnd_Users WHERE User_Id = @UserId", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    var val = cmd.ExecuteScalar()?.ToString()?.Trim();
+                    return string.IsNullOrEmpty(val) ? null : val;
+                }
+            } catch { return null; }
         }
 
         /// <summary>

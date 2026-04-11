@@ -18,7 +18,7 @@ namespace Close_Portal.Pages.Main {
             System.Diagnostics.Debug.WriteLine("===== Dashboard.aspx Page_Load =====");
             System.Diagnostics.Debug.WriteLine($"  UserId:   {Session["UserId"]}");
             System.Diagnostics.Debug.WriteLine($"  Email:    {Session["Email"]}");
-            System.Diagnostics.Debug.WriteLine($"  Username: {Session["Username"]}");
+            System.Diagnostics.Debug.WriteLine($"  FullName: {Session["FullName"]}");
             System.Diagnostics.Debug.WriteLine($"  RoleName: {Session["RoleName"]}");
             System.Diagnostics.Debug.WriteLine("========================================");
         }

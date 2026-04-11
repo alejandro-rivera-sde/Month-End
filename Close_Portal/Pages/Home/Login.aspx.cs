@@ -77,7 +77,7 @@ namespace Close_Portal.Pages {
 
                 context.Session["UserId"] = loginResult.UserId;
                 context.Session["Email"] = loginResult.Email;
-                context.Session["Username"] = loginResult.Username ?? loginResult.Email;
+                context.Session["FullName"] = loginResult.FullName ?? loginResult.Email?.Split('@')[0];
                 context.Session["RoleName"] = loginResult.RoleName;
                 context.Session["RoleId"] = loginResult.RoleId;
 

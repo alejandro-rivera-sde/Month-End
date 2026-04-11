@@ -33,7 +33,7 @@ namespace Close_Portal {
             System.Diagnostics.Debug.WriteLine($"=== Role key: {roleKey} ===");
         }
         private void LoadUserInfo() {
-            string userName = Session["Username"]?.ToString();
+            string userName = Session["FullName"]?.ToString();
             string email = Session["Email"]?.ToString();
             string roleName = Session["RoleName"]?.ToString();
             string wmsCode = Session["WmsCode"]?.ToString() ?? "";
