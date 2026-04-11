@@ -455,7 +455,7 @@ namespace Close_Portal.Pages.Main {
                 SELECT TOP 1
                     gs.Guard_Id,
                     gs.Start_Time,
-                    cb.Username AS StartedBy
+                    RTRIM(ISNULL(cb.First_Name,'') + ' ' + ISNULL(cb.Last_Name,'')) AS StartedBy
                 FROM  MonthEnd_Guard_Schedule gs
                 LEFT  JOIN MonthEnd_Users cb ON cb.User_Id = gs.Created_By
                 WHERE gs.Start_Time IS NOT NULL
@@ -478,7 +478,8 @@ namespace Close_Portal.Pages.Main {
 
             // Cargar spots del guard
             const string sqlSpots = @"
-                SELECT d.Department_Code, d.Department_Name, u.Username
+                SELECT d.Department_Code, d.Department_Name,
+                       RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username
                 FROM   MonthEnd_Guard_Spots sp
                 INNER JOIN MonthEnd_Departments d ON d.Department_Id = sp.Department_Id
                 LEFT  JOIN MonthEnd_Users       u ON u.User_Id       = sp.User_Id
@@ -571,8 +572,8 @@ namespace Close_Portal.Pages.Main {
                         cr.Created_At,
                         cr.Review_Notes,
                         cr.Reviewed_At,
-                        u.Username  AS RequestedByName,
-                        ru.Username AS ReviewedByName,
+                        RTRIM(ISNULL(u.First_Name,'')  + ' ' + ISNULL(u.Last_Name,''))  AS RequestedByName,
+                        RTRIM(ISNULL(ru.First_Name,'') + ' ' + ISNULL(ru.Last_Name,'')) AS ReviewedByName,
                         ROW_NUMBER() OVER (
                             PARTITION BY cr.Location_Id
                             ORDER BY cr.Created_At DESC

@@ -144,14 +144,15 @@ namespace Close_Portal.Pages.Admin {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
                     string sql = @"
                         SELECT
-                            u.User_Id, u.Email, u.Username,
+                            u.User_Id, u.Email,
+                            RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
                             u.Active, u.Locked, u.Login_Type,
                             r.Role_Id, r.Role_Name,
                             d.Department_Id, d.Department_Code, d.Department_Name
                         FROM MonthEnd_Users u
                         INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
                         LEFT  JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
-                        ORDER BY u.Role_Id DESC, u.Username";
+                        ORDER BY u.Role_Id DESC, RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,''))";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
@@ -269,7 +270,9 @@ namespace Close_Portal.Pages.Admin {
                     conn.Open();
 
                     using (var cmd = new SqlCommand(@"
-                        SELECT u.User_Id, u.Email, u.Username, u.Active, u.Locked,
+                        SELECT u.User_Id, u.Email,
+                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                               u.Active, u.Locked,
                                u.Login_Type, r.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
                         FROM MonthEnd_Users u
@@ -328,7 +331,9 @@ namespace Close_Portal.Pages.Admin {
         private static (string Email, string Username, string RoleName, int RoleId) GetUserInfo(int userId) {
             using (SqlConnection conn = new SqlConnection(_connStr)) {
                 string sql = @"
-                    SELECT u.Email, u.Username, r.Role_Name, r.Role_Id
+                    SELECT u.Email,
+                           RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                           r.Role_Name, r.Role_Id
                     FROM MonthEnd_Users u
                     INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
                     WHERE u.User_Id = @UserId";
@@ -374,7 +379,9 @@ namespace Close_Portal.Pages.Admin {
 
                     // ── 1. Datos básicos del usuario ─────────────────────────
                     string sqlUser = @"
-                        SELECT u.User_Id, u.Email, u.Username, u.Active, u.Locked,
+                        SELECT u.User_Id, u.Email,
+                               RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS Username,
+                               u.Active, u.Locked,
                                u.Login_Type, u.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
                         FROM MonthEnd_Users u
@@ -624,7 +631,10 @@ namespace Close_Portal.Pages.Admin {
                 }
 
                 if (string.IsNullOrWhiteSpace(username))
-                    return new { Success = false, Message = "El username no puede estar vacío" };
+                    return new { Success = false, Message = "El nombre no puede estar vacío" };
+                var nameParts = username.Trim().Split(new[] { ' ' }, 2);
+                string firstName = nameParts[0];
+                string lastName  = nameParts.Length > 1 ? nameParts[1] : "";
 
                 string newRoleName = "";
                 using (SqlConnection connRole = new SqlConnection(_connStr)) {
@@ -654,7 +664,8 @@ namespace Close_Portal.Pages.Admin {
                                         Active        = @Active,
                                         Locked        = @Locked,
                                         Lock_Date     = CASE WHEN @Locked = 1 THEN GETDATE() ELSE NULL END,
-                                        Username      = @Username,
+                                        First_Name    = @FirstName,
+                                        Last_Name     = @LastName,
                                         Department_Id = @DepartmentId,
                                         Password_Hash = @PasswordHash
                                     WHERE User_Id = @UserId";
@@ -667,7 +678,8 @@ namespace Close_Portal.Pages.Admin {
                                         Active        = @Active,
                                         Locked        = @Locked,
                                         Lock_Date     = CASE WHEN @Locked = 1 THEN GETDATE() ELSE NULL END,
-                                        Username      = @Username,
+                                        First_Name    = @FirstName,
+                                        Last_Name     = @LastName,
                                         Department_Id = @DepartmentId
                                     WHERE User_Id = @UserId";
                                 cmdUser = new SqlCommand(sqlUser, conn, tx);
@@ -677,7 +689,8 @@ namespace Close_Portal.Pages.Admin {
                             cmdUser.Parameters.AddWithValue("@RoleId", roleId);
                             cmdUser.Parameters.AddWithValue("@Active", active);
                             cmdUser.Parameters.AddWithValue("@Locked", locked);
-                            cmdUser.Parameters.AddWithValue("@Username", username.Trim());
+                            cmdUser.Parameters.AddWithValue("@FirstName", firstName);
+                            cmdUser.Parameters.AddWithValue("@LastName",  lastName);
                             cmdUser.Parameters.AddWithValue("@DepartmentId",
                                 departmentId > 0 ? (object)departmentId : DBNull.Value);
                             cmdUser.ExecuteNonQuery();
@@ -799,17 +812,21 @@ namespace Close_Portal.Pages.Admin {
                     conn.Open();
                     using (var tx = conn.BeginTransaction()) {
                         try {
+                            var cParts = (string.IsNullOrWhiteSpace(username) ? email.Split('@')[0] : username.Trim())
+                                             .Split(new[] { ' ' }, 2);
+                            string cFirst = cParts[0];
+                            string cLast  = cParts.Length > 1 ? cParts[1] : "";
+
                             string sqlInsert = @"
                                 INSERT INTO MonthEnd_Users
-                                    (Email, Username, Login_Type, Role_Id, Active, Locked, Department_Id)
-                                VALUES (@Email, @Username, 'Google', @RoleId, 1, 0, @DeptId);
+                                    (Email, First_Name, Last_Name, Login_Type, Role_Id, Active, Locked, Department_Id)
+                                VALUES (@Email, @FirstName, @LastName, 'Google', @RoleId, 1, 0, @DeptId);
                                 SELECT SCOPE_IDENTITY();";
                             using (var cmd = new SqlCommand(sqlInsert, conn, tx)) {
                                 cmd.Parameters.AddWithValue("@Email",
                                     email.Trim().ToLower());
-                                cmd.Parameters.AddWithValue("@Username",
-                                    string.IsNullOrWhiteSpace(username)
-                                        ? email.Split('@')[0] : username.Trim());
+                                cmd.Parameters.AddWithValue("@FirstName", cFirst);
+                                cmd.Parameters.AddWithValue("@LastName",  cLast);
                                 cmd.Parameters.AddWithValue("@RoleId", roleId);
                                 cmd.Parameters.AddWithValue("@DeptId",
                                     departmentId > 0 ? (object)departmentId : DBNull.Value);
