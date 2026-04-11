@@ -143,8 +143,11 @@ function openModalNew() {
     document.getElementById('newUserFields').style.display = 'block';
     document.getElementById('editModeFields').style.display = 'none';
 
-    document.getElementById('newEmail').value = '';
-    document.getElementById('newUsername').value = '';
+    document.getElementById('newEmail').value     = '';
+    document.getElementById('newFirstName').value = '';
+    document.getElementById('newLastName').value  = '';
+    document.getElementById('newPhone').value     = '';
+    document.getElementById('newPhoneExt').value  = '';
 
     // Restaurar no aplica en nuevo usuario
     const restoreBtn = document.getElementById('btnRestoreLocs');
@@ -167,6 +170,25 @@ function openModalNew() {
     showOverlay();
 }
 
+function autoFillName() {
+    var prefix = (document.getElementById('newEmail').value || '').trim();
+    var dotIdx = prefix.indexOf('.');
+    var first = '', last = '';
+    if (dotIdx > 0) {
+        first = _capitalize(prefix.substring(0, dotIdx));
+        last  = _capitalize(prefix.substring(dotIdx + 1));
+    } else {
+        first = _capitalize(prefix);
+    }
+    document.getElementById('newFirstName').value = first;
+    document.getElementById('newLastName').value  = last;
+}
+
+function _capitalize(s) {
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 function togglePasswordField() {
     const v = document.getElementById('newLoginType').value;
     document.getElementById('passwordField').style.display = v === 'Standard' ? 'block' : 'none';
@@ -176,10 +198,13 @@ function togglePasswordField() {
 // POBLAR MODAL (modo edición)
 // ============================================================
 function populateModal(data) {
-    document.getElementById('modalAvatar').innerText = data.Initials;
-    document.getElementById('modalUserName').innerText = data.Username;
+    document.getElementById('modalAvatar').innerText   = data.Initials;
+    document.getElementById('modalUserName').innerText  = data.FullName || data.Email;
     document.getElementById('modalUserEmail').innerText = data.Email;
-    document.getElementById('editUsername').value = data.Username || '';
+    document.getElementById('editFirstName').value = data.FirstName || '';
+    document.getElementById('editLastName').value  = data.LastName  || '';
+    document.getElementById('editPhone').value     = data.Phone     || '';
+    document.getElementById('editPhoneExt').value  = data.PhoneExtension || '';
     const roleSelect = document.getElementById('modalRole');
     for (let i = 0; i < roleSelect.options.length; i++) {
         if (parseInt(roleSelect.options[i].value) === data.RoleId) {
@@ -444,14 +469,12 @@ function saveChanges() {
 }
 
 function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, departmentId) {
-    const username = (document.getElementById('editUsername').value || '').trim();
+    const firstName = (document.getElementById('editFirstName').value || '').trim();
+    const lastName  = (document.getElementById('editLastName').value  || '').trim();
+    const phone     = (document.getElementById('editPhone').value     || '').trim();
+    const phoneExt  = (document.getElementById('editPhoneExt').value  || '').trim();
     const password1 = document.getElementById('editPassword1').value;
     const password2 = document.getElementById('editPassword2').value;
-
-    if (!username) {
-        showToast(getTranslation('um.modal.username_required'), 'error');
-        return;
-    }
 
     if (password1 || password2) {
         if (!PW_ALLOWED.test(password1)) {
@@ -480,7 +503,10 @@ function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, de
             locked,
             wmsIds,
             locationIds,
-            username,
+            firstName,
+            lastName,
+            phone,
+            phoneExtension: phoneExt,
             newPassword: password1 || null,
             departmentId: departmentId || 0
         }),
@@ -505,9 +531,12 @@ function saveEditChanges(userId, roleId, active, locked, wmsIds, locationIds, de
 }
 
 function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
-    const emailPrefix = (document.getElementById('newEmail').value || '').trim();
-    const email = emailPrefix ? emailPrefix + '@novamex.com' : '';
-    const username = (document.getElementById('newUsername').value || '').trim();
+    const emailPrefix = (document.getElementById('newEmail').value    || '').trim();
+    const email       = emailPrefix ? emailPrefix + '@novamex.com' : '';
+    const firstName   = (document.getElementById('newFirstName').value || '').trim();
+    const lastName    = (document.getElementById('newLastName').value  || '').trim();
+    const phone       = (document.getElementById('newPhone').value     || '').trim();
+    const phoneExt    = (document.getElementById('newPhoneExt').value  || '').trim();
 
     if (!emailPrefix) {
         showToast('El email es requerido.', 'error');
@@ -515,10 +544,6 @@ function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
     }
     if (emailPrefix.includes('@')) {
         showToast('Escribe solo la parte antes del @.', 'error');
-        return;
-    }
-    if (!username) {
-        showToast(getTranslation('um.modal.username_required'), 'error');
         return;
     }
     if (!roleId) {
@@ -532,7 +557,7 @@ function saveNewUser(roleId, wmsIds, locationIds, departmentId) {
         type: 'POST',
         url: window.PageWebMethodBase + 'CreateUser',
         // Always Google OAuth — no password needed
-        data: JSON.stringify({ email, username, roleId, wmsIds: wmsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
+        data: JSON.stringify({ email, firstName, lastName, phone, phoneExtension: phoneExt, roleId, wmsIds: wmsIds || [], locationIds: locationIds || [], departmentId: departmentId || 0 }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         success: function (response) {
@@ -664,7 +689,7 @@ function updateUserRow(row) {
 
     // [0] Avatar + nombre
     cells[0].querySelector('.avatar').textContent         = row.Initials;
-    cells[0].querySelector('.user-name-text').textContent = row.Username;
+    cells[0].querySelector('.user-name-text').textContent = row.FullName;
 
     // [1] Badge de rol
     const roleBadge = cells[1].querySelector('.badge');

@@ -144,32 +144,32 @@ namespace Close_Portal.Pages.Admin {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
                     string sql = @"
                         SELECT
-                            u.User_Id, u.Email,
-                            COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
+                            u.User_Id, u.Email, u.First_Name, u.Last_Name,
                             u.Active, u.Locked, u.Login_Type,
                             r.Role_Id, r.Role_Name,
                             d.Department_Id, d.Department_Code, d.Department_Name
                         FROM MonthEnd_Users u
                         INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
                         LEFT  JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
-                        ORDER BY u.Role_Id DESC, RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,''))";
+                        ORDER BY u.Role_Id DESC, u.First_Name, u.Last_Name";
 
                     using (SqlCommand cmd = new SqlCommand(sql, conn)) {
                         conn.Open();
                         using (SqlDataReader reader = cmd.ExecuteReader()) {
                             while (reader.Read()) {
                                 users.Add(new UserManagementModel {
-                                    UserId = (int)reader["User_Id"],
-                                    Email = reader["Email"].ToString(),
-                                    Username = reader["Username"]?.ToString(),
-                                    Active = (bool)reader["Active"],
-                                    Locked = (bool)reader["Locked"],
-                                    LoginType = reader["Login_Type"].ToString(),
-                                    RoleId = (int)reader["Role_Id"],
-                                    RoleName = reader["Role_Name"].ToString(),
-                                    DepartmentId = reader["Department_Id"] != DBNull.Value ? (int?)reader["Department_Id"] : null,
-                                    DepartmentCode = reader["Department_Code"]?.ToString(),
-                                    DepartmentName = reader["Department_Name"]?.ToString()
+                                    UserId    = (int)reader["User_Id"],
+                                    Email     = reader["Email"].ToString(),
+                                    FirstName = reader["First_Name"] == DBNull.Value ? null : reader["First_Name"].ToString(),
+                                    LastName  = reader["Last_Name"]  == DBNull.Value ? null : reader["Last_Name"].ToString(),
+                                    Active    = (bool)reader["Active"],
+                                    Locked    = (bool)reader["Locked"],
+                                    LoginType = reader["Login_Type"] == DBNull.Value ? "" : reader["Login_Type"].ToString(),
+                                    RoleId    = (int)reader["Role_Id"],
+                                    RoleName  = reader["Role_Name"].ToString(),
+                                    DepartmentId   = reader["Department_Id"]   == DBNull.Value ? null : (int?)reader["Department_Id"],
+                                    DepartmentCode = reader["Department_Code"] == DBNull.Value ? null : reader["Department_Code"].ToString(),
+                                    DepartmentName = reader["Department_Name"] == DBNull.Value ? null : reader["Department_Name"].ToString()
                                 });
                             }
                         }
@@ -270,8 +270,7 @@ namespace Close_Portal.Pages.Admin {
                     conn.Open();
 
                     using (var cmd = new SqlCommand(@"
-                        SELECT u.User_Id, u.Email,
-                               COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
+                        SELECT u.User_Id, u.Email, u.First_Name, u.Last_Name,
                                u.Active, u.Locked,
                                u.Login_Type, r.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
@@ -284,7 +283,8 @@ namespace Close_Portal.Pages.Admin {
                             if (!r.Read()) return null;
                             user.UserId       = (int)r["User_Id"];
                             user.Email        = r["Email"].ToString();
-                            user.Username     = r["Username"]?.ToString();
+                            user.FirstName    = r["First_Name"] == DBNull.Value ? null : r["First_Name"].ToString();
+                            user.LastName     = r["Last_Name"]  == DBNull.Value ? null : r["Last_Name"].ToString();
                             user.Active       = (bool)r["Active"];
                             user.Locked       = (bool)r["Locked"];
                             user.LoginType    = r["Login_Type"].ToString();
@@ -299,12 +299,25 @@ namespace Close_Portal.Pages.Admin {
                     user.WmsCodes      = GetUserWmsCodes(conn, userId);
                     user.WmsTagsHtml   = BuildLocationTagsHtml(conn, userId);
                     user.LocationNames = GetUserLocationNames(conn, userId);
+
+                    using (var cmd = new SqlCommand(
+                        "SELECT TOP 1 Phone, Extension FROM MonthEnd_User_Phones WHERE User_Id = @UserId AND Active = 1", conn)) {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+                        using (var r = cmd.ExecuteReader()) {
+                            if (r.Read()) {
+                                user.Phone          = r["Phone"]?.ToString();
+                                user.PhoneExtension = r["Extension"]?.ToString();
+                            }
+                        }
+                    }
                 }
 
                 return new {
                     UserId          = user.UserId,
                     Email           = user.Email,
-                    Username        = user.Username ?? user.Email.Split('@')[0],
+                    FirstName       = user.FirstName ?? "",
+                    LastName        = user.LastName  ?? "",
+                    FullName        = user.FullName,
                     Initials        = user.Initials,
                     RoleId          = user.RoleId,
                     RoleName        = user.RoleName,
@@ -328,11 +341,11 @@ namespace Close_Portal.Pages.Admin {
             }
         }
 
-        private static (string Email, string Username, string RoleName, int RoleId) GetUserInfo(int userId) {
+        private static (string Email, string FullName, string RoleName, int RoleId) GetUserInfo(int userId) {
             using (SqlConnection conn = new SqlConnection(_connStr)) {
                 string sql = @"
                     SELECT u.Email,
-                           COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
+                           RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS FullName,
                            r.Role_Name, r.Role_Id
                     FROM MonthEnd_Users u
                     INNER JOIN MonthEnd_Users_Roles r ON u.Role_Id = r.Role_Id
@@ -344,7 +357,7 @@ namespace Close_Portal.Pages.Admin {
                     using (SqlDataReader r = cmd.ExecuteReader()) {
                         if (r.Read())
                             return (r["Email"].ToString(),
-                                    r["Username"]?.ToString(),
+                                    r["FullName"]?.ToString()?.Trim(),
                                     r["Role_Name"].ToString(),
                                     (int)r["Role_Id"]);
                     }
@@ -379,8 +392,7 @@ namespace Close_Portal.Pages.Admin {
 
                     // ── 1. Datos básicos del usuario ─────────────────────────
                     string sqlUser = @"
-                        SELECT u.User_Id, u.Email,
-                               COALESCE(NULLIF(RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')), ''), u.Email) AS Username,
+                        SELECT u.User_Id, u.Email, u.First_Name, u.Last_Name,
                                u.Active, u.Locked,
                                u.Login_Type, u.Role_Id, r.Role_Name,
                                d.Department_Id, d.Department_Code, d.Department_Name
@@ -395,15 +407,16 @@ namespace Close_Portal.Pages.Admin {
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             if (r.Read()) {
                                 user = new UserManagementModel {
-                                    UserId = (int)r["User_Id"],
-                                    Email = r["Email"].ToString(),
-                                    Username = r["Username"]?.ToString(),
-                                    Active = (bool)r["Active"],
-                                    Locked = (bool)r["Locked"],
+                                    UserId    = (int)r["User_Id"],
+                                    Email     = r["Email"].ToString(),
+                                    FirstName = r["First_Name"]?.ToString(),
+                                    LastName  = r["Last_Name"]?.ToString(),
+                                    Active    = (bool)r["Active"],
+                                    Locked    = (bool)r["Locked"],
                                     LoginType = r["Login_Type"].ToString(),
-                                    RoleId = (int)r["Role_Id"],
-                                    RoleName = r["Role_Name"].ToString(),
-                                    DepartmentId = r["Department_Id"] != DBNull.Value ? (int?)r["Department_Id"] : null,
+                                    RoleId    = (int)r["Role_Id"],
+                                    RoleName  = r["Role_Name"].ToString(),
+                                    DepartmentId   = r["Department_Id"] != DBNull.Value ? (int?)r["Department_Id"] : null,
                                     DepartmentCode = r["Department_Code"]?.ToString(),
                                     DepartmentName = r["Department_Name"]?.ToString()
                                 };
@@ -471,21 +484,41 @@ namespace Close_Portal.Pages.Admin {
                         }
                     }
 
+                    // ── 4. Teléfono activo del usuario ────────────────────────
+                    string phone = null, phoneExt = null;
+                    int phoneId = 0;
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT TOP 1 Phone_Id, Phone, Extension FROM MonthEnd_User_Phones WHERE User_Id = @UserId AND Active = 1", conn)) {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+                        using (SqlDataReader r = cmd.ExecuteReader()) {
+                            if (r.Read()) {
+                                phoneId  = (int)r["Phone_Id"];
+                                phone    = r["Phone"]?.ToString();
+                                phoneExt = r["Extension"]?.ToString();
+                            }
+                        }
+                    }
+
                     return new {
-                        Success = true,
-                        UserId = user.UserId,
-                        Email = user.Email,
-                        Username = user.Username ?? user.Email.Split('@')[0],
-                        Initials = user.Initials,
-                        RoleId = user.RoleId,
-                        LoginType = user.LoginType,
-                        Active = user.Active,
-                        Locked = user.Locked,
-                        DepartmentId = user.DepartmentId,
+                        Success    = true,
+                        UserId     = user.UserId,
+                        Email      = user.Email,
+                        FirstName  = user.FirstName ?? "",
+                        LastName   = user.LastName  ?? "",
+                        FullName   = user.FullName,
+                        Initials   = user.Initials,
+                        RoleId     = user.RoleId,
+                        LoginType  = user.LoginType,
+                        Active     = user.Active,
+                        Locked     = user.Locked,
+                        DepartmentId   = user.DepartmentId,
                         DepartmentCode = user.DepartmentCode,
                         DepartmentName = user.DepartmentName,
-                        WmsList = wmsList,
-                        LocationList = locationList
+                        PhoneId        = phoneId,
+                        Phone          = phone ?? "",
+                        PhoneExtension = phoneExt ?? "",
+                        WmsList        = wmsList,
+                        LocationList   = locationList
                     };
                 }
             } catch (Exception ex) {
@@ -602,11 +635,10 @@ namespace Close_Portal.Pages.Admin {
         [WebMethod(EnableSession = true)]
         public static object SaveUserChanges(
             int userId, int roleId, bool active, bool locked,
-            int[] wmsIds,
-            int[] locationIds,
-            string username,
-            string newPassword,
-            int departmentId) {
+            int[] wmsIds, int[] locationIds,
+            string firstName, string lastName,
+            string phone, string phoneExtension,
+            string newPassword, int departmentId) {
             try {
                 System.Diagnostics.Debug.WriteLine(
                     $"=== SaveUserChanges UserId:{userId} RoleId:{roleId} Active:{active} Locked:{locked} ===");
@@ -614,7 +646,7 @@ namespace Close_Portal.Pages.Admin {
                 var session = System.Web.HttpContext.Current.Session;
                 int currentRoleId = session["RoleId"] != null ? (int)session["RoleId"] : -1;
 
-                var (targetEmail, targetUsername, _, targetRoleId) = GetUserInfo(userId);
+                var (targetEmail, targetFullName, _, targetRoleId) = GetUserInfo(userId);
 
                 if (targetRoleId >= currentRoleId)
                     return new { Success = false, Message = "No tienes permisos para modificar este usuario" };
@@ -629,12 +661,6 @@ namespace Close_Portal.Pages.Admin {
                     var val = cmd.ExecuteScalar();
                     previouslyLocked = val != null && val != DBNull.Value && (bool)val;
                 }
-
-                if (string.IsNullOrWhiteSpace(username))
-                    return new { Success = false, Message = "El nombre no puede estar vacío" };
-                var nameParts = username.Trim().Split(new[] { ' ' }, 2);
-                string firstName = nameParts[0];
-                string lastName  = nameParts.Length > 1 ? nameParts[1] : "";
 
                 string newRoleName = "";
                 using (SqlConnection connRole = new SqlConnection(_connStr)) {
@@ -689,8 +715,10 @@ namespace Close_Portal.Pages.Admin {
                             cmdUser.Parameters.AddWithValue("@RoleId", roleId);
                             cmdUser.Parameters.AddWithValue("@Active", active);
                             cmdUser.Parameters.AddWithValue("@Locked", locked);
-                            cmdUser.Parameters.AddWithValue("@FirstName", firstName);
-                            cmdUser.Parameters.AddWithValue("@LastName",  lastName);
+                            cmdUser.Parameters.AddWithValue("@FirstName",
+                                string.IsNullOrWhiteSpace(firstName) ? (object)DBNull.Value : firstName.Trim());
+                            cmdUser.Parameters.AddWithValue("@LastName",
+                                string.IsNullOrWhiteSpace(lastName)  ? (object)DBNull.Value : lastName.Trim());
                             cmdUser.Parameters.AddWithValue("@DepartmentId",
                                 departmentId > 0 ? (object)departmentId : DBNull.Value);
                             cmdUser.ExecuteNonQuery();
@@ -731,6 +759,37 @@ namespace Close_Portal.Pages.Admin {
                                 }
                             }
 
+                            // 4. Upsert MonthEnd_User_Phones
+                            if (!string.IsNullOrWhiteSpace(phone)) {
+                                int existingPhoneId = 0;
+                                using (SqlCommand cmd = new SqlCommand(
+                                    "SELECT TOP 1 Phone_Id FROM MonthEnd_User_Phones WHERE User_Id = @UserId AND Active = 1",
+                                    conn, tx)) {
+                                    cmd.Parameters.AddWithValue("@UserId", userId);
+                                    var val = cmd.ExecuteScalar();
+                                    if (val != null && val != DBNull.Value) existingPhoneId = (int)val;
+                                }
+                                if (existingPhoneId > 0) {
+                                    using (SqlCommand cmd = new SqlCommand(
+                                        "UPDATE MonthEnd_User_Phones SET Phone = @Phone, Extension = @Ext WHERE Phone_Id = @PhoneId",
+                                        conn, tx)) {
+                                        cmd.Parameters.AddWithValue("@Phone", phone.Trim());
+                                        cmd.Parameters.AddWithValue("@Ext", string.IsNullOrWhiteSpace(phoneExtension) ? (object)DBNull.Value : phoneExtension.Trim());
+                                        cmd.Parameters.AddWithValue("@PhoneId", existingPhoneId);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                } else {
+                                    using (SqlCommand cmd = new SqlCommand(
+                                        "INSERT INTO MonthEnd_User_Phones (User_Id, Phone, Extension, Active) VALUES (@UserId, @Phone, @Ext, 1)",
+                                        conn, tx)) {
+                                        cmd.Parameters.AddWithValue("@UserId", userId);
+                                        cmd.Parameters.AddWithValue("@Phone", phone.Trim());
+                                        cmd.Parameters.AddWithValue("@Ext", string.IsNullOrWhiteSpace(phoneExtension) ? (object)DBNull.Value : phoneExtension.Trim());
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+
                             tx.Commit();
                             System.Diagnostics.Debug.WriteLine("✓ SaveUserChanges — Commit exitoso");
 
@@ -744,7 +803,7 @@ namespace Close_Portal.Pages.Admin {
 
                 EmailService.NotifyUserUpdated(
                     targetEmail: targetEmail,
-                    targetUsername: targetUsername,
+                    targetUsername: targetFullName,
                     newRole: newRoleName,
                     performedByEmail: performedBy
                 );
@@ -752,10 +811,10 @@ namespace Close_Portal.Pages.Admin {
                 // Notificaciones de bloqueo/desbloqueo si cambió el estado
                 if (locked && !previouslyLocked) {
                     System.Threading.Tasks.Task.Run(() =>
-                        EmailService.NotifyUserBlocked(targetEmail, targetUsername, performedBy));
+                        EmailService.NotifyUserBlocked(targetEmail, targetFullName, performedBy));
                 } else if (!locked && previouslyLocked) {
                     System.Threading.Tasks.Task.Run(() =>
-                        EmailService.NotifyUserUnblocked(targetEmail, targetUsername, performedBy));
+                        EmailService.NotifyUserUnblocked(targetEmail, targetFullName, performedBy));
                 }
 
                 return new { Success = true, Message = "Cambios guardados correctamente", Row = GetUserRowData(userId) };
@@ -772,8 +831,9 @@ namespace Close_Portal.Pages.Admin {
         // ============================================================
         [WebMethod(EnableSession = true)]
         public static object CreateUser(
-            string email, string username, int roleId,
-            int[] wmsIds, int[] locationIds, int departmentId) {
+            string email, string firstName, string lastName,
+            string phone, string phoneExtension,
+            int roleId, int[] wmsIds, int[] locationIds, int departmentId) {
             try {
                 var session = System.Web.HttpContext.Current.Session;
                 int currentRole = session["RoleId"] != null ? (int)session["RoleId"] : -1;
@@ -812,21 +872,17 @@ namespace Close_Portal.Pages.Admin {
                     conn.Open();
                     using (var tx = conn.BeginTransaction()) {
                         try {
-                            var cParts = (string.IsNullOrWhiteSpace(username) ? email.Split('@')[0] : username.Trim())
-                                             .Split(new[] { ' ' }, 2);
-                            string cFirst = cParts[0];
-                            string cLast  = cParts.Length > 1 ? cParts[1] : "";
-
                             string sqlInsert = @"
                                 INSERT INTO MonthEnd_Users
                                     (Email, First_Name, Last_Name, Login_Type, Role_Id, Active, Locked, Department_Id)
                                 VALUES (@Email, @FirstName, @LastName, 'Google', @RoleId, 1, 0, @DeptId);
                                 SELECT SCOPE_IDENTITY();";
                             using (var cmd = new SqlCommand(sqlInsert, conn, tx)) {
-                                cmd.Parameters.AddWithValue("@Email",
-                                    email.Trim().ToLower());
-                                cmd.Parameters.AddWithValue("@FirstName", cFirst);
-                                cmd.Parameters.AddWithValue("@LastName",  cLast);
+                                cmd.Parameters.AddWithValue("@Email", email.Trim().ToLower());
+                                cmd.Parameters.AddWithValue("@FirstName",
+                                    string.IsNullOrWhiteSpace(firstName) ? (object)DBNull.Value : firstName.Trim());
+                                cmd.Parameters.AddWithValue("@LastName",
+                                    string.IsNullOrWhiteSpace(lastName)  ? (object)DBNull.Value : lastName.Trim());
                                 cmd.Parameters.AddWithValue("@RoleId", roleId);
                                 cmd.Parameters.AddWithValue("@DeptId",
                                     departmentId > 0 ? (object)departmentId : DBNull.Value);
@@ -857,6 +913,17 @@ namespace Close_Portal.Pages.Admin {
                                 }
                             }
 
+                            if (!string.IsNullOrWhiteSpace(phone)) {
+                                using (var cmd = new SqlCommand(
+                                    "INSERT INTO MonthEnd_User_Phones (User_Id, Phone, Extension, Active) VALUES (@UserId, @Phone, @Ext, 1)",
+                                    conn, tx)) {
+                                    cmd.Parameters.AddWithValue("@UserId", newUserId);
+                                    cmd.Parameters.AddWithValue("@Phone", phone.Trim());
+                                    cmd.Parameters.AddWithValue("@Ext", string.IsNullOrWhiteSpace(phoneExtension) ? (object)DBNull.Value : phoneExtension.Trim());
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+
                             tx.Commit();
                             System.Diagnostics.Debug.WriteLine($"[CreateUser] Id={newUserId} Email={email}");
                         } catch (Exception ex) {
@@ -867,8 +934,10 @@ namespace Close_Portal.Pages.Admin {
                     }
                 }
 
+                string newFullName = $"{firstName?.Trim()} {lastName?.Trim()}".Trim();
                 EmailService.NotifyUserAdded(
-                    targetEmail: email, targetUsername: username,
+                    targetEmail: email,
+                    targetUsername: string.IsNullOrEmpty(newFullName) ? email : newFullName,
                     targetRole: roleName, performedByEmail: createdBy);
 
                 return new { Success = true, Message = "Usuario creado correctamente", UserId = newUserId };
@@ -885,7 +954,7 @@ namespace Close_Portal.Pages.Admin {
         [WebMethod(EnableSession = true)]
         public static object ToggleUserActive(int userId, bool active) {
             try {
-                var (targetEmail, targetUsername, _, targetRoleId) = GetUserInfo(userId);
+                var (targetEmail, targetFullName, _, targetRoleId) = GetUserInfo(userId);
                 string performedBy = System.Web.HttpContext.Current.Session["Email"]?.ToString() ?? "Sistema";
 
                 int currentRoleId = System.Web.HttpContext.Current.Session["RoleId"] != null
@@ -906,11 +975,11 @@ namespace Close_Portal.Pages.Admin {
 
                 if (active) {
                     EmailService.NotifyUserAdded(
-                        targetEmail: targetEmail, targetUsername: targetUsername,
+                        targetEmail: targetEmail, targetUsername: targetFullName,
                         targetRole: null, performedByEmail: performedBy);
                 } else {
                     EmailService.NotifyUserRemoved(
-                        targetEmail: targetEmail, targetUsername: targetUsername,
+                        targetEmail: targetEmail, targetUsername: targetFullName,
                         performedByEmail: performedBy);
                 }
 

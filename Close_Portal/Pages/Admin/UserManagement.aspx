@@ -127,7 +127,7 @@
                                 <div class="user-cell">
                                     <div class="avatar"><%# Eval("Initials") %></div>
                                     <div>
-                                        <div class="user-name-text"><%# Eval("Username") %></div>
+                                        <div class="user-name-text"><%# Eval("FullName") %></div>
                                         <div class="user-email"><%# Eval("Email") %></div>
                                     </div>
                                 </div>
@@ -227,16 +227,26 @@
                                     <label for="newEmail" data-translate-key="um.modal.email">Email</label>
                                     <div class="um-email-row">
                                         <input type="text" id="newEmail"
-                                               placeholder="usuario" autocomplete="off" />
+                                               placeholder="usuario" autocomplete="off"
+                                               oninput="autoFillName()" />
                                         <span class="um-email-domain">@novamex.com</span>
                                     </div>
                                 </div>
                                 <div class="field-group">
-                                    <label for="newUsername" data-translate-key="um.modal.username">Username</label>
-                                    <input type="text" id="newUsername"
-                                           data-translate-key="um.modal.username_placeholder"
-                                           placeholder="Nombre de usuario" maxlength="80" autocomplete="off" />
-                                    <span class="field-hint" data-translate-key="um.modal.username_hint">Nombre visible dentro del portal</span>
+                                    <label for="newFirstName" data-translate-key="um.modal.first_name">Nombre</label>
+                                    <input type="text" id="newFirstName" placeholder="Nombre" maxlength="50" autocomplete="off" />
+                                </div>
+                                <div class="field-group">
+                                    <label for="newLastName" data-translate-key="um.modal.last_name">Apellido</label>
+                                    <input type="text" id="newLastName" placeholder="Apellido" maxlength="50" autocomplete="off" />
+                                </div>
+                                <div class="field-group">
+                                    <label for="newPhone" data-translate-key="um.modal.phone">Teléfono</label>
+                                    <div class="um-phone-row">
+                                        <input type="text" id="newPhone" placeholder="(664) 000-0000" maxlength="20" autocomplete="off" />
+                                        <span class="um-phone-sep">Ext.</span>
+                                        <input type="text" id="newPhoneExt" placeholder="000" maxlength="10" autocomplete="off" class="um-phone-ext" />
+                                    </div>
                                 </div>
                                 <div class="field-group">
                                     <label for="newModalRole" data-translate-key="um.modal.role">Rol</label>
@@ -270,12 +280,20 @@
                         <div id="editModeFields" style="display:none">
                             <div class="um-general-grid">
                                 <div class="field-group">
-                                    <label for="editUsername" data-translate-key="um.modal.username">Username</label>
-                                    <input type="text" id="editUsername" placeholder="Nombre de usuario"
-                                           maxlength="80" autocomplete="off" />
-                                    <span class="field-hint" data-translate-key="um.modal.username_hint">
-                                        Nombre visible dentro del portal
-                                    </span>
+                                    <label for="editFirstName" data-translate-key="um.modal.first_name">Nombre</label>
+                                    <input type="text" id="editFirstName" placeholder="Nombre" maxlength="50" autocomplete="off" />
+                                </div>
+                                <div class="field-group">
+                                    <label for="editLastName" data-translate-key="um.modal.last_name">Apellido</label>
+                                    <input type="text" id="editLastName" placeholder="Apellido" maxlength="50" autocomplete="off" />
+                                </div>
+                                <div class="field-group">
+                                    <label for="editPhone" data-translate-key="um.modal.phone">Teléfono</label>
+                                    <div class="um-phone-row">
+                                        <input type="text" id="editPhone" placeholder="(664) 000-0000" maxlength="20" autocomplete="off" />
+                                        <span class="um-phone-sep">Ext.</span>
+                                        <input type="text" id="editPhoneExt" placeholder="000" maxlength="10" autocomplete="off" class="um-phone-ext" />
+                                    </div>
                                 </div>
                                 <div class="field-group">
                                     <label for="modalRole" data-translate-key="um.modal.role">Rol</label>

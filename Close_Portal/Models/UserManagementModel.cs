@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -7,7 +7,10 @@ namespace Close_Portal.Models {
     public class UserManagementModel {
         public int UserId { get; set; }
         public string Email { get; set; }
-        public string Username { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Phone { get; set; }
+        public string PhoneExtension { get; set; }
         public string RoleName { get; set; }
         public int RoleId { get; set; }
         public bool Active { get; set; }
@@ -27,12 +30,22 @@ namespace Close_Portal.Models {
         public string LocationNames { get; set; } // "Bodega Norte,Muelle 3"
 
         // Campos calculados para el Repeater
+        public string FullName {
+            get {
+                var parts = new[] { FirstName?.Trim(), LastName?.Trim() };
+                var joined = string.Join(" ", System.Array.FindAll(parts, s => !string.IsNullOrEmpty(s)));
+                return string.IsNullOrEmpty(joined) ? Email?.Split('@')[0] ?? "" : joined;
+            }
+        }
+
         public string Initials {
             get {
-                string name = !string.IsNullOrEmpty(Username) ? Username : Email;
-                return name.Length >= 2
-                    ? name.Substring(0, 2).ToUpper()
-                    : name.Substring(0, 1).ToUpper();
+                if (!string.IsNullOrEmpty(FirstName) && !string.IsNullOrEmpty(LastName))
+                    return (FirstName[0].ToString() + LastName[0].ToString()).ToUpper();
+                if (!string.IsNullOrEmpty(FirstName))
+                    return FirstName.Substring(0, Math.Min(2, FirstName.Length)).ToUpper();
+                string name = Email?.Split('@')[0] ?? "?";
+                return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
             }
         }
 
