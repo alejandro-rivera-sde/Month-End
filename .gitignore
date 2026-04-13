@@ -1,0 +1,79 @@
+# ============================================================
+# Ignorar TODO por defecto
+# ============================================================
+*
+*.designer.cs
+# ============================================================
+# EXCEPCIONES — Solo esto se sube
+# ============================================================
+
+# Raíz del repositorio
+!.gitignore
+!Close_Portal.sln
+!Startup.cs
+!RouteConfig.cs
+!Global.asax
+!Global.asax.cs
+
+# Proyecto principal
+!Close_Portal/
+!Close_Portal/Close_Portal.csproj
+!Close_Portal/packages.config
+
+!Close_Portal/Hubs/
+Close_Portal/Hubs/*
+!Close_Portal/Hubs/*.cs
+
+# Masters
+!Close_Portal/DashboardLayout.Master
+!Close_Portal/DashboardLayout.Master.cs
+!Close_Portal/DashboardLayout.Master.designer.cs
+!Close_Portal/Site.Master
+!Close_Portal/Site.Master.cs
+!Close_Portal/Site.Master.designer.cs
+
+# Carpetas — necesitas excluir el * para que git entre en ellas
+!Close_Portal/Controllers/
+Close_Portal/Controllers/*
+!Close_Portal/Controllers/*.cs
+
+!Close_Portal/Core/
+Close_Portal/Core/*
+!Close_Portal/Core/*.cs
+
+!Close_Portal/Data_Access/
+Close_Portal/Data_Access/*
+!Close_Portal/Data_Access/*.cs
+
+!Close_Portal/Models/
+Close_Portal/Models/*
+!Close_Portal/Models/*.cs
+
+!Close_Portal/Properties/
+Close_Portal/Properties/*
+!Close_Portal/Properties/*.cs
+
+!Close_Portal/Services/
+Close_Portal/Services/*
+!Close_Portal/Services/*.cs
+
+!Close_Portal/Scripts/
+Close_Portal/Scripts/*
+!Close_Portal/Scripts/*.js
+
+!Close_Portal/Styles/
+Close_Portal/Styles/*
+!Close_Portal/Styles/*.css
+
+# Pages (tiene subcarpetas)
+!Close_Portal/Pages/
+!Close_Portal/Pages/*/
+Close_Portal/Pages/*/*
+!Close_Portal/Pages/*/*.aspx
+!Close_Portal/Pages/*/*.aspx.cs
+!Close_Portal/Pages/*/*.aspx.designer.cs
+
+# Properties
+!Close_Portal/Properties/
+Close_Portal/Properties/*
+!Close_Portal/Properties/AssemblyInfo.cs

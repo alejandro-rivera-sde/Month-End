@@ -1,0 +1,490 @@
+﻿/* ===================================
+   RequestClosure.css — prefijo: rc-
+   =================================== */
+
+/* ── TITLE ICON ──────────────────────────────────── */
+.rc-title-icon {
+    font-size: 24px;
+    vertical-align: middle;
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+/* ── GRID PRINCIPAL ──────────────────────────────── */
+.rc-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .rc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── PANEL ───────────────────────────────────────── */
+.rc-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.rc-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+    .rc-panel-header .material-icons {
+        font-size: 18px;
+        color: var(--primary-color);
+    }
+
+    .rc-panel-header h3 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 700;
+        flex: 1;
+    }
+
+.rc-panel-body {
+    padding: 24px 20px;
+}
+
+.rc-list-body {
+    padding: 0;
+}
+
+/* ── FIELD GROUP ─────────────────────────────────── */
+.rc-field-group {
+    margin-bottom: 20px;
+}
+
+    .rc-field-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+
+.rc-required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.rc-optional {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 12px;
+}
+
+/* ── INPUT ───────────────────────────────────────── */
+.rc-input-wrapper {
+    position: relative;
+}
+
+.rc-input-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 17px;
+    pointer-events: none;
+}
+
+.rc-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--input-bg, var(--card-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+    .rc-input.has-icon {
+        padding-left: 36px;
+    }
+
+    .rc-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+.rc-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--input-bg, var(--card-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+    .rc-textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+.rc-field-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
+
+.rc-char-count {
+    text-align: right;
+}
+
+.rc-field-error {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 4px;
+    display: none;
+}
+
+/* ── MANAGER CARD ────────────────────────────────── */
+.rc-manager-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(99,102,241,0.06);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+
+    .rc-manager-card .material-icons {
+        font-size: 28px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+    }
+
+.rc-manager-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.rc-manager-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.rc-manager-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+/* ── NO MANAGER WARNING ──────────────────────────── */
+.rc-no-manager {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #b45309;
+    margin-bottom: 20px;
+}
+
+    .rc-no-manager .material-icons {
+        color: #f59e0b;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+/* ── FORM FOOTER ─────────────────────────────────── */
+.rc-form-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.rc-form-message {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+    .rc-form-message.success {
+        background: rgba(16,185,129,0.1);
+        color: #065f46;
+        border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    .rc-form-message.error {
+        background: rgba(239,68,68,0.1);
+        color: #991b1b;
+        border: 1px solid rgba(239,68,68,0.3);
+    }
+
+.rc-btn-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    width: 100%;
+}
+
+    .rc-btn-send:hover {
+        opacity: 0.87;
+    }
+
+    .rc-btn-send:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .rc-btn-send .material-icons {
+        font-size: 18px;
+    }
+
+/* ── FILTER TABS ─────────────────────────────────── */
+.rc-filter-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.rc-tab {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    transition: all 0.2s;
+}
+
+    .rc-tab:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .rc-tab.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: #fff;
+    }
+
+/* ── COUNT BADGE ─────────────────────────────────── */
+.rc-count-badge {
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 1px 8px;
+    margin-left: auto;
+}
+
+.rc-btn-refresh {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+    .rc-btn-refresh:hover {
+        color: var(--primary-color);
+    }
+
+    .rc-btn-refresh .material-icons {
+        font-size: 18px;
+    }
+
+/* ── HISTORY LIST ────────────────────────────────── */
+.rc-history-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.rc-history-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+}
+
+    .rc-history-item:last-child {
+        border-bottom: none;
+    }
+
+    .rc-history-item:hover {
+        background: var(--bg-primary);
+    }
+
+.rc-history-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+/* Nombre de locación en las tarjetas del historial */
+.rc-location-tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-color);
+    background: rgba(99,102,241,0.1);
+    border-radius: 6px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+/* Fila de OMS codes bajo el nombre de locación */
+.rc-oms-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.rc-oms-pill {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--border-color);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.rc-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 2px 10px;
+}
+
+    .rc-status-badge.Pending {
+        background: rgba(245,158,11,0.15);
+        color: #b45309;
+    }
+
+    .rc-status-badge.Approved {
+        background: rgba(16,185,129,0.15);
+        color: #065f46;
+    }
+
+    .rc-status-badge.Rejected {
+        background: rgba(239,68,68,0.15);
+        color: #991b1b;
+    }
+
+.rc-history-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.rc-history-notes {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+.rc-review-notes {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--border-color);
+    border-radius: 2px;
+}
+
+    .rc-review-notes strong {
+        color: var(--text-secondary);
+    }
+
+/* ── LOADING / EMPTY ─────────────────────────────── */
+.rc-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.rc-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+    .rc-empty .material-icons {
+        font-size: 40px;
+        display: block;
+        margin-bottom: 10px;
+        opacity: 0.35;
+    }
+
+/* ── SPINNER ─────────────────────────────────────── */
+@keyframes rc-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.rc-spin {
+    animation: rc-spin 1s linear infinite;
+}
