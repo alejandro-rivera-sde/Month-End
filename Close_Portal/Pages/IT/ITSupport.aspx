@@ -98,7 +98,7 @@
         Estas variables solo controlan la UI.
     -->
     <script>
-        window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/IT/ITSupport.aspx/") %>';
+        window.ChatWebMethodBase = '<%= ResolveUrl("~/Pages/IT/ITSupport.aspx/") %>';
         window.ChatMode  = 'agent';
         window.AgentName = '<%= System.Web.HttpUtility.JavaScriptStringEncode(Session["FullName"]?.ToString() ?? "IT Support") %>';
     </script>

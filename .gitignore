@@ -33,6 +33,12 @@ Close_Portal/Hubs/*
 !Close_Portal/Site.Master.designer.cs
 
 # Carpetas — necesitas excluir el * para que git entre en ellas
+!Close_Portal/Controls/
+Close_Portal/Controls/*
+!Close_Portal/Controls/*.ascx
+!Close_Portal/Controls/*.ascx.cs
+!Close_Portal/Controls/*.ascx.designer.cs
+
 !Close_Portal/Controllers/
 Close_Portal/Controllers/*
 !Close_Portal/Controllers/*.cs

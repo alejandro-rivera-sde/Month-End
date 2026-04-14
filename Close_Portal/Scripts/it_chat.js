@@ -1,73 +1,149 @@
 // =============================================================================
 // it_chat.js — Chat IT Support en tiempo real (SignalR 2.x + jQuery)
 //
-// Modo de operación:
-//   window.ChatMode = 'client'  → Support.aspx   (usuario envía a IT)
-//   window.ChatMode = 'agent'   → ITSupport.aspx  (agente gestiona conversaciones)
+// Modos de operación (window.ChatMode):
+//   'client'  → Support.aspx    — página dedicada, el usuario chatea con IT
+//   'agent'   → ITSupport.aspx  — panel del agente, gestiona conversaciones
+//   'widget'  → ChatWidget.ascx — widget flotante embebido en páginas existentes
 //
-// Dependencias cargadas por DashboardLayout.Master (ANTES de este script):
+// Variable de configuración:
+//   window.ChatWebMethodBase — URL base para WebMethods del chat
+//     Ejemplo: ResolveUrl("~/Pages/Support/Support.aspx/")
+//   window.AgentName — nombre del agente (solo modo 'agent')
+//
+// Dependencias (cargadas por DashboardLayout.Master ANTES que este script):
 //   - jQuery 3.x
 //   - jquery.signalR-2.4.3.min.js
-//   - /signalr/hubs (proxy auto-generado por SignalR)
+//   - /signalr/hubs  (proxy auto-generado)
 //
-// IMPORTANTE: los handlers de SignalR client-side se registran de forma
-// síncrona al cargar este script, antes de que hub.start() sea llamado
-// por dashboard_layout.js (en DOMContentLoaded). Esto garantiza que no
-// se pierda ningún mensaje entre la carga del DOM y la conexión al hub.
+// IMPORTANTE: initSignalRHandlers() se ejecuta de forma síncrona al cargar
+// el script, antes de que hub.start() sea invocado por dashboard_layout.js.
+// Esto garantiza que ningún mensaje se pierda entre la carga y la conexión.
 // =============================================================================
 
 (function () {
     'use strict';
 
-    // ── Constantes ────────────────────────────────────────────────
-    var HUB_CONNECTED = 1;  // $.connection.hub.state cuando está conectado
+    var HUB_CONNECTED     = 1;   // $.connection.hub.state cuando está activo
+    var chatHub           = null;
+    var selectedClienteId = null; // solo en modo 'agent'
 
-    // ── Estado ────────────────────────────────────────────────────
-    var chatHub            = null;
-    var selectedClienteId  = null;  // solo en modo 'agent'
+    // ── Estado del widget (solo modo 'widget') ────────────────────
+    var widgetOpen    = false;
+    var widgetLoaded  = false;  // historial cargado al menos una vez
+    var widgetUnread  = 0;
+
+    // ==========================================================================
+    // FUNCIONES PÚBLICAS DEL WIDGET
+    // Expuestas globalmente porque los onclick del .ascx las llaman directamente.
+    // ==========================================================================
+
+    window.toggleChatWidget = function () {
+        if (widgetOpen) { closeChatWidgetInternal(); }
+        else            { openChatWidgetInternal();  }
+    };
+
+    window.closeChatWidget = function () {
+        closeChatWidgetInternal();
+    };
+
+    function openChatWidgetInternal() {
+        widgetOpen = true;
+        var panel = document.getElementById('chatWidgetPanel');
+        var icon  = document.getElementById('chatFabIcon');
+        if (panel) {
+            panel.style.display = 'flex';
+            // Forzar re-trigger de la animación CSS
+            panel.classList.remove('widget-anim');
+            void panel.offsetWidth;
+            panel.classList.add('widget-anim');
+        }
+        if (icon) icon.textContent = 'close';
+
+        clearWidgetBadge();
+
+        // Historial: carga diferida — solo la primera vez que se abre
+        if (!widgetLoaded) {
+            widgetLoaded = true;
+            loadHistorialCliente();
+        } else {
+            scrollToBottom();
+        }
+    }
+
+    function closeChatWidgetInternal() {
+        widgetOpen = false;
+        var panel = document.getElementById('chatWidgetPanel');
+        var icon  = document.getElementById('chatFabIcon');
+        if (panel) panel.style.display = 'none';
+        if (icon)  icon.textContent = 'support_agent';
+    }
+
+    function clearWidgetBadge() {
+        widgetUnread = 0;
+        var badge = document.getElementById('chatWidgetBadge');
+        if (badge) badge.style.display = 'none';
+    }
+
+    function addWidgetUnread() {
+        widgetUnread++;
+        var badge = document.getElementById('chatWidgetBadge');
+        if (badge) {
+            badge.textContent = widgetUnread > 99 ? '99+' : String(widgetUnread);
+            badge.style.display = 'block';
+        }
+    }
 
     // ==========================================================================
     // PASO 3 — Registrar handlers del cliente SignalR
-    // Debe ejecutarse síncronamente antes de hub.start()
+    // Se ejecuta síncronamente, antes de hub.start()
     // ==========================================================================
 
     function initSignalRHandlers() {
         if (typeof $.connection === 'undefined' || !$.connection.chatHub) return;
         chatHub = $.connection.chatHub;
 
-        // ── Modo CLIENTE: recibe respuestas del agente IT ─────────
-        if (window.ChatMode === 'client') {
+        // ── Modo CLIENTE o WIDGET: recibe respuestas del agente IT ───
 
+        if (window.ChatMode === 'client') {
             chatHub.client.recibirRespuestaIT = function (data) {
                 appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, false);
                 scrollToBottom();
             };
         }
 
-        // ── Modo AGENTE: recibe mensajes de clientes y sincroniza ─
+        if (window.ChatMode === 'widget') {
+            chatHub.client.recibirRespuestaIT = function (data) {
+                if (widgetOpen) {
+                    appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, false);
+                    scrollToBottom();
+                } else {
+                    // Widget cerrado: mostrar badge en el botón FAB
+                    addWidgetUnread();
+                }
+            };
+        }
+
+        // ── Modo AGENTE: recibe mensajes de clientes y sincroniza ────
+
         if (window.ChatMode === 'agent') {
 
-            // Llega un mensaje nuevo de un cliente
             chatHub.client.recibirMensajeDeCliente = function (data) {
-                // Actualizar o crear entrada en la lista lateral
                 refreshClientEntry(
                     data.clienteId,
                     data.clienteNombre,
                     data.mensaje,
                     data.fechaHora,
-                    data.clienteId !== selectedClienteId  // mostrar badge solo si no es el chat abierto
+                    data.clienteId !== selectedClienteId
                 );
 
-                // Si el chat de este cliente está abierto, mostrar el mensaje
                 if (data.clienteId === selectedClienteId) {
                     appendMessage(data.mensaje, data.clienteNombre, data.fechaHora, false);
                     scrollToBottom();
-                    // Marcar como leído en BD
                     if ($.connection.hub.state === HUB_CONNECTED) {
                         chatHub.server.marcarLeido(selectedClienteId);
                     }
                 } else {
-                    // Notificación de SO para mensajes de otros clientes
                     if (typeof showOsNotification === 'function') {
                         showOsNotification(
                             'Mensaje de ' + data.clienteNombre,
@@ -78,33 +154,30 @@
                 }
             };
 
-            // Sincronización: este u otro agente envió una respuesta
             chatHub.client.mensajeEnviado = function (data) {
                 if (data.clienteId === selectedClienteId) {
                     var esPropio = (parseInt(data.agenteId) === parseInt(window.CurrentUserId));
                     if (!esPropio) {
-                        // Otro agente respondió mientras yo tenía la conversación abierta
                         appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, true);
                         scrollToBottom();
                     }
-                    // Si es propio ya se mostró de forma optimista al enviarlo
                 }
             };
         }
 
-        // ── Estado de conexión ────────────────────────────────────
+        // ── Estado de conexión ────────────────────────────────────────
+
         $.connection.hub.stateChanged(function (change) {
             updateConnectionStatus(change.newState === HUB_CONNECTED);
         });
 
-        // Si ya está conectado al registrar (improbable, pero seguro)
         if ($.connection.hub.state === HUB_CONNECTED) {
             updateConnectionStatus(true);
         }
     }
 
     // ==========================================================================
-    // PASO 3 — DOMContentLoaded: inicializar UI y cargar datos
+    // DOMContentLoaded — inicializar UI
     // ==========================================================================
 
     function onDomReady() {
@@ -115,6 +188,7 @@
         } else if (window.ChatMode === 'agent') {
             loadClientList();
         }
+        // En modo 'widget' la carga es diferida (openChatWidgetInternal)
     }
 
     // ==========================================================================
@@ -127,8 +201,6 @@
         if (!sendBtn || !msgInput) return;
 
         sendBtn.addEventListener('click', sendMessage);
-
-        // Enter envía; Shift+Enter hace salto de línea
         msgInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -143,25 +215,19 @@
 
         var texto = msgInput.value.trim();
         if (!texto) return;
-
         msgInput.value = '';
-        msgInput.style.height = '';  // reset altura de textarea
 
-        if (window.ChatMode === 'client') {
-            // Mostrar el mensaje de forma optimista antes de la confirmación del servidor
+        if (window.ChatMode === 'client' || window.ChatMode === 'widget') {
             appendMessage(texto, 'Tú', new Date().toISOString(), true);
             scrollToBottom();
-
             if ($.connection.hub.state === HUB_CONNECTED) {
                 chatHub.server.enviarMensajeAIT(texto);
             }
 
         } else if (window.ChatMode === 'agent') {
             if (selectedClienteId === null) return;
-
             appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
             scrollToBottom();
-
             if ($.connection.hub.state === HUB_CONNECTED) {
                 chatHub.server.enviarMensajeACliente(selectedClienteId, texto);
             }
@@ -169,14 +235,14 @@
     }
 
     // ==========================================================================
-    // HISTORIAL — MODO CLIENTE
+    // HISTORIAL — MODO CLIENTE / WIDGET
     // ==========================================================================
 
     function loadHistorialCliente() {
         showLoadingMessages();
         $.ajax({
             type:        'POST',
-            url:         window.PageWebMethodBase + 'GetHistorial',
+            url:         window.ChatWebMethodBase + 'GetHistorial',
             data:        '{}',
             contentType: 'application/json; charset=utf-8',
             dataType:    'json',
@@ -208,7 +274,7 @@
     function loadClientList() {
         $.ajax({
             type:        'POST',
-            url:         window.PageWebMethodBase + 'GetClientes',
+            url:         window.ChatWebMethodBase + 'GetClientes',
             data:        '{}',
             contentType: 'application/json; charset=utf-8',
             dataType:    'json',
@@ -224,14 +290,11 @@
         var list = document.getElementById('clientList');
         if (!list) return;
         list.innerHTML = '';
-
         if (clientes.length === 0) {
             list.innerHTML = '<div class="chat-empty-list">Sin conversaciones activas</div>';
             return;
         }
-        clientes.forEach(function (c) {
-            list.appendChild(buildClientItem(c));
-        });
+        clientes.forEach(function (c) { list.appendChild(buildClientItem(c)); });
     }
 
     function buildClientItem(c) {
@@ -239,12 +302,10 @@
         item.className = 'client-item' + (c.clienteId === selectedClienteId ? ' active' : '');
         item.dataset.clienteId = c.clienteId;
 
-        // Avatar (inicial del nombre)
         var avatar = document.createElement('div');
         avatar.className = 'client-avatar';
         avatar.textContent = (c.clienteNombre || 'U').charAt(0).toUpperCase();
 
-        // Info
         var info = document.createElement('div');
         info.className = 'client-info';
 
@@ -271,14 +332,10 @@
         info.appendChild(preview);
         item.appendChild(avatar);
         item.appendChild(info);
-
-        item.addEventListener('click', function () {
-            selectClient(c.clienteId, c.clienteNombre);
-        });
+        item.addEventListener('click', function () { selectClient(c.clienteId, c.clienteNombre); });
         return item;
     }
 
-    // Actualiza (o crea) la entrada en la lista lateral cuando llega un mensaje en tiempo real
     function refreshClientEntry(clienteId, clienteNombre, mensaje, fechaHora, addBadge) {
         var list     = document.getElementById('clientList');
         var existing = list ? list.querySelector('[data-cliente-id="' + clienteId + '"]') : null;
@@ -295,18 +352,16 @@
                 } else {
                     var nameRow = existing.querySelector('.client-name-row');
                     if (nameRow) {
-                        var newBadge = document.createElement('span');
-                        newBadge.className = 'client-badge';
-                        newBadge.textContent = '1';
-                        nameRow.appendChild(newBadge);
+                        var nb = document.createElement('span');
+                        nb.className = 'client-badge';
+                        nb.textContent = '1';
+                        nameRow.appendChild(nb);
                     }
                 }
             }
-            // Mover al principio de la lista (conversación más reciente arriba)
             if (list) list.insertBefore(existing, list.firstChild);
 
         } else {
-            // Cliente nuevo que no estaba en la lista
             var newItem = buildClientItem({
                 clienteId:        clienteId,
                 clienteNombre:    clienteNombre,
@@ -321,40 +376,32 @@
         }
     }
 
-    // Seleccionar un cliente para ver su conversación
     function selectClient(clienteId, clienteNombre) {
         selectedClienteId = clienteId;
 
-        // Marcar activo en la lista
         document.querySelectorAll('.client-item').forEach(function (item) {
             item.classList.toggle('active', parseInt(item.dataset.clienteId) === clienteId);
         });
 
-        // Quitar badge del cliente seleccionado
         var activeItem = document.querySelector('[data-cliente-id="' + clienteId + '"]');
         if (activeItem) {
             var badge = activeItem.querySelector('.client-badge');
             if (badge) badge.remove();
         }
 
-        // Mostrar panel de conversación
         var chatPanel    = document.getElementById('chatPanel');
         var noneSelected = document.getElementById('noneSelected');
         if (chatPanel)    chatPanel.style.display = 'flex';
         if (noneSelected) noneSelected.style.display = 'none';
 
-        // Actualizar header de la conversación
-        var clientNameEl  = document.getElementById('chatClientName');
-        var convAvatarEl  = document.getElementById('convAvatar');
+        var clientNameEl = document.getElementById('chatClientName');
+        var convAvatarEl = document.getElementById('convAvatar');
         if (clientNameEl) clientNameEl.textContent = clienteNombre;
         if (convAvatarEl) convAvatarEl.textContent = clienteNombre.charAt(0).toUpperCase();
 
-        // Marcar mensajes como leídos en BD
         if ($.connection.hub.state === HUB_CONNECTED) {
             chatHub.server.marcarLeido(clienteId);
         }
-
-        // Cargar historial del cliente seleccionado
         loadHistorialAgente(clienteId);
     }
 
@@ -363,7 +410,7 @@
         showLoadingMessages();
         $.ajax({
             type:        'POST',
-            url:         window.PageWebMethodBase + 'GetHistorial',
+            url:         window.ChatWebMethodBase + 'GetHistorial',
             data:        JSON.stringify({ clienteId: clienteId }),
             contentType: 'application/json; charset=utf-8',
             dataType:    'json',
@@ -372,13 +419,7 @@
                 clearMessages();
                 if (d && d.success && d.mensajes && d.mensajes.length > 0) {
                     d.mensajes.forEach(function (m) {
-                        // esCliente=true → mensaje del usuario; false → respuesta del agente
-                        appendMessage(
-                            m.mensaje,
-                            m.emisorNombre,
-                            m.fechaHora,
-                            !m.esCliente  // "propio" para el agente = mensajes de agente
-                        );
+                        appendMessage(m.mensaje, m.emisorNombre, m.fechaHora, !m.esCliente);
                     });
                     scrollToBottom();
                 } else {
@@ -403,21 +444,18 @@
         var bubble = document.createElement('div');
         bubble.className = 'chat-bubble';
 
-        // Nombre del emisor (solo en mensajes del otro lado)
         if (!esPropio) {
             var senderEl = document.createElement('div');
             senderEl.className = 'chat-sender';
-            senderEl.textContent = nombre;  // textContent previene XSS
+            senderEl.textContent = nombre;  // textContent — inmune a XSS
             bubble.appendChild(senderEl);
         }
 
-        // Texto del mensaje — textContent para XSS-safe rendering
         var textEl = document.createElement('div');
         textEl.className = 'chat-text';
-        textEl.textContent = texto;
+        textEl.textContent = texto;  // textContent — inmune a XSS
         bubble.appendChild(textEl);
 
-        // Timestamp
         var timeEl = document.createElement('div');
         timeEl.className = 'chat-time';
         timeEl.textContent = formatTime(fechaHora);
@@ -463,21 +501,18 @@
     function updateConnectionStatus(connected) {
         var dot  = document.getElementById('chatStatusDot');
         var text = document.getElementById('chatStatusText');
-        if (dot)  dot.className  = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
-        if (text) text.textContent = connected ? 'Conectado' : 'Reconectando...';
+        if (dot)  dot.className   = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
+        if (text) text.textContent = connected ? 'En línea' : 'Reconectando...';
     }
 
     function formatTime(isoStr) {
         try {
-            var d = new Date(isoStr);
-            return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            return new Date(isoStr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
         } catch (e) { return isoStr || ''; }
     }
 
     // ==========================================================================
-    // INICIO
-    // Los handlers de SignalR se registran de forma síncrona al cargar el script,
-    // antes de que hub.start() sea invocado por dashboard_layout.js.
+    // INICIO — síncrono al cargar el script
     // ==========================================================================
 
     initSignalRHandlers();

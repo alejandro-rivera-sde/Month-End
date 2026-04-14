@@ -70,7 +70,7 @@
         Estas variables solo controlan la UI.
     -->
     <script>
-        window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Support/Support.aspx/") %>';
+        window.ChatWebMethodBase = '<%= ResolveUrl("~/Pages/Support/Support.aspx/") %>';
         window.ChatMode  = 'client';
         window.AgentName = '';  // no aplica en modo cliente
     </script>

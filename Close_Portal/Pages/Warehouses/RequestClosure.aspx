@@ -1,4 +1,5 @@
 ﻿<%@ Page Language="C#" MasterPageFile="~/DashboardLayout.Master" AutoEventWireup="true" CodeBehind="RequestClosure.aspx.cs" Inherits="Close_Portal.Pages.RequestClosure" %>
+<%@ Register Src="~/Controls/ChatWidget.ascx" TagPrefix="uc" TagName="ChatWidget" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="PageTitle" runat="server">
     Solicitar Cierre - Close Portal
@@ -6,6 +7,7 @@
 
 <asp:Content ID="AdditionalCSS" ContentPlaceHolderID="AdditionalCSS" runat="server">
     <link href='<%= ResolveUrl("~/Styles/RequestClosure.css") %>' rel="stylesheet" type="text/css" />
+    <link href='<%= ResolveUrl("~/Styles/ITChat.css") %>'         rel="stylesheet" type="text/css" />
 </asp:Content>
 
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
@@ -119,12 +121,22 @@
 
     </div>
 
+    <!-- Widget de Soporte IT — aparece como botón flotante en esquina inferior derecha -->
+    <uc:ChatWidget ID="ChatWidget1" runat="server" />
+
 </asp:Content>
 
 <asp:Content ID="AdditionalScripts" ContentPlaceHolderID="AdditionalScripts" runat="server">
     <script>
-        window.CurrentUserId = '<%= Session["UserId"] %>';
-        window.PageWebMethodBase  = '<%= ResolveUrl("~/Pages/Warehouses/RequestClosure.aspx/") %>';
+        window.CurrentUserId     = '<%= Session["UserId"] %>';
+        window.PageWebMethodBase = '<%= ResolveUrl("~/Pages/Warehouses/RequestClosure.aspx/") %>';
     </script>
     <script src='<%= ResolveUrl("~/Scripts/request_closure.js") %>'></script>
+    <!-- Chat widget — ChatWebMethodBase apunta al WebMethod del chat (Support.aspx),
+         distinto del PageWebMethodBase de esta página. -->
+    <script>
+        window.ChatMode          = 'widget';
+        window.ChatWebMethodBase = '<%= ResolveUrl("~/Pages/Support/Support.aspx/") %>';
+    </script>
+    <script src='<%= ResolveUrl("~/Scripts/it_chat.js") %>'></script>
 </asp:Content>

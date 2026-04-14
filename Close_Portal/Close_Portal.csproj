@@ -121,6 +121,7 @@
     <Content Include="Pages\Admin\UserManagement.aspx" />
     <Content Include="Pages\Admin\WarehouseManagement.aspx" />
     <Content Include="Pages\Home\Error.aspx" />
+    <Content Include="Controls\ChatWidget.ascx" />
     <Content Include="Pages\IT\EmailService.aspx" />
     <Content Include="Pages\IT\ITSupport.aspx" />
     <Content Include="Pages\IT\Processes.aspx" />
@@ -177,6 +178,13 @@
     <Compile Include="Data_Access\UserDataAccess.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ChatWidget.ascx.cs">
+      <DependentUpon>ChatWidget.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Controls\ChatWidget.ascx.designer.cs">
+      <DependentUpon>ChatWidget.ascx</DependentUpon>
     </Compile>
     <Compile Include="Data_Access\ChatDataAccess.cs" />
     <Compile Include="Hubs\ChatHub.cs" />
