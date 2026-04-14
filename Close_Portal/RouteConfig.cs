@@ -60,6 +60,17 @@ namespace Close_Portal {
                 routeName: "processes",
                 routeUrl: "processes",
                 physicalFile: "~/Pages/IT/Processes.aspx");
+
+            routes.MapPageRoute(
+                routeName: "it-support",
+                routeUrl: "it-support",
+                physicalFile: "~/Pages/IT/ITSupport.aspx");
+
+            // ── Support (todos los usuarios) ─────────────────────────
+            routes.MapPageRoute(
+                routeName: "support",
+                routeUrl: "support",
+                physicalFile: "~/Pages/Support/Support.aspx");
         }
     }
 }

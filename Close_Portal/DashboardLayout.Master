@@ -114,6 +114,32 @@
                     </ul>
                 </div>
 
+                <!-- IT Support Chat — Administrador y Owner como agentes -->
+                <div class="nav-section" id="sectionITSupport" runat="server">
+                    <div class="nav-section-title">IT Support</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/it-support" runat="server">
+                                <span class="material-icons">headset_mic</span>
+                                <span class="nav-text">Support Chat</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Soporte — todos los usuarios (acceso al chat con IT) -->
+                <div class="nav-section" id="sectionSupport" runat="server">
+                    <div class="nav-section-title">Soporte</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/support" runat="server">
+                                <span class="material-icons">support_agent</span>
+                                <span class="nav-text">Chat con IT</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Settings Section -->
                 <div class="nav-section">
                     <div class="nav-section-title" data-translate-key="sidebar.settings">Settings</div>

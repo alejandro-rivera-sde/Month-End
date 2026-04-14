@@ -122,7 +122,9 @@
     <Content Include="Pages\Admin\WarehouseManagement.aspx" />
     <Content Include="Pages\Home\Error.aspx" />
     <Content Include="Pages\IT\EmailService.aspx" />
+    <Content Include="Pages\IT\ITSupport.aspx" />
     <Content Include="Pages\IT\Processes.aspx" />
+    <Content Include="Pages\Support\Support.aspx" />
     <Content Include="Pages\Main\Live.aspx" />
     <Content Include="Pages\Home\Login.aspx" />
     <Content Include="Pages\Home\Logout.aspx" />
@@ -130,11 +132,13 @@
     <Content Include="Pages\Validation\ValidateRequest.aspx" />
     <Content Include="Scripts\dashboard_layout.js" />
     <Content Include="Scripts\email_service.js" />
+    <Content Include="Scripts\it_chat.js" />
     <Content Include="Scripts\jquery.signalR-2.4.3.js" />
     <Content Include="Scripts\jquery.signalR-2.4.3.min.js" />
     <Content Include="Scripts\live.js" />
     <Content Include="Scripts\guard.js" />
     <Content Include="Styles\EmailService.css" />
+    <Content Include="Styles\ITChat.css" />
     <Content Include="Styles\Live.css" />
     <Content Include="Scripts\login.js" />
     <Content Include="Scripts\request_closure.js" />
@@ -174,6 +178,8 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Data_Access\ChatDataAccess.cs" />
+    <Compile Include="Hubs\ChatHub.cs" />
     <Compile Include="Hubs\LocationHub.cs" />
     <Compile Include="Models\GoogleLoginRequest.cs" />
     <Compile Include="Models\LoginResult.cs" />
@@ -214,12 +220,26 @@
     <Compile Include="Pages\IT\EmailService.aspx.designer.cs">
       <DependentUpon>EmailService.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Pages\IT\ITSupport.aspx.cs">
+      <DependentUpon>ITSupport.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Pages\IT\ITSupport.aspx.designer.cs">
+      <DependentUpon>ITSupport.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Pages\IT\Processes.aspx.cs">
       <DependentUpon>Processes.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Pages\IT\Processes.aspx.designer.cs">
       <DependentUpon>Processes.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\Support\Support.aspx.cs">
+      <DependentUpon>Support.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Pages\Support\Support.aspx.designer.cs">
+      <DependentUpon>Support.aspx</DependentUpon>
     </Compile>
     <Compile Include="Pages\Main\Live.aspx.cs">
       <DependentUpon>Live.aspx</DependentUpon>

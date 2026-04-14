@@ -76,6 +76,16 @@ namespace Close_Portal {
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionIT;
 
         /// <summary>
+        /// sectionITSupport control — panel de agentes IT (Administrador+).
+        /// </summary>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionITSupport;
+
+        /// <summary>
+        /// sectionSupport control — acceso al chat para usuarios Regular/Manager.
+        /// </summary>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionSupport;
+
+        /// <summary>
         /// dashboardHeader control.
         /// </summary>
         /// <remarks>

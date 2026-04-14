@@ -20,11 +20,15 @@ namespace Close_Portal {
         private void ApplyRolePermissions() {
             int roleId = Convert.ToInt32(Session["RoleId"]);
             System.Diagnostics.Debug.WriteLine($"=== ApplyRolePermissions - RoleId: {roleId} ===");
-            sectionAdmin.Visible = (roleId == 4 || roleId == 3);
-            sectionGuard.Visible = (roleId == 4 || roleId == 3);
-            sectionValidation.Visible = (roleId == 4 || roleId == 3 || roleId == 2);
+            sectionAdmin.Visible      = (roleId >= 3);
+            sectionGuard.Visible      = (roleId >= 3);
+            sectionValidation.Visible = (roleId >= 2);
             sectionWarehouses.Visible = true;
-            sectionIT.Visible = (roleId == 4);
+            sectionIT.Visible         = (roleId == 4);
+            // IT Support Chat: visible para agentes (Administrador+) como panel de gestión
+            sectionITSupport.Visible  = (roleId >= 3);
+            // Soporte: visible para usuarios Regular y Manager (que no son agentes IT)
+            sectionSupport.Visible    = (roleId < 3);
             string roleKey = roleId == 4 ? "owner"
                            : roleId == 3 ? "admin"
                            : roleId == 2 ? "manager"
