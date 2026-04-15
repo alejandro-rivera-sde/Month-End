@@ -8,26 +8,22 @@ using System.Web.Services;
 namespace Close_Portal.Pages.IT {
 
     /// <summary>
-    /// Panel de IT Support — agentes responden a los chats de los clientes.
+    /// Panel de IT Support — el agente ve y responde los casos del cierre activo.
     /// Requiere rol Administrador (3) o superior.
     ///
-    /// Paso 2 (Servidor) / Paso 3 (Frontend):
-    ///   - GetClientes(): lista de clientes con mensajes (la lógica de mensajes
-    ///     en tiempo real está en ChatHub.cs, no aquí).
-    ///   - GetHistorial(clienteId): historial de una conversación específica.
+    /// WebMethods:
+    ///   GetCases()               — lista de casos abiertos en el cierre activo
+    ///   GetHistorial(clientId)   — mensajes del caso de ese cliente en el cierre activo
     ///
-    /// SEGURIDAD: todos los WebMethods validan el rol en el servidor.
+    /// El envío y recepción en tiempo real se gestiona en ChatHub.cs.
     /// </summary>
     public partial class ITSupportPage : SecurePage {
 
-        // Solo Administrador (3) y Owner (4) acceden a esta página
         protected override int RequiredRoleId => RoleLevel.Administrador;
 
-        protected void Page_Load(object sender, EventArgs e) {
-            // Sin lógica en Page_Load; la UI la monta it_chat.js
-        }
+        protected void Page_Load(object sender, EventArgs e) { }
 
-        // ── Helper de autorización para WebMethods ──────────────────
+        // ── Helper de autorización para WebMethods ───────────────────────────
 
         private static bool TryGetAgent(out int userId) {
             var session = HttpContext.Current.Session;
@@ -38,47 +34,48 @@ namespace Close_Portal.Pages.IT {
             return roleId >= RoleLevel.Administrador;
         }
 
-        // ── WebMethod: lista de clientes con conversaciones ─────────
+        // ── WebMethod: casos abiertos del cierre activo ──────────────────────
 
         /// <summary>
-        /// Retorna todos los clientes que han enviado mensajes, ordenados por
-        /// mensajes no leídos (desc) y última actividad (desc).
+        /// Returns all open support cases for the current active guard,
+        /// ordered by unread count then last activity.
         /// </summary>
         [WebMethod(EnableSession = true)]
-        public static object GetClientes() {
+        public static object GetCases() {
             try {
                 if (!TryGetAgent(out _))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                var da       = new ChatDataAccess();
-                var clientes = da.GetClientesActivos();
+                var da    = new ChatDataAccess();
+                var cases = da.GetActiveCases();
 
                 var dto = new List<object>();
-                foreach (var c in clientes) {
+                foreach (var c in cases) {
                     dto.Add(new {
+                        caseId       = c.CaseId,
                         clientId     = c.ClientId,
                         clientName   = c.ClientName,
+                        status       = c.Status,
                         lastMessage  = c.LastMessage,
                         lastActivity = c.LastActivity.ToString("yyyy-MM-ddTHH:mm:ss"),
                         unreadCount  = c.UnreadCount
                     });
                 }
 
-                return new { success = true, clients = dto };
+                return new { success = true, cases = dto };
 
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine($"[ITSupport.GetClientes] ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ITSupport.GetCases] ERROR: {ex.Message}");
                 return new { success = false, message = ex.Message };
             }
         }
 
-        // ── WebMethod: historial de una conversación ────────────────
+        // ── WebMethod: historial de un caso ─────────────────────────────────
 
         /// <summary>
-        /// Retorna los mensajes de la conversación entre IT y el cliente
-        /// identificado por <paramref name="clienteId"/>.
-        ///
-        /// Solo accesible a agentes IT (Administrador+).
+        /// Returns the message history for the support case belonging to
+        /// <paramref name="clientId"/> in the current active guard.
+        /// The server resolves the Case_Id — the client never passes it directly.
         /// </summary>
         [WebMethod(EnableSession = true)]
         public static object GetHistorial(int clientId) {
@@ -89,13 +86,19 @@ namespace Close_Portal.Pages.IT {
                 if (clientId <= 0)
                     return new { success = false, message = "clientId inválido." };
 
-                var da       = new ChatDataAccess();
-                var messages = da.GetHistorial(clientId);
+                var da      = new ChatDataAccess();
+                int guardId = da.GetActiveGuardId();
+                int caseId  = da.GetCaseIdForClient(clientId, guardId);
 
-                var dto = new List<object>();
+                if (caseId <= 0)
+                    return new { success = true, messages = new object[0] };
+
+                var messages = da.GetHistorial(caseId);
+                var dto      = new List<object>();
                 foreach (var m in messages) {
                     dto.Add(new {
                         messageId  = m.MessageId,
+                        caseId     = m.CaseId,
                         senderId   = m.SenderId,
                         senderName = m.SenderName,
                         message    = m.Message,

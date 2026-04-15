@@ -9,29 +9,26 @@ namespace Close_Portal.Pages.Support {
 
     /// <summary>
     /// Página de chat del cliente con IT Support.
-    /// Accesible a cualquier usuario autenticado (RoleLevel.Regular).
+    /// Accesible a cualquier usuario autenticado.
     ///
-    /// Paso 3 — Frontend:
-    ///   - GetHistorial(): carga el historial al abrir el chat (llamado desde it_chat.js).
-    ///   El envío y recepción de mensajes en tiempo real se gestiona desde ChatHub.cs.
+    /// WebMethod:
+    ///   GetHistorial() — carga el historial del caso activo del usuario
+    ///                    (caso del cierre activo, si existe).
+    ///
+    /// El envío y recepción en tiempo real se gestiona en ChatHub.cs.
     /// </summary>
     public partial class SupportPage : SecurePage {
 
-        // Cualquier usuario autenticado puede abrir el chat con IT
         protected override int RequiredRoleId => RoleLevel.Regular;
 
-        protected void Page_Load(object sender, EventArgs e) {
-            // Sin lógica de servidor en Page_Load; toda la UI la monta it_chat.js
-        }
+        protected void Page_Load(object sender, EventArgs e) { }
 
-        // ── WebMethod: historial de la conversación del usuario actual ──
+        // ── WebMethod: historial del caso activo del usuario ─────────────────
 
         /// <summary>
-        /// Retorna los últimos 100 mensajes de la conversación del usuario
-        /// autenticado con IT Support.
-        ///
-        /// La identidad del cliente se lee siempre desde Session["UserId"];
-        /// nunca se acepta un userId del frontend.
+        /// Returns the message history for the current user's open support case
+        /// in the active guard. Returns empty list if no case exists yet
+        /// (the case is created lazily on first message send via ChatHub).
         /// </summary>
         [WebMethod(EnableSession = true)]
         public static object GetHistorial() {
@@ -42,9 +39,15 @@ namespace Close_Portal.Pages.Support {
 
                 int clientId = (int)session["UserId"];
                 var da       = new ChatDataAccess();
-                var messages = da.GetHistorial(clientId);
+                int guardId  = da.GetActiveGuardId();
+                int caseId   = da.GetCaseIdForClient(clientId, guardId);
 
-                var dto = new List<object>();
+                // No case yet — return empty history (case is created on first send)
+                if (caseId <= 0)
+                    return new { success = true, messages = new object[0] };
+
+                var messages = da.GetHistorial(caseId);
+                var dto      = new List<object>();
                 foreach (var m in messages) {
                     dto.Add(new {
                         messageId  = m.MessageId,

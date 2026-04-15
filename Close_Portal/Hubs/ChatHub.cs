@@ -1,3 +1,4 @@
+using Close_Portal.DataAccess;
 using Microsoft.AspNet.SignalR;
 using System;
 using System.Configuration;
@@ -8,14 +9,19 @@ namespace Close_Portal.Hubs {
 
     /// <summary>
     /// Hub de SignalR para chat en tiempo real entre usuarios (cliente)
-    /// y agentes de IT Support (Administrador o Owner).
+    /// y el agente de IT Support (Administrador o Owner en ITSupport.aspx).
+    ///
+    /// Modelo de datos:
+    ///   Cada conversación es un "caso" (MonthEnd_Support_Cases) vinculado al
+    ///   guard/cierre activo. Los mensajes se guardan en MonthEnd_Chat_Messages
+    ///   con referencia al Case_Id. Los casos persisten durante todo el cierre.
     ///
     /// Seguridad: la identidad siempre se lee desde Session del servidor,
     /// nunca desde parámetros del cliente.
     ///
     /// Grupos SignalR:
     ///   "user-{userId}"  → recibe mensajes dirigidos a ese usuario
-    ///   "it-agents"      → todos los agentes IT conectados (RoleId >= 3)
+    ///   "it-agents"      → solo el agente activo en ITSupport.aspx
     /// </summary>
     public class ChatHub : Hub {
 
@@ -39,25 +45,20 @@ namespace Close_Portal.Hubs {
             return session?["FullName"]?.ToString() ?? "Usuario";
         }
 
-        // ── OnConnected: intento inicial de suscribir a grupos ───────
-        // NOTA: HttpContext.Session puede ser null en OnConnected() con OWIN.
-        // El cliente llama también a JoinGroups() explícitamente después de
-        // hub.start() para garantizar la membresía incluso si falla aquí.
+        // ── OnConnected: une al grupo personal ───────────────────────────────
 
         public override Task OnConnected() {
             JoinGroups();
             return base.OnConnected();
         }
 
-        // SignalR elimina la conexión de todos los grupos al desconectar
         public override Task OnDisconnected(bool stopCalled) {
             return base.OnDisconnected(stopCalled);
         }
 
-        // ── JoinGroups: une al grupo personal del usuario ────────────
-        // Llamado desde OnConnected() Y explícitamente por el cliente
-        // tras hub.start(). Solo une a "user-{id}" — el grupo personal
-        // que recibe respuestas dirigidas a este usuario.
+        // ── JoinGroups: grupo personal "user-{id}" (todos los usuarios) ──────
+        // Llamado desde OnConnected() y explícitamente desde el cliente
+        // porque Session puede no estar disponible en OnConnected() con OWIN.
 
         public void JoinGroups() {
             int userId = GetCurrentUserId();
@@ -65,103 +66,112 @@ namespace Close_Portal.Hubs {
             Groups.Add(Context.ConnectionId, "user-" + userId);
         }
 
-        // ── RegisterAsITAgent: une al grupo de agentes IT activos ────
-        // Solo llamado desde ITSupport.aspx (ChatMode='agent').
-        // Garantiza que únicamente la persona en el panel de IT
-        // recibe los mensajes entrantes de los usuarios.
+        // ── RegisterAsITAgent: grupo "it-agents" (solo ITSupport.aspx) ───────
+        // Solo la persona en el panel de IT se suscribe a este grupo,
+        // asegurando que únicamente el agente activo recibe las notificaciones.
 
         public void RegisterAsITAgent() {
             if (GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
             Groups.Add(Context.ConnectionId, "it-agents");
         }
 
-        // ── Paso 2a: Cliente → IT Support ────────────────────────────
-        // Llamado desde Support.aspx — cualquier usuario autenticado
+        // ── Paso 2a: Cliente → IT Support ────────────────────────────────────
+        // Cualquier usuario autenticado puede enviar un mensaje.
+        // Crea o reutiliza el caso del cierre activo para este cliente.
 
         public void EnviarMensajeAIT(string mensaje) {
             int emisorId = GetCurrentUserId();
             if (emisorId <= 0) return;
             if (string.IsNullOrWhiteSpace(mensaje)) return;
-
-            // Límite de longitud para evitar abuso
-            if (mensaje.Length > 2000) mensaje = mensaje.Substring(0, 2000);
-
-            string nombre   = GetCurrentFullName();
-            var    timestamp = DateTime.Now;
-
-            int mensajeId = GuardarMensaje(clientId: emisorId, senderId: emisorId,
-                                           message:  mensaje.Trim());
-
-            // Push a todos los agentes IT conectados
-            Clients.Group("it-agents").recibirMensajeDeCliente(new {
-                messageId    = mensajeId,
-                clientId     = emisorId,
-                clientName   = nombre,
-                message      = mensaje.Trim(),
-                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                isClient     = true
-            });
-        }
-
-        // ── Paso 2b: IT Agente → Cliente específico ──────────────────
-        // Llamado desde ITSupport.aspx — solo Administrador+
-
-        public void EnviarMensajeACliente(int clientId, string mensaje) {
-            int emisorId = GetCurrentUserId();
-            // Validar rol en el servidor — el cliente no puede elevar sus permisos
-            if (emisorId <= 0 || GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
-            if (clientId <= 0 || string.IsNullOrWhiteSpace(mensaje)) return;
-
             if (mensaje.Length > 2000) mensaje = mensaje.Substring(0, 2000);
 
             string nombre    = GetCurrentFullName();
             var    timestamp = DateTime.Now;
+            var    da        = new ChatDataAccess();
 
-            int mensajeId = GuardarMensaje(clientId: clientId, senderId: emisorId,
-                                           message:  mensaje.Trim());
+            int guardId = da.GetActiveGuardId();
+            int caseId  = da.GetOrCreateCase(clientId: emisorId, guardId: guardId);
+            if (caseId <= 0) return;
 
-            // Push al cliente específico (grupo personal)
+            int messageId = GuardarMensaje(caseId: caseId, senderId: emisorId,
+                                           message: mensaje.Trim());
+
+            Clients.Group("it-agents").recibirMensajeDeCliente(new {
+                messageId,
+                caseId,
+                clientId   = emisorId,
+                clientName = nombre,
+                message    = mensaje.Trim(),
+                sentAt     = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient   = true
+            });
+        }
+
+        // ── Paso 2b: IT Agente → Cliente específico ───────────────────────────
+        // Solo Administrador+. El servidor resuelve el caseId desde clientId
+        // y el guard activo — el cliente no puede manipular este valor.
+
+        public void EnviarMensajeACliente(int clientId, string mensaje) {
+            int emisorId = GetCurrentUserId();
+            if (emisorId <= 0 || GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
+            if (clientId <= 0 || string.IsNullOrWhiteSpace(mensaje)) return;
+            if (mensaje.Length > 2000) mensaje = mensaje.Substring(0, 2000);
+
+            string nombre    = GetCurrentFullName();
+            var    timestamp = DateTime.Now;
+            var    da        = new ChatDataAccess();
+
+            int guardId = da.GetActiveGuardId();
+            int caseId  = da.GetCaseIdForClient(clientId: clientId, guardId: guardId);
+            if (caseId <= 0) return; // no hay caso activo para este cliente
+
+            int messageId = GuardarMensaje(caseId: caseId, senderId: emisorId,
+                                           message: mensaje.Trim());
+
+            // Respuesta al cliente específico
             Clients.Group("user-" + clientId).recibirRespuestaIT(new {
-                messageId    = mensajeId,
-                senderName   = nombre,
-                message      = mensaje.Trim(),
-                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                isClient     = false
+                messageId,
+                caseId,
+                senderName = nombre,
+                message    = mensaje.Trim(),
+                sentAt     = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient   = false
             });
 
-            // Sincronizar a otros agentes IT para que vean la respuesta en tiempo real
+            // Sincronizar al propio panel IT (por si hay más de una pestaña abierta)
             Clients.Group("it-agents").mensajeEnviado(new {
-                messageId    = mensajeId,
+                messageId,
+                caseId,
                 clientId,
-                senderId     = emisorId,
-                senderName   = nombre,
-                message      = mensaje.Trim(),
-                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                isClient     = false
+                senderId   = emisorId,
+                senderName = nombre,
+                message    = mensaje.Trim(),
+                sentAt     = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient   = false
             });
         }
 
-        // ── Marcar mensajes de un cliente como leídos ─────────────────
-        // Llamado desde ITSupport.aspx al abrir una conversación
+        // ── Marcar caso como leído ────────────────────────────────────────────
+        // Llamado desde ITSupport.aspx al abrir un caso.
 
-        public void MarcarLeido(int clientId) {
+        public void MarcarLeido(int caseId) {
             if (GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
-            if (clientId <= 0) return;
-            ActualizarLeido(clientId);
+            if (caseId <= 0) return;
+            ActualizarLeido(caseId);
         }
 
-        // ── BD: insertar mensaje ───────────────────────────────────────
+        // ── BD: insertar mensaje ──────────────────────────────────────────────
 
-        private int GuardarMensaje(int clientId, int senderId, string message) {
+        private int GuardarMensaje(int caseId, int senderId, string message) {
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
-                    INSERT INTO MonthEnd_Chat_Messages (Client_Id, Sender_Id, Message)
+                    INSERT INTO MonthEnd_Chat_Messages (Case_Id, Sender_Id, Message)
                     OUTPUT INSERTED.Message_Id
-                    VALUES (@ClientId, @SenderId, @Message)", conn)) {
-                    cmd.Parameters.AddWithValue("@ClientId",  clientId);
-                    cmd.Parameters.AddWithValue("@SenderId",  senderId);
-                    cmd.Parameters.AddWithValue("@Message",   message);
+                    VALUES (@CaseId, @SenderId, @Message)", conn)) {
+                    cmd.Parameters.AddWithValue("@CaseId",   caseId);
+                    cmd.Parameters.AddWithValue("@SenderId", senderId);
+                    cmd.Parameters.AddWithValue("@Message",  message);
                     conn.Open();
                     return (int)cmd.ExecuteScalar();
                 }
@@ -171,18 +181,20 @@ namespace Close_Portal.Hubs {
             }
         }
 
-        // ── BD: marcar mensajes del cliente como leídos por el agente ─
+        // ── BD: marcar mensajes del cliente en el caso como leídos ───────────
 
-        private void ActualizarLeido(int clientId) {
+        private void ActualizarLeido(int caseId) {
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
-                    UPDATE MonthEnd_Chat_Messages
-                    SET    Is_Read = 1
-                    WHERE  Client_Id = @ClientId
-                      AND  Sender_Id = @ClientId
-                      AND  Is_Read   = 0", conn)) {
-                    cmd.Parameters.AddWithValue("@ClientId", clientId);
+                    UPDATE m
+                    SET    m.Is_Read = 1
+                    FROM   MonthEnd_Chat_Messages m
+                    INNER JOIN MonthEnd_Support_Cases c ON c.Case_Id = m.Case_Id
+                    WHERE  m.Case_Id   = @CaseId
+                      AND  m.Sender_Id = c.Client_Id
+                      AND  m.Is_Read   = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@CaseId", caseId);
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }

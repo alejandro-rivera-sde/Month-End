@@ -3,39 +3,38 @@
 //
 // Modos de operación (window.ChatMode):
 //   'client'  → Support.aspx    — página dedicada, el usuario chatea con IT
-//   'agent'   → ITSupport.aspx  — panel del agente, gestiona conversaciones
+//   'agent'   → ITSupport.aspx  — panel del agente, gestiona casos del cierre
 //   'widget'  → ChatWidget.ascx — widget flotante embebido en páginas existentes
 //
-// Variable de configuración:
-//   window.ChatWebMethodBase — URL base para WebMethods del chat
-//     Ejemplo: ResolveUrl("~/Pages/Support/Support.aspx/")
-//   window.AgentName — nombre del agente (solo modo 'agent')
+// Modelo de datos:
+//   Cada conversación es un "caso" vinculado al guard/cierre activo.
+//   Los casos persisten durante todo el cierre aunque el agente cierre la página.
 //
-// Dependencias (cargadas por DashboardLayout.Master ANTES que este script):
-//   - jQuery 3.x
-//   - jquery.signalR-2.4.3.min.js
-//   - /signalr/hubs  (proxy auto-generado)
+// Variables de configuración (window.*):
+//   ChatWebMethodBase — URL base para WebMethods del chat
+//   AgentName         — nombre del agente (solo modo 'agent')
 //
-// IMPORTANTE: initSignalRHandlers() se ejecuta de forma síncrona al cargar
-// el script, antes de que hub.start() sea invocado por dashboard_layout.js.
-// Esto garantiza que ningún mensaje se pierda entre la carga y la conexión.
+// Dependencias cargadas por DashboardLayout.Master ANTES que este script:
+//   jQuery 3.x · jquery.signalR-2.4.3.min.js · /signalr/hubs
 // =============================================================================
 
 (function () {
     'use strict';
 
-    var HUB_CONNECTED    = 1;   // $.connection.hub.state cuando está activo
+    var HUB_CONNECTED    = 1;
     var chatHub          = null;
-    var selectedClientId = null; // solo en modo 'agent'
 
-    // ── Estado del widget (solo modo 'widget') ────────────────────
+    // Caso/cliente seleccionado actualmente (modo 'agent')
+    var selectedCaseId   = null;
+    var selectedClientId = null;
+
+    // Estado del widget (modo 'widget')
     var widgetOpen   = false;
-    var widgetLoaded = false;  // historial cargado al menos una vez
+    var widgetLoaded = false;
     var widgetUnread = 0;
 
     // ==========================================================================
     // FUNCIONES PÚBLICAS DEL WIDGET
-    // Expuestas globalmente porque los onclick del .ascx las llaman directamente.
     // ==========================================================================
 
     window.toggleChatWidget = function () {
@@ -53,16 +52,13 @@
         var icon  = document.getElementById('chatFabIcon');
         if (panel) {
             panel.style.display = 'flex';
-            // Forzar re-trigger de la animación CSS
             panel.classList.remove('widget-anim');
             void panel.offsetWidth;
             panel.classList.add('widget-anim');
         }
         if (icon) icon.textContent = 'close';
-
         clearWidgetBadge();
 
-        // Historial: carga diferida — solo la primera vez que se abre
         if (!widgetLoaded) {
             widgetLoaded = true;
             loadHistorialCliente();
@@ -95,15 +91,14 @@
     }
 
     // ==========================================================================
-    // PASO 3 — Registrar handlers del cliente SignalR
-    // Se ejecuta síncronamente, antes de hub.start()
+    // REGISTRO DE HANDLERS SIGNALR (síncrono al cargar el script)
     // ==========================================================================
 
     function initSignalRHandlers() {
         if (typeof $.connection === 'undefined' || !$.connection.chatHub) return;
         chatHub = $.connection.chatHub;
 
-        // ── Modo CLIENTE o WIDGET: recibe respuestas del agente IT ───
+        // ── Modo CLIENTE: recibe respuestas del agente IT ─────────────────────
 
         if (window.ChatMode === 'client') {
             chatHub.client.recibirRespuestaIT = function (data) {
@@ -112,36 +107,38 @@
             };
         }
 
+        // ── Modo WIDGET: igual que cliente, pero con badge si está cerrado ────
+
         if (window.ChatMode === 'widget') {
             chatHub.client.recibirRespuestaIT = function (data) {
                 if (widgetOpen) {
                     appendMessage(data.message, data.senderName, data.sentAt, false);
                     scrollToBottom();
                 } else {
-                    // Widget cerrado: mostrar badge en el botón FAB
                     addWidgetUnread();
                 }
             };
         }
 
-        // ── Modo AGENTE: recibe mensajes de clientes y sincroniza ────
+        // ── Modo AGENTE: recibe nuevos mensajes y sincroniza entre pestañas ───
 
         if (window.ChatMode === 'agent') {
 
+            // Nuevo mensaje de un cliente
             chatHub.client.recibirMensajeDeCliente = function (data) {
-                refreshClientEntry(
+                refreshCaseEntry(
+                    data.caseId,
                     data.clientId,
                     data.clientName,
                     data.message,
-                    data.sentAt,
-                    data.clientId !== selectedClientId
+                    data.caseId !== selectedCaseId
                 );
 
-                if (data.clientId === selectedClientId) {
+                if (data.caseId === selectedCaseId) {
                     appendMessage(data.message, data.clientName, data.sentAt, false);
                     scrollToBottom();
                     if ($.connection.hub.state === HUB_CONNECTED) {
-                        chatHub.server.marcarLeido(selectedClientId);
+                        chatHub.server.marcarLeido(selectedCaseId);
                     }
                 } else {
                     if (typeof showOsNotification === 'function') {
@@ -154,8 +151,9 @@
                 }
             };
 
+            // Respuesta enviada por otro agente (sincronización multi-pestaña)
             chatHub.client.mensajeEnviado = function (data) {
-                if (data.clientId === selectedClientId) {
+                if (data.caseId === selectedCaseId) {
                     var esPropio = (parseInt(data.senderId) === parseInt(window.CurrentUserId));
                     if (!esPropio) {
                         appendMessage(data.message, data.senderName, data.sentAt, true);
@@ -165,12 +163,9 @@
             };
         }
 
-        // ── Estado de conexión + membresía de grupos ─────────────────
+        // ── Conexión + membresía de grupos ────────────────────────────────────
         // joinGroups()        → grupo personal "user-{id}" (todos los modos)
-        // registerAsITAgent() → grupo "it-agents" (solo modo agent, ITSupport.aspx)
-        //
-        // Se llaman en stateChanged (no en OnConnected del servidor) porque
-        // OnConnected puede ejecutarse antes de que Session esté disponible en OWIN.
+        // registerAsITAgent() → grupo "it-agents"  (solo modo agent)
 
         var isAgentMode = (window.ChatMode === 'agent');
 
@@ -190,18 +185,17 @@
     }
 
     // ==========================================================================
-    // DOMContentLoaded — inicializar UI
+    // DOMContentLoaded
     // ==========================================================================
 
     function onDomReady() {
         initSendControls();
-
         if (window.ChatMode === 'client') {
             loadHistorialCliente();
         } else if (window.ChatMode === 'agent') {
-            loadClientList();
+            loadCases();
         }
-        // En modo 'widget' la carga es diferida (openChatWidgetInternal)
+        // Modo 'widget': carga diferida en openChatWidgetInternal()
     }
 
     // ==========================================================================
@@ -225,7 +219,6 @@
     function sendMessage() {
         var msgInput = document.getElementById('chatInput');
         if (!msgInput) return;
-
         var texto = msgInput.value.trim();
         if (!texto) return;
         msgInput.value = '';
@@ -242,6 +235,7 @@
             appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
             scrollToBottom();
             if ($.connection.hub.state === HUB_CONNECTED) {
+                // El servidor resuelve el caseId desde clientId + guard activo
                 chatHub.server.enviarMensajeACliente(selectedClientId, texto);
             }
         }
@@ -281,38 +275,39 @@
     }
 
     // ==========================================================================
-    // LISTA DE CLIENTES — MODO AGENTE
+    // LISTA DE CASOS — MODO AGENTE
     // ==========================================================================
 
-    function loadClientList() {
+    function loadCases() {
         $.ajax({
             type:        'POST',
-            url:         window.ChatWebMethodBase + 'GetClientes',
+            url:         window.ChatWebMethodBase + 'GetCases',
             data:        '{}',
             contentType: 'application/json; charset=utf-8',
             dataType:    'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
-                if (d && d.success) renderClientList(d.clients || []);
+                if (d && d.success) renderCaseList(d.cases || []);
             },
             error: function () {}
         });
     }
 
-    function renderClientList(clients) {
+    function renderCaseList(cases) {
         var list = document.getElementById('clientList');
         if (!list) return;
         list.innerHTML = '';
-        if (clients.length === 0) {
-            list.innerHTML = '<div class="chat-empty-list">Sin conversaciones activas</div>';
+        if (cases.length === 0) {
+            list.innerHTML = '<div class="chat-empty-list">Sin casos abiertos en este cierre</div>';
             return;
         }
-        clients.forEach(function (c) { list.appendChild(buildClientItem(c)); });
+        cases.forEach(function (c) { list.appendChild(buildCaseItem(c)); });
     }
 
-    function buildClientItem(c) {
+    function buildCaseItem(c) {
         var item = document.createElement('div');
-        item.className = 'client-item' + (c.clientId === selectedClientId ? ' active' : '');
+        item.className = 'client-item' + (c.caseId === selectedCaseId ? ' active' : '');
+        item.dataset.caseId   = c.caseId;
         item.dataset.clientId = c.clientId;
 
         var avatar = document.createElement('div');
@@ -345,13 +340,15 @@
         info.appendChild(preview);
         item.appendChild(avatar);
         item.appendChild(info);
-        item.addEventListener('click', function () { selectClient(c.clientId, c.clientName); });
+        item.addEventListener('click', function () {
+            selectCase(c.caseId, c.clientId, c.clientName);
+        });
         return item;
     }
 
-    function refreshClientEntry(clientId, clientName, message, sentAt, addBadge) {
+    function refreshCaseEntry(caseId, clientId, clientName, message, addBadge) {
         var list     = document.getElementById('clientList');
-        var existing = list ? list.querySelector('[data-client-id="' + clientId + '"]') : null;
+        var existing = list ? list.querySelector('[data-case-id="' + caseId + '"]') : null;
 
         if (existing) {
             var preview = existing.querySelector('.client-preview');
@@ -375,7 +372,8 @@
             if (list) list.insertBefore(existing, list.firstChild);
 
         } else {
-            var newItem = buildClientItem({
+            var newItem = buildCaseItem({
+                caseId:      caseId,
                 clientId:    clientId,
                 clientName:  clientName,
                 lastMessage: message,
@@ -389,14 +387,15 @@
         }
     }
 
-    function selectClient(clientId, clientName) {
+    function selectCase(caseId, clientId, clientName) {
+        selectedCaseId   = caseId;
         selectedClientId = clientId;
 
         document.querySelectorAll('.client-item').forEach(function (item) {
-            item.classList.toggle('active', parseInt(item.dataset.clientId) === clientId);
+            item.classList.toggle('active', parseInt(item.dataset.caseId) === caseId);
         });
 
-        var activeItem = document.querySelector('[data-client-id="' + clientId + '"]');
+        var activeItem = document.querySelector('[data-case-id="' + caseId + '"]');
         if (activeItem) {
             var badge = activeItem.querySelector('.client-badge');
             if (badge) badge.remove();
@@ -413,7 +412,7 @@
         if (convAvatarEl) convAvatarEl.textContent = clientName.charAt(0).toUpperCase();
 
         if ($.connection.hub.state === HUB_CONNECTED) {
-            chatHub.server.marcarLeido(clientId);
+            chatHub.server.marcarLeido(caseId);
         }
         loadHistorialAgente(clientId);
     }
@@ -460,13 +459,13 @@
         if (!esPropio) {
             var senderEl = document.createElement('div');
             senderEl.className = 'chat-sender';
-            senderEl.textContent = nombre;  // textContent — inmune a XSS
+            senderEl.textContent = nombre;  // textContent — XSS-safe
             bubble.appendChild(senderEl);
         }
 
         var textEl = document.createElement('div');
         textEl.className = 'chat-text';
-        textEl.textContent = texto;  // textContent — inmune a XSS
+        textEl.textContent = texto;  // textContent — XSS-safe
         bubble.appendChild(textEl);
 
         var timeEl = document.createElement('div');
@@ -525,7 +524,7 @@
     }
 
     // ==========================================================================
-    // INICIO — síncrono al cargar el script
+    // INICIO
     // ==========================================================================
 
     initSignalRHandlers();
