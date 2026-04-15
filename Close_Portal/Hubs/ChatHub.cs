@@ -74,79 +74,79 @@ namespace Close_Portal.Hubs {
             string nombre   = GetCurrentFullName();
             var    timestamp = DateTime.Now;
 
-            int mensajeId = GuardarMensaje(clienteId: emisorId, emisorId: emisorId,
-                                           mensaje:   mensaje.Trim());
+            int mensajeId = GuardarMensaje(clientId: emisorId, senderId: emisorId,
+                                           message:  mensaje.Trim());
 
             // Push a todos los agentes IT conectados
             Clients.Group("it-agents").recibirMensajeDeCliente(new {
-                mensajeId,
-                clienteId     = emisorId,
-                clienteNombre = nombre,
-                mensaje       = mensaje.Trim(),
-                fechaHora     = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                esCliente     = true
+                messageId    = mensajeId,
+                clientId     = emisorId,
+                clientName   = nombre,
+                message      = mensaje.Trim(),
+                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient     = true
             });
         }
 
         // ── Paso 2b: IT Agente → Cliente específico ──────────────────
         // Llamado desde ITSupport.aspx — solo Administrador+
 
-        public void EnviarMensajeACliente(int clienteId, string mensaje) {
+        public void EnviarMensajeACliente(int clientId, string mensaje) {
             int emisorId = GetCurrentUserId();
             // Validar rol en el servidor — el cliente no puede elevar sus permisos
             if (emisorId <= 0 || GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
-            if (clienteId <= 0 || string.IsNullOrWhiteSpace(mensaje)) return;
+            if (clientId <= 0 || string.IsNullOrWhiteSpace(mensaje)) return;
 
             if (mensaje.Length > 2000) mensaje = mensaje.Substring(0, 2000);
 
             string nombre    = GetCurrentFullName();
             var    timestamp = DateTime.Now;
 
-            int mensajeId = GuardarMensaje(clienteId: clienteId, emisorId: emisorId,
-                                           mensaje:   mensaje.Trim());
+            int mensajeId = GuardarMensaje(clientId: clienteId, senderId: emisorId,
+                                           message:  mensaje.Trim());
 
             // Push al cliente específico (grupo personal)
-            Clients.Group("user-" + clienteId).recibirRespuestaIT(new {
-                mensajeId,
-                agenteNombre = nombre,
-                mensaje      = mensaje.Trim(),
-                fechaHora    = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                esCliente    = false
+            Clients.Group("user-" + clientId).recibirRespuestaIT(new {
+                messageId    = mensajeId,
+                senderName   = nombre,
+                message      = mensaje.Trim(),
+                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient     = false
             });
 
             // Sincronizar a otros agentes IT para que vean la respuesta en tiempo real
             Clients.Group("it-agents").mensajeEnviado(new {
-                mensajeId,
-                clienteId,
-                agenteId     = emisorId,
-                agenteNombre = nombre,
-                mensaje      = mensaje.Trim(),
-                fechaHora    = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
-                esCliente    = false
+                messageId    = mensajeId,
+                clientId,
+                senderId     = emisorId,
+                senderName   = nombre,
+                message      = mensaje.Trim(),
+                sentAt       = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
+                isClient     = false
             });
         }
 
         // ── Marcar mensajes de un cliente como leídos ─────────────────
         // Llamado desde ITSupport.aspx al abrir una conversación
 
-        public void MarcarLeido(int clienteId) {
+        public void MarcarLeido(int clientId) {
             if (GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
-            if (clienteId <= 0) return;
-            ActualizarLeido(clienteId);
+            if (clientId <= 0) return;
+            ActualizarLeido(clientId);
         }
 
         // ── BD: insertar mensaje ───────────────────────────────────────
 
-        private int GuardarMensaje(int clienteId, int emisorId, string mensaje) {
+        private int GuardarMensaje(int clientId, int senderId, string message) {
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
-                    INSERT INTO ChatMensajes (ClienteId, EmisorId, Mensaje)
-                    OUTPUT INSERTED.Id
-                    VALUES (@ClienteId, @EmisorId, @Mensaje)", conn)) {
-                    cmd.Parameters.AddWithValue("@ClienteId", clienteId);
-                    cmd.Parameters.AddWithValue("@EmisorId",  emisorId);
-                    cmd.Parameters.AddWithValue("@Mensaje",   mensaje);
+                    INSERT INTO MonthEnd_Chat_Messages (Client_Id, Sender_Id, Message)
+                    OUTPUT INSERTED.Message_Id
+                    VALUES (@ClientId, @SenderId, @Message)", conn)) {
+                    cmd.Parameters.AddWithValue("@ClientId",  clientId);
+                    cmd.Parameters.AddWithValue("@SenderId",  senderId);
+                    cmd.Parameters.AddWithValue("@Message",   message);
                     conn.Open();
                     return (int)cmd.ExecuteScalar();
                 }
@@ -158,16 +158,16 @@ namespace Close_Portal.Hubs {
 
         // ── BD: marcar mensajes del cliente como leídos por el agente ─
 
-        private void ActualizarLeido(int clienteId) {
+        private void ActualizarLeido(int clientId) {
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
-                    UPDATE ChatMensajes
-                    SET    Leido = 1
-                    WHERE  ClienteId = @ClienteId
-                      AND  EmisorId  = @ClienteId
-                      AND  Leido     = 0", conn)) {
-                    cmd.Parameters.AddWithValue("@ClienteId", clienteId);
+                    UPDATE MonthEnd_Chat_Messages
+                    SET    Is_Read = 1
+                    WHERE  Client_Id = @ClientId
+                      AND  Sender_Id = @ClientId
+                      AND  Is_Read   = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@ClientId", clientId);
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }

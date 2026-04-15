@@ -24,14 +24,14 @@
 (function () {
     'use strict';
 
-    var HUB_CONNECTED     = 1;   // $.connection.hub.state cuando está activo
-    var chatHub           = null;
-    var selectedClienteId = null; // solo en modo 'agent'
+    var HUB_CONNECTED    = 1;   // $.connection.hub.state cuando está activo
+    var chatHub          = null;
+    var selectedClientId = null; // solo en modo 'agent'
 
     // ── Estado del widget (solo modo 'widget') ────────────────────
-    var widgetOpen    = false;
-    var widgetLoaded  = false;  // historial cargado al menos una vez
-    var widgetUnread  = 0;
+    var widgetOpen   = false;
+    var widgetLoaded = false;  // historial cargado al menos una vez
+    var widgetUnread = 0;
 
     // ==========================================================================
     // FUNCIONES PÚBLICAS DEL WIDGET
@@ -107,7 +107,7 @@
 
         if (window.ChatMode === 'client') {
             chatHub.client.recibirRespuestaIT = function (data) {
-                appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, false);
+                appendMessage(data.message, data.senderName, data.sentAt, false);
                 scrollToBottom();
             };
         }
@@ -115,7 +115,7 @@
         if (window.ChatMode === 'widget') {
             chatHub.client.recibirRespuestaIT = function (data) {
                 if (widgetOpen) {
-                    appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, false);
+                    appendMessage(data.message, data.senderName, data.sentAt, false);
                     scrollToBottom();
                 } else {
                     // Widget cerrado: mostrar badge en el botón FAB
@@ -130,24 +130,24 @@
 
             chatHub.client.recibirMensajeDeCliente = function (data) {
                 refreshClientEntry(
-                    data.clienteId,
-                    data.clienteNombre,
-                    data.mensaje,
-                    data.fechaHora,
-                    data.clienteId !== selectedClienteId
+                    data.clientId,
+                    data.clientName,
+                    data.message,
+                    data.sentAt,
+                    data.clientId !== selectedClientId
                 );
 
-                if (data.clienteId === selectedClienteId) {
-                    appendMessage(data.mensaje, data.clienteNombre, data.fechaHora, false);
+                if (data.clientId === selectedClientId) {
+                    appendMessage(data.message, data.clientName, data.sentAt, false);
                     scrollToBottom();
                     if ($.connection.hub.state === HUB_CONNECTED) {
-                        chatHub.server.marcarLeido(selectedClienteId);
+                        chatHub.server.marcarLeido(selectedClientId);
                     }
                 } else {
                     if (typeof showOsNotification === 'function') {
                         showOsNotification(
-                            'Mensaje de ' + data.clienteNombre,
-                            data.mensaje.substring(0, 80),
+                            'Mensaje de ' + data.clientName,
+                            data.message.substring(0, 80),
                             window.AppRoot + 'it-support'
                         );
                     }
@@ -155,10 +155,10 @@
             };
 
             chatHub.client.mensajeEnviado = function (data) {
-                if (data.clienteId === selectedClienteId) {
-                    var esPropio = (parseInt(data.agenteId) === parseInt(window.CurrentUserId));
+                if (data.clientId === selectedClientId) {
+                    var esPropio = (parseInt(data.senderId) === parseInt(window.CurrentUserId));
                     if (!esPropio) {
-                        appendMessage(data.mensaje, data.agenteNombre, data.fechaHora, true);
+                        appendMessage(data.message, data.senderName, data.sentAt, true);
                         scrollToBottom();
                     }
                 }
@@ -225,11 +225,11 @@
             }
 
         } else if (window.ChatMode === 'agent') {
-            if (selectedClienteId === null) return;
+            if (selectedClientId === null) return;
             appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
             scrollToBottom();
             if ($.connection.hub.state === HUB_CONNECTED) {
-                chatHub.server.enviarMensajeACliente(selectedClienteId, texto);
+                chatHub.server.enviarMensajeACliente(selectedClientId, texto);
             }
         }
     }
@@ -249,13 +249,13 @@
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
                 clearMessages();
-                if (d && d.success && d.mensajes && d.mensajes.length > 0) {
-                    d.mensajes.forEach(function (m) {
+                if (d && d.success && d.messages && d.messages.length > 0) {
+                    d.messages.forEach(function (m) {
                         appendMessage(
-                            m.mensaje,
-                            m.esCliente ? 'Tú' : m.emisorNombre,
-                            m.fechaHora,
-                            m.esCliente
+                            m.message,
+                            m.isClient ? 'Tú' : m.senderName,
+                            m.sentAt,
+                            m.isClient
                         );
                     });
                     scrollToBottom();
@@ -280,31 +280,31 @@
             dataType:    'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
-                if (d && d.success) renderClientList(d.clientes || []);
+                if (d && d.success) renderClientList(d.clients || []);
             },
             error: function () {}
         });
     }
 
-    function renderClientList(clientes) {
+    function renderClientList(clients) {
         var list = document.getElementById('clientList');
         if (!list) return;
         list.innerHTML = '';
-        if (clientes.length === 0) {
+        if (clients.length === 0) {
             list.innerHTML = '<div class="chat-empty-list">Sin conversaciones activas</div>';
             return;
         }
-        clientes.forEach(function (c) { list.appendChild(buildClientItem(c)); });
+        clients.forEach(function (c) { list.appendChild(buildClientItem(c)); });
     }
 
     function buildClientItem(c) {
         var item = document.createElement('div');
-        item.className = 'client-item' + (c.clienteId === selectedClienteId ? ' active' : '');
-        item.dataset.clienteId = c.clienteId;
+        item.className = 'client-item' + (c.clientId === selectedClientId ? ' active' : '');
+        item.dataset.clientId = c.clientId;
 
         var avatar = document.createElement('div');
         avatar.className = 'client-avatar';
-        avatar.textContent = (c.clienteNombre || 'U').charAt(0).toUpperCase();
+        avatar.textContent = (c.clientName || 'U').charAt(0).toUpperCase();
 
         var info = document.createElement('div');
         info.className = 'client-info';
@@ -314,35 +314,35 @@
 
         var name = document.createElement('span');
         name.className = 'client-name';
-        name.textContent = c.clienteNombre || 'Usuario';
+        name.textContent = c.clientName || 'Usuario';
         nameRow.appendChild(name);
 
-        if (c.mensajesNoLeidos > 0) {
+        if (c.unreadCount > 0) {
             var badge = document.createElement('span');
             badge.className = 'client-badge';
-            badge.textContent = c.mensajesNoLeidos > 99 ? '99+' : c.mensajesNoLeidos;
+            badge.textContent = c.unreadCount > 99 ? '99+' : c.unreadCount;
             nameRow.appendChild(badge);
         }
 
         var preview = document.createElement('div');
         preview.className = 'client-preview';
-        preview.textContent = (c.ultimoMensaje || '').substring(0, 50);
+        preview.textContent = (c.lastMessage || '').substring(0, 50);
 
         info.appendChild(nameRow);
         info.appendChild(preview);
         item.appendChild(avatar);
         item.appendChild(info);
-        item.addEventListener('click', function () { selectClient(c.clienteId, c.clienteNombre); });
+        item.addEventListener('click', function () { selectClient(c.clientId, c.clientName); });
         return item;
     }
 
-    function refreshClientEntry(clienteId, clienteNombre, mensaje, fechaHora, addBadge) {
+    function refreshClientEntry(clientId, clientName, message, sentAt, addBadge) {
         var list     = document.getElementById('clientList');
-        var existing = list ? list.querySelector('[data-cliente-id="' + clienteId + '"]') : null;
+        var existing = list ? list.querySelector('[data-client-id="' + clientId + '"]') : null;
 
         if (existing) {
             var preview = existing.querySelector('.client-preview');
-            if (preview) preview.textContent = mensaje.substring(0, 50);
+            if (preview) preview.textContent = message.substring(0, 50);
 
             if (addBadge) {
                 var badge = existing.querySelector('.client-badge');
@@ -363,10 +363,10 @@
 
         } else {
             var newItem = buildClientItem({
-                clienteId:        clienteId,
-                clienteNombre:    clienteNombre,
-                ultimoMensaje:    mensaje,
-                mensajesNoLeidos: addBadge ? 1 : 0
+                clientId:    clientId,
+                clientName:  clientName,
+                lastMessage: message,
+                unreadCount: addBadge ? 1 : 0
             });
             if (list) {
                 var emptyMsg = list.querySelector('.chat-empty-list');
@@ -376,14 +376,14 @@
         }
     }
 
-    function selectClient(clienteId, clienteNombre) {
-        selectedClienteId = clienteId;
+    function selectClient(clientId, clientName) {
+        selectedClientId = clientId;
 
         document.querySelectorAll('.client-item').forEach(function (item) {
-            item.classList.toggle('active', parseInt(item.dataset.clienteId) === clienteId);
+            item.classList.toggle('active', parseInt(item.dataset.clientId) === clientId);
         });
 
-        var activeItem = document.querySelector('[data-cliente-id="' + clienteId + '"]');
+        var activeItem = document.querySelector('[data-client-id="' + clientId + '"]');
         if (activeItem) {
             var badge = activeItem.querySelector('.client-badge');
             if (badge) badge.remove();
@@ -396,30 +396,30 @@
 
         var clientNameEl = document.getElementById('chatClientName');
         var convAvatarEl = document.getElementById('convAvatar');
-        if (clientNameEl) clientNameEl.textContent = clienteNombre;
-        if (convAvatarEl) convAvatarEl.textContent = clienteNombre.charAt(0).toUpperCase();
+        if (clientNameEl) clientNameEl.textContent = clientName;
+        if (convAvatarEl) convAvatarEl.textContent = clientName.charAt(0).toUpperCase();
 
         if ($.connection.hub.state === HUB_CONNECTED) {
-            chatHub.server.marcarLeido(clienteId);
+            chatHub.server.marcarLeido(clientId);
         }
-        loadHistorialAgente(clienteId);
+        loadHistorialAgente(clientId);
     }
 
-    function loadHistorialAgente(clienteId) {
+    function loadHistorialAgente(clientId) {
         clearMessages();
         showLoadingMessages();
         $.ajax({
             type:        'POST',
             url:         window.ChatWebMethodBase + 'GetHistorial',
-            data:        JSON.stringify({ clienteId: clienteId }),
+            data:        JSON.stringify({ clientId: clientId }),
             contentType: 'application/json; charset=utf-8',
             dataType:    'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
                 clearMessages();
-                if (d && d.success && d.mensajes && d.mensajes.length > 0) {
-                    d.mensajes.forEach(function (m) {
-                        appendMessage(m.mensaje, m.emisorNombre, m.fechaHora, !m.esCliente);
+                if (d && d.success && d.messages && d.messages.length > 0) {
+                    d.messages.forEach(function (m) {
+                        appendMessage(m.message, m.senderName, m.sentAt, !m.isClient);
                     });
                     scrollToBottom();
                 } else {
@@ -434,7 +434,7 @@
     // HELPERS DE UI
     // ==========================================================================
 
-    function appendMessage(texto, nombre, fechaHora, esPropio) {
+    function appendMessage(texto, nombre, sentAt, esPropio) {
         var container = document.getElementById('chatMessages');
         if (!container) return;
 
@@ -458,7 +458,7 @@
 
         var timeEl = document.createElement('div');
         timeEl.className = 'chat-time';
-        timeEl.textContent = formatTime(fechaHora);
+        timeEl.textContent = formatTime(sentAt);
         bubble.appendChild(timeEl);
 
         msgDiv.appendChild(bubble);

@@ -7,24 +7,24 @@ namespace Close_Portal.DataAccess {
 
     // ── View models ──────────────────────────────────────────────────────────
 
-    public class ChatMensajeViewModel {
-        public int      Id          { get; set; }
-        public int      ClienteId   { get; set; }
-        public int      EmisorId    { get; set; }
-        public string   EmisorNombre { get; set; }
-        public string   Mensaje     { get; set; }
-        public DateTime FechaHora   { get; set; }
-        public bool     Leido       { get; set; }
-        /// <summary>True si el emisor es el propio cliente (diferencia visual).</summary>
-        public bool     EsCliente   { get; set; }
+    public class ChatMessageViewModel {
+        public int      MessageId   { get; set; }
+        public int      ClientId    { get; set; }
+        public int      SenderId    { get; set; }
+        public string   SenderName  { get; set; }
+        public string   Message     { get; set; }
+        public DateTime SentAt      { get; set; }
+        public bool     IsRead      { get; set; }
+        /// <summary>True if the sender is the client (for visual differentiation).</summary>
+        public bool     IsClient    { get; set; }
     }
 
-    public class ChatClienteViewModel {
-        public int      ClienteId         { get; set; }
-        public string   ClienteNombre     { get; set; }
-        public string   UltimoMensaje     { get; set; }
-        public DateTime UltimaActividad   { get; set; }
-        public int      MensajesNoLeidos  { get; set; }
+    public class ChatClientViewModel {
+        public int      ClientId      { get; set; }
+        public string   ClientName    { get; set; }
+        public string   LastMessage   { get; set; }
+        public DateTime LastActivity  { get; set; }
+        public int      UnreadCount   { get; set; }
     }
 
     // ── Data access ──────────────────────────────────────────────────────────
@@ -35,49 +35,48 @@ namespace Close_Portal.DataAccess {
             ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
 
         /// <summary>
-        /// Retorna el historial de una conversación (identificada por clienteId),
-        /// ordenado cronológicamente. Limita a los últimos <paramref name="pageSize"/>
-        /// mensajes para no saturar la UI.
+        /// Returns the conversation history for a given client, ordered chronologically.
+        /// Limited to the most recent <paramref name="pageSize"/> messages.
         /// </summary>
-        public List<ChatMensajeViewModel> GetHistorial(int clienteId, int pageSize = 100) {
-            var result = new List<ChatMensajeViewModel>();
+        public List<ChatMessageViewModel> GetHistorial(int clientId, int pageSize = 100) {
+            var result = new List<ChatMessageViewModel>();
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
                     SELECT TOP (@PageSize)
-                        m.Id,
-                        m.ClienteId,
-                        m.EmisorId,
-                        RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS EmisorNombre,
-                        m.Mensaje,
-                        m.FechaHora,
-                        m.Leido,
-                        CASE WHEN m.EmisorId = m.ClienteId THEN 1 ELSE 0 END AS EsCliente
-                    FROM  ChatMensajes m
-                    INNER JOIN MonthEnd_Users u ON u.User_Id = m.EmisorId
-                    WHERE m.ClienteId = @ClienteId
-                    ORDER BY m.FechaHora DESC", conn)) {
+                        m.Message_Id,
+                        m.Client_Id,
+                        m.Sender_Id,
+                        RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS SenderName,
+                        m.Message,
+                        m.Sent_At,
+                        m.Is_Read,
+                        CASE WHEN m.Sender_Id = m.Client_Id THEN 1 ELSE 0 END AS IsClient
+                    FROM  MonthEnd_Chat_Messages m
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = m.Sender_Id
+                    WHERE m.Client_Id = @ClientId
+                    ORDER BY m.Sent_At DESC", conn)) {
 
-                    cmd.Parameters.AddWithValue("@ClienteId", clienteId);
-                    cmd.Parameters.AddWithValue("@PageSize",  pageSize);
+                    cmd.Parameters.AddWithValue("@ClientId", clientId);
+                    cmd.Parameters.AddWithValue("@PageSize", pageSize);
                     conn.Open();
 
                     using (var dr = cmd.ExecuteReader()) {
                         while (dr.Read()) {
-                            result.Add(new ChatMensajeViewModel {
-                                Id           = dr.GetInt32(0),
-                                ClienteId    = dr.GetInt32(1),
-                                EmisorId     = dr.GetInt32(2),
-                                EmisorNombre = dr.GetString(3),
-                                Mensaje      = dr.GetString(4),
-                                FechaHora    = dr.GetDateTime(5),
-                                Leido        = dr.GetBoolean(6),
-                                EsCliente    = dr.GetInt32(7) == 1
+                            result.Add(new ChatMessageViewModel {
+                                MessageId  = dr.GetInt32(0),
+                                ClientId   = dr.GetInt32(1),
+                                SenderId   = dr.GetInt32(2),
+                                SenderName = dr.GetString(3),
+                                Message    = dr.GetString(4),
+                                SentAt     = dr.GetDateTime(5),
+                                IsRead     = dr.GetBoolean(6),
+                                IsClient   = dr.GetInt32(7) == 1
                             });
                         }
                     }
                 }
-                // Revertir: la query trae DESC (más recientes primero), necesitamos ASC (cronológico)
+                // Query returns DESC (newest first); reverse to get chronological order
                 result.Reverse();
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ChatDataAccess.GetHistorial] ERROR: {ex.Message}");
@@ -86,41 +85,41 @@ namespace Close_Portal.DataAccess {
         }
 
         /// <summary>
-        /// Retorna todos los clientes que han enviado al menos un mensaje,
-        /// ordenados por mensajes no leídos (desc) y última actividad (desc).
-        /// Usado en el panel de IT Support para la lista lateral de conversaciones.
+        /// Returns all clients who have sent at least one message,
+        /// ordered by unread count (desc) then last activity (desc).
+        /// Used by the IT Support agent panel to populate the conversation list.
         /// </summary>
-        public List<ChatClienteViewModel> GetClientesActivos() {
-            var result = new List<ChatClienteViewModel>();
+        public List<ChatClientViewModel> GetClientesActivos() {
+            var result = new List<ChatClientViewModel>();
             try {
                 using (var conn = new SqlConnection(_connStr))
                 using (var cmd = new SqlCommand(@"
                     SELECT
-                        m.ClienteId,
-                        RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS ClienteNombre,
-                        MAX(m.FechaHora) AS UltimaActividad,
+                        m.Client_Id,
+                        RTRIM(ISNULL(u.First_Name,'') + ' ' + ISNULL(u.Last_Name,'')) AS ClientName,
+                        MAX(m.Sent_At) AS LastActivity,
                         (
-                            SELECT TOP 1 Mensaje
-                            FROM   ChatMensajes sub
-                            WHERE  sub.ClienteId = m.ClienteId
-                            ORDER  BY sub.FechaHora DESC
-                        ) AS UltimoMensaje,
-                        SUM(CASE WHEN m.Leido = 0 AND m.EmisorId = m.ClienteId THEN 1 ELSE 0 END)
-                            AS MensajesNoLeidos
-                    FROM  ChatMensajes m
-                    INNER JOIN MonthEnd_Users u ON u.User_Id = m.ClienteId
-                    GROUP BY m.ClienteId, u.First_Name, u.Last_Name
-                    ORDER BY MensajesNoLeidos DESC, UltimaActividad DESC", conn)) {
+                            SELECT TOP 1 sub.Message
+                            FROM   MonthEnd_Chat_Messages sub
+                            WHERE  sub.Client_Id = m.Client_Id
+                            ORDER  BY sub.Sent_At DESC
+                        ) AS LastMessage,
+                        SUM(CASE WHEN m.Is_Read = 0 AND m.Sender_Id = m.Client_Id THEN 1 ELSE 0 END)
+                            AS UnreadCount
+                    FROM  MonthEnd_Chat_Messages m
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = m.Client_Id
+                    GROUP BY m.Client_Id, u.First_Name, u.Last_Name
+                    ORDER BY UnreadCount DESC, LastActivity DESC", conn)) {
 
                     conn.Open();
                     using (var dr = cmd.ExecuteReader()) {
                         while (dr.Read()) {
-                            result.Add(new ChatClienteViewModel {
-                                ClienteId        = dr.GetInt32(0),
-                                ClienteNombre    = dr.GetString(1)?.Trim() ?? "Usuario",
-                                UltimaActividad  = dr.GetDateTime(2),
-                                UltimoMensaje    = dr.IsDBNull(3) ? "" : dr.GetString(3),
-                                MensajesNoLeidos = dr.GetInt32(4)
+                            result.Add(new ChatClientViewModel {
+                                ClientId     = dr.GetInt32(0),
+                                ClientName   = dr.GetString(1)?.Trim() ?? "Usuario",
+                                LastActivity = dr.GetDateTime(2),
+                                LastMessage  = dr.IsDBNull(3) ? "" : dr.GetString(3),
+                                UnreadCount  = dr.GetInt32(4)
                             });
                         }
                     }

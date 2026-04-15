@@ -40,23 +40,23 @@ namespace Close_Portal.Pages.Support {
                 if (session["UserId"] == null)
                     return new { success = false, message = "Sesión expirada." };
 
-                int clienteId = (int)session["UserId"];
-                var da        = new ChatDataAccess();
-                var mensajes  = da.GetHistorial(clienteId);
+                int clientId = (int)session["UserId"];
+                var da       = new ChatDataAccess();
+                var messages = da.GetHistorial(clientId);
 
                 var dto = new List<object>();
-                foreach (var m in mensajes) {
+                foreach (var m in messages) {
                     dto.Add(new {
-                        id           = m.Id,
-                        emisorNombre = m.EmisorNombre,
-                        mensaje      = m.Mensaje,
-                        fechaHora    = m.FechaHora.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        leido        = m.Leido,
-                        esCliente    = m.EsCliente
+                        messageId  = m.MessageId,
+                        senderName = m.SenderName,
+                        message    = m.Message,
+                        sentAt     = m.SentAt.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        isRead     = m.IsRead,
+                        isClient   = m.IsClient
                     });
                 }
 
-                return new { success = true, mensajes = dto };
+                return new { success = true, messages = dto };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[Support.GetHistorial] ERROR: {ex.Message}");

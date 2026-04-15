@@ -56,15 +56,15 @@ namespace Close_Portal.Pages.IT {
                 var dto = new List<object>();
                 foreach (var c in clientes) {
                     dto.Add(new {
-                        clienteId        = c.ClienteId,
-                        clienteNombre    = c.ClienteNombre,
-                        ultimoMensaje    = c.UltimoMensaje,
-                        ultimaActividad  = c.UltimaActividad.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        mensajesNoLeidos = c.MensajesNoLeidos
+                        clientId     = c.ClientId,
+                        clientName   = c.ClientName,
+                        lastMessage  = c.LastMessage,
+                        lastActivity = c.LastActivity.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        unreadCount  = c.UnreadCount
                     });
                 }
 
-                return new { success = true, clientes = dto };
+                return new { success = true, clients = dto };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ITSupport.GetClientes] ERROR: {ex.Message}");
@@ -81,31 +81,31 @@ namespace Close_Portal.Pages.IT {
         /// Solo accesible a agentes IT (Administrador+).
         /// </summary>
         [WebMethod(EnableSession = true)]
-        public static object GetHistorial(int clienteId) {
+        public static object GetHistorial(int clientId) {
             try {
                 if (!TryGetAgent(out _))
                     return new { success = false, message = "Acceso no autorizado." };
 
-                if (clienteId <= 0)
-                    return new { success = false, message = "clienteId inválido." };
+                if (clientId <= 0)
+                    return new { success = false, message = "clientId inválido." };
 
                 var da       = new ChatDataAccess();
-                var mensajes = da.GetHistorial(clienteId);
+                var messages = da.GetHistorial(clientId);
 
                 var dto = new List<object>();
-                foreach (var m in mensajes) {
+                foreach (var m in messages) {
                     dto.Add(new {
-                        id           = m.Id,
-                        emisorId     = m.EmisorId,
-                        emisorNombre = m.EmisorNombre,
-                        mensaje      = m.Mensaje,
-                        fechaHora    = m.FechaHora.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        leido        = m.Leido,
-                        esCliente    = m.EsCliente
+                        messageId  = m.MessageId,
+                        senderId   = m.SenderId,
+                        senderName = m.SenderName,
+                        message    = m.Message,
+                        sentAt     = m.SentAt.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        isRead     = m.IsRead,
+                        isClient   = m.IsClient
                     });
                 }
 
-                return new { success = true, mensajes = dto };
+                return new { success = true, messages = dto };
 
             } catch (Exception ex) {
                 System.Diagnostics.Debug.WriteLine($"[ITSupport.GetHistorial] ERROR: {ex.Message}");
