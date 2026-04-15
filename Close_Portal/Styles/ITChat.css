@@ -627,3 +627,31 @@
         height: 50px;
     }
 }
+
+/* ─── ESTADOS DE ERROR EN ENVÍO ─────────────────────────────── */
+
+/* Aviso temporal de "sin conexión" dentro del área de mensajes */
+.chat-send-error {
+    align-self: center;
+    background: var(--error-color, #e53935);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 80%;
+    animation: chat-fade-in 0.2s ease;
+}
+
+/* Burbuja marcada como fallida (fallo de transporte SignalR) */
+.chat-msg-failed .chat-bubble {
+    opacity: 0.55;
+    background: var(--bg-elevated) !important;
+    color: var(--text-secondary) !important;
+    border: 1px dashed var(--error-color, #e53935) !important;
+}
+
+@keyframes chat-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}

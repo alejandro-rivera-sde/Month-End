@@ -221,23 +221,51 @@
         if (!msgInput) return;
         var texto = msgInput.value.trim();
         if (!texto) return;
+
+        // Verificar conexión ANTES de mostrar el mensaje — evita burbujas huérfanas
+        if ($.connection.hub.state !== HUB_CONNECTED) {
+            showSendError('Sin conexión con el servidor. Intenta de nuevo en unos segundos.');
+            return;
+        }
+
         msgInput.value = '';
 
         if (window.ChatMode === 'client' || window.ChatMode === 'widget') {
-            appendMessage(texto, 'Tú', new Date().toISOString(), true);
+            var bubble = appendMessage(texto, 'Tú', new Date().toISOString(), true);
             scrollToBottom();
-            if ($.connection.hub.state === HUB_CONNECTED) {
-                chatHub.server.enviarMensajeAIT(texto);
-            }
+            chatHub.server.enviarMensajeAIT(texto)
+                .fail(function () { markMessageFailed(bubble); });
 
         } else if (window.ChatMode === 'agent') {
             if (selectedClientId === null) return;
-            appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
+            var bubble = appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
             scrollToBottom();
-            if ($.connection.hub.state === HUB_CONNECTED) {
-                // El servidor resuelve el caseId desde clientId + guard activo
-                chatHub.server.enviarMensajeACliente(selectedClientId, texto);
-            }
+            chatHub.server.enviarMensajeACliente(selectedClientId, texto)
+                .fail(function () { markMessageFailed(bubble); });
+        }
+    }
+
+    function showSendError(msg) {
+        var c = document.getElementById('chatMessages');
+        if (!c) return;
+        var el = document.createElement('div');
+        el.className = 'chat-send-error';
+        el.textContent = msg;
+        c.appendChild(el);
+        scrollToBottom();
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+    }
+
+    function markMessageFailed(msgDiv) {
+        if (!msgDiv) return;
+        msgDiv.classList.add('chat-msg-failed');
+        var bubble = msgDiv.querySelector('.chat-bubble');
+        if (bubble) {
+            var errEl = document.createElement('div');
+            errEl.className = 'chat-time';
+            errEl.style.color = 'var(--error-color, #e53935)';
+            errEl.textContent = 'No enviado — intenta de nuevo';
+            bubble.appendChild(errEl);
         }
     }
 
@@ -475,6 +503,7 @@
 
         msgDiv.appendChild(bubble);
         container.appendChild(msgDiv);
+        return msgDiv;
     }
 
     function showLoadingMessages() {
