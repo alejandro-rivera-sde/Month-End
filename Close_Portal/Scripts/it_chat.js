@@ -2,17 +2,20 @@
 // it_chat.js — Chat IT Support en tiempo real (SignalR 2.x + jQuery)
 //
 // Modos de operación (window.ChatMode):
-//   'client'  → Support.aspx    — página dedicada, el usuario chatea con IT
-//   'agent'   → ITSupport.aspx  — panel del agente, gestiona casos del cierre
-//   'widget'  → ChatWidget.ascx — widget flotante embebido en páginas existentes
+//   'client'       → Support.aspx     — página dedicada, usuario → IT
+//   'agent'        → ITSupport.aspx   — historial de casos (visor de registros)
+//   'widget'       → cualquier página — widget flotante, usuario → IT
+//   'agent-widget' → cualquier página — widget flotante, agente recibe y responde
 //
-// Modelo de datos:
-//   Cada conversación es un "caso" vinculado al guard/cierre activo.
-//   Los casos persisten durante todo el cierre aunque el agente cierre la página.
+// El agente IT usa 'agent-widget' como interfaz PRINCIPAL: recibe mensajes en
+// tiempo real en la burbuja flotante y puede responder sin cambiar de página.
+// 'agent' (ITSupport.aspx) es un visor de registros opcional.
 //
 // Variables de configuración (window.*):
+//   ChatMode          — modo de operación (resuelto por ChatWidget.ascx.cs)
 //   ChatWebMethodBase — URL base para WebMethods del chat
-//   AgentName         — nombre del agente (solo modo 'agent')
+//   AgentName         — nombre del agente (modos agent / agent-widget)
+//   CurrentUserId     — inyectado por DashboardLayout.Master
 //
 // Dependencias cargadas por DashboardLayout.Master ANTES que este script:
 //   jQuery 3.x · jquery.signalR-2.4.3.min.js · /signalr/hubs
@@ -24,14 +27,15 @@
     var HUB_CONNECTED    = 1;
     var chatHub          = null;
 
-    // Caso/cliente seleccionado actualmente (modo 'agent')
+    // Caso/cliente seleccionado actualmente (modos agent / agent-widget)
     var selectedCaseId   = null;
     var selectedClientId = null;
 
-    // Estado del widget (modo 'widget')
-    var widgetOpen   = false;
-    var widgetLoaded = false;
-    var widgetUnread = 0;
+    // Estado del widget (modos widget / agent-widget)
+    var widgetOpen       = false;
+    var widgetLoaded     = false;
+    var widgetUnread     = 0;
+    var widgetInConvView = false; // agent-widget: ¿vista de conversación activa?
 
     // ==========================================================================
     // FUNCIONES PÚBLICAS DEL WIDGET
@@ -42,14 +46,26 @@
         else            { openChatWidgetInternal();  }
     };
 
-    window.closeChatWidget = function () {
-        closeChatWidgetInternal();
+    window.closeChatWidget = function () { closeChatWidgetInternal(); };
+
+    // Volver a la lista de casos (agent-widget: conversación → lista)
+    window.widgetGoBack = function () {
+        selectedCaseId   = null;
+        selectedClientId = null;
+        widgetInConvView = false;
+
+        var caseView = document.getElementById('widgetCaseListView');
+        var convView = document.getElementById('widgetConvView');
+        if (caseView) caseView.style.display = 'flex';
+        if (convView) convView.style.display  = 'none';
+
+        clearMessages();
     };
 
     function openChatWidgetInternal() {
         widgetOpen = true;
-        var panel = document.getElementById('chatWidgetPanel');
-        var icon  = document.getElementById('chatFabIcon');
+        var panel  = document.getElementById('chatWidgetPanel');
+        var icon   = document.getElementById('chatFabIcon');
         if (panel) {
             panel.style.display = 'flex';
             panel.classList.remove('widget-anim');
@@ -61,7 +77,11 @@
 
         if (!widgetLoaded) {
             widgetLoaded = true;
-            loadHistorialCliente();
+            if (window.ChatMode === 'agent-widget') {
+                loadCases();
+            } else {
+                loadHistorialCliente();
+            }
         } else {
             scrollToBottom();
         }
@@ -69,10 +89,14 @@
 
     function closeChatWidgetInternal() {
         widgetOpen = false;
-        var panel = document.getElementById('chatWidgetPanel');
-        var icon  = document.getElementById('chatFabIcon');
+        var panel  = document.getElementById('chatWidgetPanel');
+        var icon   = document.getElementById('chatFabIcon');
         if (panel) panel.style.display = 'none';
-        if (icon)  icon.textContent = 'support_agent';
+        if (icon) {
+            icon.textContent = (window.ChatMode === 'agent-widget')
+                ? 'mark_chat_unread'
+                : 'support_agent';
+        }
     }
 
     function clearWidgetBadge() {
@@ -99,17 +123,14 @@
         chatHub = $.connection.chatHub;
 
         // Pasar userId en el query string de la conexión SignalR.
-        // Este valor viene del HTML renderizado por el servidor (window.CurrentUserId),
-        // no de input del cliente. El servidor lo usa como fallback cuando
-        // HttpContext.Session no está disponible en el pipeline OWIN.
+        // El servidor lo usa como fallback cuando Session no está disponible en OWIN.
         // El rol NUNCA se acepta del cliente — ChatHub lo valida en BD.
         if (window.CurrentUserId && window.CurrentUserId !== '0') {
             $.connection.hub.qs = $.connection.hub.qs || {};
             $.connection.hub.qs.chatUserId = window.CurrentUserId;
         }
 
-        // ── Modo CLIENTE: recibe respuestas del agente IT ─────────────────────
-
+        // ── Modo CLIENTE (Support.aspx — página completa) ─────────────────────
         if (window.ChatMode === 'client') {
             chatHub.client.recibirRespuestaIT = function (data) {
                 appendMessage(data.message, data.senderName, data.sentAt, false);
@@ -117,8 +138,7 @@
             };
         }
 
-        // ── Modo WIDGET: igual que cliente, pero con badge si está cerrado ────
-
+        // ── Modo WIDGET (usuario en burbuja flotante) ──────────────────────────
         if (window.ChatMode === 'widget') {
             chatHub.client.recibirRespuestaIT = function (data) {
                 if (widgetOpen) {
@@ -130,26 +150,18 @@
             };
         }
 
-        // ── Modo AGENTE: recibe nuevos mensajes y sincroniza entre pestañas ───
-
+        // ── Modo AGENTE (ITSupport.aspx — visor de registros) ─────────────────
         if (window.ChatMode === 'agent') {
-
-            // Nuevo mensaje de un cliente
             chatHub.client.recibirMensajeDeCliente = function (data) {
                 refreshCaseEntry(
-                    data.caseId,
-                    data.clientId,
-                    data.clientName,
-                    data.message,
+                    data.caseId, data.clientId, data.clientName, data.message,
                     data.caseId !== selectedCaseId
                 );
-
                 if (data.caseId === selectedCaseId) {
                     appendMessage(data.message, data.clientName, data.sentAt, false);
                     scrollToBottom();
-                    if ($.connection.hub.state === HUB_CONNECTED) {
+                    if ($.connection.hub.state === HUB_CONNECTED)
                         chatHub.server.marcarLeido(selectedCaseId);
-                    }
                 } else {
                     if (typeof showOsNotification === 'function') {
                         showOsNotification(
@@ -161,7 +173,6 @@
                 }
             };
 
-            // Respuesta enviada por otro agente (sincronización multi-pestaña)
             chatHub.client.mensajeEnviado = function (data) {
                 if (data.caseId === selectedCaseId) {
                     var esPropio = (parseInt(data.senderId) === parseInt(window.CurrentUserId));
@@ -173,11 +184,50 @@
             };
         }
 
-        // ── Conexión + membresía de grupos ────────────────────────────────────
-        // joinGroups()        → grupo personal "user-{id}" (todos los modos)
-        // registerAsITAgent() → grupo "it-agents"  (solo modo agent)
+        // ── Modo AGENT-WIDGET (interfaz principal del agente) ──────────────────
+        // El agente recibe mensajes en la burbuja en cualquier página y responde
+        // sin salir de donde está. Patrón Intercom / Drift / Zendesk.
+        if (window.ChatMode === 'agent-widget') {
 
-        var isAgentMode = (window.ChatMode === 'agent');
+            chatHub.client.recibirMensajeDeCliente = function (data) {
+                // ¿Estamos leyendo activamente esta conversación?
+                var inThisConv = (data.caseId === selectedCaseId
+                               && widgetOpen
+                               && widgetInConvView);
+
+                // Actualizar lista de casos siempre (aunque el widget esté cerrado)
+                refreshCaseEntry(
+                    data.caseId, data.clientId, data.clientName, data.message,
+                    !inThisConv
+                );
+
+                if (inThisConv) {
+                    appendMessage(data.message, data.clientName, data.sentAt, false);
+                    scrollToBottom();
+                    if ($.connection.hub.state === HUB_CONNECTED)
+                        chatHub.server.marcarLeido(selectedCaseId);
+                } else {
+                    addWidgetUnread(); // badge sobre el FAB
+                }
+            };
+
+            // Sincronizar respuesta propia en otra pestaña del agente
+            chatHub.client.mensajeEnviado = function (data) {
+                if (data.caseId === selectedCaseId && widgetOpen && widgetInConvView) {
+                    var isOwn = (parseInt(data.senderId) === parseInt(window.CurrentUserId));
+                    if (!isOwn) {
+                        appendMessage(data.message, data.senderName, data.sentAt, true);
+                        scrollToBottom();
+                    }
+                }
+            };
+        }
+
+        // ── Conexión + membresía de grupos ────────────────────────────────────
+        // joinGroups()         → grupo personal "user-{id}" (todos los modos)
+        // registerAsITAgent()  → grupo "it-agents"  (agent y agent-widget)
+
+        var isAgentMode = (window.ChatMode === 'agent' || window.ChatMode === 'agent-widget');
 
         $.connection.hub.stateChanged(function (change) {
             if (change.newState === HUB_CONNECTED) {
@@ -187,6 +237,7 @@
             updateConnectionStatus(change.newState === HUB_CONNECTED);
         });
 
+        // Si el hub ya estaba conectado cuando se cargó este script
         if ($.connection.hub.state === HUB_CONNECTED) {
             chatHub.server.joinGroups();
             if (isAgentMode) chatHub.server.registerAsITAgent();
@@ -200,12 +251,13 @@
 
     function onDomReady() {
         initSendControls();
+
         if (window.ChatMode === 'client') {
             loadHistorialCliente();
         } else if (window.ChatMode === 'agent') {
             loadCases();
         }
-        // Modo 'widget': carga diferida en openChatWidgetInternal()
+        // Modos 'widget' y 'agent-widget': carga diferida al abrir el widget
     }
 
     // ==========================================================================
@@ -246,7 +298,7 @@
             chatHub.server.enviarMensajeAIT(texto)
                 .fail(function () { markMessageFailed(bubble); });
 
-        } else if (window.ChatMode === 'agent') {
+        } else if (window.ChatMode === 'agent' || window.ChatMode === 'agent-widget') {
             if (selectedClientId === null) return;
             var bubble = appendMessage(texto, window.AgentName || 'IT Support', new Date().toISOString(), true);
             scrollToBottom();
@@ -313,8 +365,15 @@
     }
 
     // ==========================================================================
-    // LISTA DE CASOS — MODO AGENTE
+    // LISTA DE CASOS — MODOS AGENTE / AGENT-WIDGET
     // ==========================================================================
+
+    // Devuelve el contenedor de la lista de casos según el modo activo
+    function getClientListEl() {
+        return document.getElementById(
+            window.ChatMode === 'agent-widget' ? 'widgetClientList' : 'clientList'
+        );
+    }
 
     function loadCases() {
         $.ajax({
@@ -332,7 +391,7 @@
     }
 
     function renderCaseList(cases) {
-        var list = document.getElementById('clientList');
+        var list = getClientListEl();
         if (!list) return;
         list.innerHTML = '';
         if (cases.length === 0) {
@@ -385,7 +444,7 @@
     }
 
     function refreshCaseEntry(caseId, clientId, clientName, message, addBadge) {
-        var list     = document.getElementById('clientList');
+        var list     = getClientListEl();
         var existing = list ? list.querySelector('[data-case-id="' + caseId + '"]') : null;
 
         if (existing) {
@@ -429,30 +488,63 @@
         selectedCaseId   = caseId;
         selectedClientId = clientId;
 
-        document.querySelectorAll('.client-item').forEach(function (item) {
-            item.classList.toggle('active', parseInt(item.dataset.caseId) === caseId);
-        });
+        if (window.ChatMode === 'agent-widget') {
+            widgetInConvView = true;
 
-        var activeItem = document.querySelector('[data-case-id="' + caseId + '"]');
-        if (activeItem) {
-            var badge = activeItem.querySelector('.client-badge');
-            if (badge) badge.remove();
+            // Cambiar a la vista de conversación
+            var caseView = document.getElementById('widgetCaseListView');
+            var convView = document.getElementById('widgetConvView');
+            if (caseView) caseView.style.display = 'none';
+            if (convView) convView.style.display  = 'flex';
+
+            // Mostrar nombre y avatar del cliente en el sub-header
+            var nameEl   = document.getElementById('widgetClientName');
+            var avatarEl = document.getElementById('widgetConvAvatar');
+            if (nameEl)   nameEl.textContent   = clientName;
+            if (avatarEl) avatarEl.textContent = clientName.charAt(0).toUpperCase();
+
+            // Quitar badge del item de esta conversación
+            var list = getClientListEl();
+            if (list) {
+                var item = list.querySelector('[data-case-id="' + caseId + '"]');
+                if (item) {
+                    var badge = item.querySelector('.client-badge');
+                    if (badge) badge.remove();
+                }
+            }
+
+            if ($.connection.hub.state === HUB_CONNECTED)
+                chatHub.server.marcarLeido(caseId);
+
+            loadHistorialAgente(clientId);
+
+        } else {
+            // Modo 'agent' (ITSupport.aspx — panel completo de dos columnas)
+            document.querySelectorAll('.client-item').forEach(function (item) {
+                item.classList.toggle('active', parseInt(item.dataset.caseId) === caseId);
+            });
+
+            var activeItem = document.querySelector('[data-case-id="' + caseId + '"]');
+            if (activeItem) {
+                var badge = activeItem.querySelector('.client-badge');
+                if (badge) badge.remove();
+            }
+
+            var chatPanel    = document.getElementById('chatPanel');
+            var noneSelected = document.getElementById('noneSelected');
+            if (chatPanel)    chatPanel.style.display = 'flex';
+            if (noneSelected) noneSelected.style.display = 'none';
+
+            var clientNameEl = document.getElementById('chatClientName');
+            var convAvatarEl = document.getElementById('convAvatar');
+            if (clientNameEl) clientNameEl.textContent = clientName;
+            if (convAvatarEl) convAvatarEl.textContent = clientName.charAt(0).toUpperCase();
+
+            if ($.connection.hub.state === HUB_CONNECTED)
+                chatHub.server.marcarLeido(caseId);
+
+            loadHistorialAgente(clientId);
         }
-
-        var chatPanel    = document.getElementById('chatPanel');
-        var noneSelected = document.getElementById('noneSelected');
-        if (chatPanel)    chatPanel.style.display = 'flex';
-        if (noneSelected) noneSelected.style.display = 'none';
-
-        var clientNameEl = document.getElementById('chatClientName');
-        var convAvatarEl = document.getElementById('convAvatar');
-        if (clientNameEl) clientNameEl.textContent = clientName;
-        if (convAvatarEl) convAvatarEl.textContent = clientName.charAt(0).toUpperCase();
-
-        if ($.connection.hub.state === HUB_CONNECTED) {
-            chatHub.server.marcarLeido(caseId);
-        }
-        loadHistorialAgente(clientId);
     }
 
     function loadHistorialAgente(clientId) {
@@ -469,6 +561,8 @@
                 clearMessages();
                 if (d && d.success && d.messages && d.messages.length > 0) {
                     d.messages.forEach(function (m) {
+                        // isClient=true → el cliente escribió (aparece a la izquierda para el agente)
+                        // isClient=false → el agente escribió (aparece a la derecha)
                         appendMessage(m.message, m.senderName, m.sentAt, !m.isClient);
                     });
                     scrollToBottom();
@@ -552,7 +646,7 @@
     function updateConnectionStatus(connected) {
         var dot  = document.getElementById('chatStatusDot');
         var text = document.getElementById('chatStatusText');
-        if (dot)  dot.className   = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
+        if (dot)  dot.className    = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
         if (text) text.textContent = connected ? 'En línea' : 'Reconectando...';
     }
 

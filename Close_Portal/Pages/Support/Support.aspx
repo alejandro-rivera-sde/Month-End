@@ -6,7 +6,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalCSS" ContentPlaceHolderID="AdditionalCSS" runat="server">
-    <link href='<%= ResolveUrl("~/Styles/ITChat.css") %>' rel="stylesheet" type="text/css" />
 </asp:Content>
 
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
@@ -69,10 +68,11 @@
         SEGURIDAD: el usuario real se lee siempre desde Session en el servidor.
         Estas variables solo controlan la UI.
     -->
+    <%-- ChatMode para esta página dedicada — sobreescribe el valor del widget
+         antes de que it_chat.js (cargado desde master) se ejecute. --%>
     <script>
         window.ChatWebMethodBase = '<%= ResolveUrl("~/Pages/Support/Support.aspx/") %>';
         window.ChatMode  = 'client';
-        window.AgentName = '';  // no aplica en modo cliente
+        window.AgentName = '';
     </script>
-    <script src='<%= ResolveUrl("~/Scripts/it_chat.js") %>'></script>
 </asp:Content>

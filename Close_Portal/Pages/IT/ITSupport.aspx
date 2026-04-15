@@ -6,7 +6,6 @@
 </asp:Content>
 
 <asp:Content ID="AdditionalCSS" ContentPlaceHolderID="AdditionalCSS" runat="server">
-    <link href='<%= ResolveUrl("~/Styles/ITChat.css") %>' rel="stylesheet" type="text/css" />
 </asp:Content>
 
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
@@ -97,10 +96,11 @@
         SEGURIDAD: el RoleId y la autorización se validan en ITSupportPage.cs.
         Estas variables solo controlan la UI.
     -->
+    <%-- ChatMode para esta página dedicada — sobreescribe el valor del widget
+         antes de que it_chat.js (cargado desde master) se ejecute. --%>
     <script>
         window.ChatWebMethodBase = '<%= ResolveUrl("~/Pages/IT/ITSupport.aspx/") %>';
         window.ChatMode  = 'agent';
         window.AgentName = '<%= System.Web.HttpUtility.JavaScriptStringEncode(Session["FullName"]?.ToString() ?? "IT Support") %>';
     </script>
-    <script src='<%= ResolveUrl("~/Scripts/it_chat.js") %>'></script>
 </asp:Content>

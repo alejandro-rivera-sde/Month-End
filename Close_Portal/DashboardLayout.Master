@@ -1,4 +1,5 @@
 ﻿<%@ Master Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardLayout.master.cs" Inherits="Close_Portal.DashboardLayout" %>
+<%@ Register TagPrefix="uc" TagName="ChatWidget" Src="~/Controls/ChatWidget.ascx" %>
 
 <asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
     <asp:ContentPlaceHolder ID="PageTitle" runat="server">
@@ -15,6 +16,9 @@
     <!-- Content Placeholder para CSS adicional de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalCSS" runat="server">
     </asp:ContentPlaceHolder>
+
+    <!-- Chat IT Support — estilos universales (widget + páginas dedicadas) -->
+    <link href='<%= ResolveUrl("~/Styles/ITChat.css") %>' rel="stylesheet" type="text/css" />
 </asp:Content>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
@@ -245,6 +249,9 @@
         </div>
     </div>
 
+    <!-- Chat IT Support — widget flotante universal (suprimido en páginas de chat dedicadas) -->
+    <uc:ChatWidget ID="chatWidget1" runat="server" />
+
     <!-- Logout Confirmation Modal (FIJO) -->
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -299,6 +306,11 @@
     <!-- Content Placeholder para scripts adicionales de páginas hijas -->
     <asp:ContentPlaceHolder ID="AdditionalScripts" runat="server">
     </asp:ContentPlaceHolder>
+
+    <!-- Chat IT Support — se carga DESPUÉS de AdditionalScripts para recoger
+         window.ChatMode definitivo (Support.aspx y ITSupport.aspx lo sobreescriben
+         en AdditionalScripts; el widget lo fija en el body antes de los scripts) -->
+    <script src='<%= ResolveUrl("~/Scripts/it_chat.js") %>'></script>
 
     <!-- Footer deslizante -->
     <script>
