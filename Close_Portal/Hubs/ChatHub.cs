@@ -102,7 +102,7 @@ namespace Close_Portal.Hubs {
             string nombre    = GetCurrentFullName();
             var    timestamp = DateTime.Now;
 
-            int mensajeId = GuardarMensaje(clientId: clienteId, senderId: emisorId,
+            int mensajeId = GuardarMensaje(clientId: clientId, senderId: emisorId,
                                            message:  mensaje.Trim());
 
             // Push al cliente específico (grupo personal)
