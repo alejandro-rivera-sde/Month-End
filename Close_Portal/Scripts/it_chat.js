@@ -165,20 +165,26 @@
             };
         }
 
-        // ── Estado de conexión + garantía de membresía de grupo ───────
-        // chatHub.server.joinGroups() es el mecanismo principal para unirse
-        // a "it-agents" / "user-{id}", porque OnConnected() en el servidor
-        // puede ejecutarse antes de que la sesión OWIN esté disponible.
+        // ── Estado de conexión + membresía de grupos ─────────────────
+        // joinGroups()        → grupo personal "user-{id}" (todos los modos)
+        // registerAsITAgent() → grupo "it-agents" (solo modo agent, ITSupport.aspx)
+        //
+        // Se llaman en stateChanged (no en OnConnected del servidor) porque
+        // OnConnected puede ejecutarse antes de que Session esté disponible en OWIN.
+
+        var isAgentMode = (window.ChatMode === 'agent');
 
         $.connection.hub.stateChanged(function (change) {
             if (change.newState === HUB_CONNECTED) {
                 chatHub.server.joinGroups();
+                if (isAgentMode) chatHub.server.registerAsITAgent();
             }
             updateConnectionStatus(change.newState === HUB_CONNECTED);
         });
 
         if ($.connection.hub.state === HUB_CONNECTED) {
             chatHub.server.joinGroups();
+            if (isAgentMode) chatHub.server.registerAsITAgent();
             updateConnectionStatus(true);
         }
     }

@@ -54,22 +54,25 @@ namespace Close_Portal.Hubs {
             return base.OnDisconnected(stopCalled);
         }
 
-        // ── JoinGroups: suscribir al grupo correcto según rol ─────────
+        // ── JoinGroups: une al grupo personal del usuario ────────────
         // Llamado desde OnConnected() Y explícitamente por el cliente
-        // tras hub.start(), garantizando acceso a Session en ambos casos.
+        // tras hub.start(). Solo une a "user-{id}" — el grupo personal
+        // que recibe respuestas dirigidas a este usuario.
 
         public void JoinGroups() {
             int userId = GetCurrentUserId();
-            int roleId = GetCurrentRoleId();
             if (userId <= 0) return;
-
-            // Grupo personal: recibe respuestas de agentes IT
             Groups.Add(Context.ConnectionId, "user-" + userId);
+        }
 
-            // Agentes IT (Administrador=3, Owner=4): escuchan el grupo global
-            if (roleId >= Core.RoleLevel.Administrador) {
-                Groups.Add(Context.ConnectionId, "it-agents");
-            }
+        // ── RegisterAsITAgent: une al grupo de agentes IT activos ────
+        // Solo llamado desde ITSupport.aspx (ChatMode='agent').
+        // Garantiza que únicamente la persona en el panel de IT
+        // recibe los mensajes entrantes de los usuarios.
+
+        public void RegisterAsITAgent() {
+            if (GetCurrentRoleId() < Core.RoleLevel.Administrador) return;
+            Groups.Add(Context.ConnectionId, "it-agents");
         }
 
         // ── Paso 2a: Cliente → IT Support ────────────────────────────
