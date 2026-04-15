@@ -9,6 +9,7 @@ namespace Close_Portal.Pages {
     public partial class Login : Page {
 
         protected void Page_Load(object sender, EventArgs e) {
+            // Si el usuario ya está logueado, lo mandamos al portal
             if (Session["UserId"] != null && !IsPostBack) {
                 System.Diagnostics.Debug.WriteLine("Ya hay sesión activa - Redirigiendo a Dashboard");
                 Response.Redirect("~/live");

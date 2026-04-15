@@ -1,19 +1,10 @@
 ﻿// ============================================================================
-// LOGIN.JS
+// LOGIN.JS - Versión Popup Clásico (Estable)
 // ============================================================================
-
-// AppRoot y LoginWebMethodBase son inyectados por Login.aspx desde el servidor
-// usando ResolveUrl — siempre correctos independientemente de la ruta amigable.
-// window.AppRoot            = resuelto por servidor
-// window.LoginWebMethodBase = resuelto por servidor
 
 const GOOGLE_CLIENT_ID = "529272784814-e2o5s7m1fscqhssu78s5efb4feg6h2em.apps.googleusercontent.com";
-
 let isGoogleMode = true;
 
-// ============================================================================
-// Inicialización
-// ============================================================================
 window.onload = function () {
     initializeGoogleSignIn();
     initializeTabToggle();
@@ -24,7 +15,8 @@ function initializeGoogleSignIn() {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         auto_select: false,
-        cancel_on_tap_outside: true
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: false // <--- APAGADO para evitar bloqueos del navegador
     });
 
     google.accounts.id.renderButton(
@@ -41,37 +33,41 @@ function initializeGoogleSignIn() {
 }
 
 // ============================================================================
-// Toggle del Tab
+// Flujo Google
 // ============================================================================
-function initializeTabToggle() {
-    var toggleBtn = document.getElementById('toggleLoginMode');
-    var tabText = document.getElementById('tabText');
-    var googleSection = document.getElementById('googleLoginSection');
-    var standardSection = document.getElementById('standardLoginSection');
-
-    if (toggleBtn) {
-        toggleBtn.addEventListener('dblclick', function () {
-            isGoogleMode = !isGoogleMode;
-            googleSection.style.display = isGoogleMode ? 'block' : 'none';
-            standardSection.style.display = isGoogleMode ? 'none' : 'block';
-            tabText.textContent = isGoogleMode ? 'Login' : 'Google';
-            hideMessages();
-        });
+function handleGoogleResponse(response) {
+    if (!response.credential) {
+        showError("No se recibió token de Google");
+        return;
     }
+    validateGoogleLogin(response.credential);
+}
 
-    var btnStandardLogin = document.getElementById('btnStandardLogin');
-    if (btnStandardLogin)
-        btnStandardLogin.addEventListener('click', validateStandardLogin);
+function validateGoogleLogin(idToken) {
+    showLoading(true);
+    hideMessages();
 
-    var passwordInput = document.getElementById('passwordStandard');
-    if (passwordInput)
-        passwordInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') validateStandardLogin();
-        });
+    $.ajax({
+        type: "POST",
+        url: window.LoginWebMethodBase + 'ValidarLoginGoogle',
+        data: JSON.stringify({ request: { IdToken: idToken } }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            showLoading(false);
+            var result = response.d;
+            if (result && result.Result) result = result.Result;
+            handleLoginResponse(result);
+        },
+        error: function () {
+            showLoading(false);
+            showError("Error de comunicación con el servidor.");
+        }
+    });
 }
 
 // ============================================================================
-// Login Estándar
+// Flujo Estándar
 // ============================================================================
 function validateStandardLogin() {
     var email = document.getElementById('emailStandard').value;
@@ -103,41 +99,14 @@ function validateStandardLogin() {
 }
 
 // ============================================================================
-// Callback de Google
+// Respuesta Compartida
 // ============================================================================
-function handleGoogleResponse(response) {
-    if (!response.credential) { showError("No se recibió token de Google"); return; }
-    validateGoogleLogin(response.credential);
-}
-
-function validateGoogleLogin(idToken) {
-    showLoading(true);
-    hideMessages();
-
-    $.ajax({
-        type: "POST",
-        url: window.LoginWebMethodBase + 'ValidarLoginGoogle',
-        data: JSON.stringify({ request: { IdToken: idToken } }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function (response) {
-            showLoading(false);
-            var result = response.d;
-            if (result && result.Result) result = result.Result;
-            handleLoginResponse(result);
-        },
-        error: function () {
-            showLoading(false);
-            showError("Error de comunicación. Intente nuevamente.");
-        }
-    });
-}
-
 function handleLoginResponse(result) {
     if (result && result.Success) {
         showSuccess('¡Bienvenido! ' + (result.Email || result.Username || ''));
         setTimeout(function () {
-            window.location.href = window.AppRoot + 'live';
+            // location.replace evita que el usuario regrese al login usando el botón "Atrás"
+            window.location.replace(window.AppRoot + 'live');
         }, 1000);
     } else {
         showError((result && result.Message) || "Error al iniciar sesión");
@@ -145,25 +114,48 @@ function handleLoginResponse(result) {
 }
 
 // ============================================================================
-// UI
+// Toggle UI
 // ============================================================================
+function initializeTabToggle() {
+    var toggleBtn = document.getElementById('toggleLoginMode');
+    var tabText = document.getElementById('tabText');
+    var googleSection = document.getElementById('googleLoginSection');
+    var standardSection = document.getElementById('standardLoginSection');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('dblclick', function () {
+            isGoogleMode = !isGoogleMode;
+            googleSection.style.display = isGoogleMode ? 'block' : 'none';
+            standardSection.style.display = isGoogleMode ? 'none' : 'block';
+            tabText.textContent = isGoogleMode ? 'Login' : 'Google';
+            hideMessages();
+        });
+    }
+
+    var btnStandardLogin = document.getElementById('btnStandardLogin');
+    if (btnStandardLogin) btnStandardLogin.addEventListener('click', validateStandardLogin);
+
+    var passwordInput = document.getElementById('passwordStandard');
+    if (passwordInput)
+        passwordInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') validateStandardLogin();
+        });
+}
+
 function showError(message) {
     var el = document.getElementById("errorMessage");
     el.textContent = message;
     el.style.display = "block";
 }
-
 function showSuccess(message) {
     var el = document.getElementById("successMessage");
     el.textContent = message;
     el.style.display = "block";
 }
-
 function hideMessages() {
     document.getElementById("errorMessage").style.display = "none";
     document.getElementById("successMessage").style.display = "none";
 }
-
 function showLoading(show) {
     var el = document.getElementById("loading");
     if (el) el.style.display = show ? "block" : "none";
