@@ -39,25 +39,37 @@ namespace Close_Portal.Hubs {
             return session?["FullName"]?.ToString() ?? "Usuario";
         }
 
-        // ── OnConnected: suscribir a grupos según rol ─────────────────
+        // ── OnConnected: intento inicial de suscribir a grupos ───────
+        // NOTA: HttpContext.Session puede ser null en OnConnected() con OWIN.
+        // El cliente llama también a JoinGroups() explícitamente después de
+        // hub.start() para garantizar la membresía incluso si falla aquí.
 
         public override Task OnConnected() {
-            int userId = GetCurrentUserId();
-            if (userId > 0) {
-                // Grupo personal: recibe mensajes directos de agentes IT
-                Groups.Add(Context.ConnectionId, "user-" + userId);
-
-                // Agentes IT (Administrador=3, Owner=4): también escuchan el grupo global
-                if (GetCurrentRoleId() >= Core.RoleLevel.Administrador) {
-                    Groups.Add(Context.ConnectionId, "it-agents");
-                }
-            }
+            JoinGroups();
             return base.OnConnected();
         }
 
         // SignalR elimina la conexión de todos los grupos al desconectar
         public override Task OnDisconnected(bool stopCalled) {
             return base.OnDisconnected(stopCalled);
+        }
+
+        // ── JoinGroups: suscribir al grupo correcto según rol ─────────
+        // Llamado desde OnConnected() Y explícitamente por el cliente
+        // tras hub.start(), garantizando acceso a Session en ambos casos.
+
+        public void JoinGroups() {
+            int userId = GetCurrentUserId();
+            int roleId = GetCurrentRoleId();
+            if (userId <= 0) return;
+
+            // Grupo personal: recibe respuestas de agentes IT
+            Groups.Add(Context.ConnectionId, "user-" + userId);
+
+            // Agentes IT (Administrador=3, Owner=4): escuchan el grupo global
+            if (roleId >= Core.RoleLevel.Administrador) {
+                Groups.Add(Context.ConnectionId, "it-agents");
+            }
         }
 
         // ── Paso 2a: Cliente → IT Support ────────────────────────────
