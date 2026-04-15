@@ -28,21 +28,66 @@ namespace Close_Portal.Hubs {
         private static readonly string _connStr =
             ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
 
-        // ── Helpers: identidad desde Session (inmune a manipulación cliente) ──
+        // ── Helpers: identidad del usuario ───────────────────────────────────
+        //
+        // Intenta Session primero. Si no está disponible (habitual en OWIN cuando
+        // el pipeline no inicializa Session para conexiones SignalR), usa el
+        // query string "chatUserId" que it_chat.js establece antes de hub.start()
+        // con el valor server-rendered de window.CurrentUserId.
+        //
+        // El rol nunca se toma del cliente: siempre se valida en BD.
 
         private int GetCurrentUserId() {
             var session = Context.Request.GetHttpContext()?.Session;
-            return session?["UserId"] != null ? (int)session["UserId"] : -1;
+            if (session?["UserId"] != null) return (int)session["UserId"];
+
+            // Fallback: query string establecido por it_chat.js desde window.CurrentUserId
+            return int.TryParse(Context.QueryString["chatUserId"], out int qsId) && qsId > 0
+                ? qsId : -1;
         }
 
         private int GetCurrentRoleId() {
             var session = Context.Request.GetHttpContext()?.Session;
-            return session?["RoleId"] != null ? (int)session["RoleId"] : -1;
+            if (session?["RoleId"] != null) return (int)session["RoleId"];
+
+            // Fallback: consultar BD — el rol nunca se acepta del cliente
+            return GetRoleFromDb(GetCurrentUserId());
         }
 
         private string GetCurrentFullName() {
             var session = Context.Request.GetHttpContext()?.Session;
-            return session?["FullName"]?.ToString() ?? "Usuario";
+            if (session?["FullName"] != null) return session["FullName"].ToString();
+
+            return GetFullNameFromDb(GetCurrentUserId());
+        }
+
+        private int GetRoleFromDb(int userId) {
+            if (userId <= 0) return -1;
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(
+                    "SELECT Role_Id FROM MonthEnd_Users WHERE User_Id = @Id AND Active = 1", conn)) {
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    conn.Open();
+                    var r = cmd.ExecuteScalar();
+                    return r != null ? (int)r : -1;
+                }
+            } catch { return -1; }
+        }
+
+        private string GetFullNameFromDb(int userId) {
+            if (userId <= 0) return "Usuario";
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(
+                    @"SELECT RTRIM(ISNULL(First_Name,'') + ' ' + ISNULL(Last_Name,''))
+                      FROM   MonthEnd_Users WHERE User_Id = @Id", conn)) {
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    conn.Open();
+                    var r = cmd.ExecuteScalar();
+                    return r?.ToString()?.Trim() is string s && s.Length > 0 ? s : "Usuario";
+                }
+            } catch { return "Usuario"; }
         }
 
         // ── OnConnected: une al grupo personal ───────────────────────────────

@@ -98,6 +98,16 @@
         if (typeof $.connection === 'undefined' || !$.connection.chatHub) return;
         chatHub = $.connection.chatHub;
 
+        // Pasar userId en el query string de la conexión SignalR.
+        // Este valor viene del HTML renderizado por el servidor (window.CurrentUserId),
+        // no de input del cliente. El servidor lo usa como fallback cuando
+        // HttpContext.Session no está disponible en el pipeline OWIN.
+        // El rol NUNCA se acepta del cliente — ChatHub lo valida en BD.
+        if (window.CurrentUserId && window.CurrentUserId !== '0') {
+            $.connection.hub.qs = $.connection.hub.qs || {};
+            $.connection.hub.qs.chatUserId = window.CurrentUserId;
+        }
+
         // ── Modo CLIENTE: recibe respuestas del agente IT ─────────────────────
 
         if (window.ChatMode === 'client') {
