@@ -123,6 +123,12 @@ namespace Close_Portal.Hubs {
         // ── Paso 2a: Cliente → IT Support ────────────────────────────────────
         // Cualquier usuario autenticado puede enviar un mensaje.
         // Crea o reutiliza el caso del cierre activo para este cliente.
+        //
+        // ENRUTAMIENTO: el mensaje se envía al grupo personal del agente IT
+        // asignado al spot de la guardia activa ("user-{itAgentId}").
+        // Solo esa persona recibe la notificación, no cualquier admin que esté
+        // conectado. Si el spot aún no tiene agente asignado, se usa "it-agents"
+        // como fallback para no perder el mensaje.
 
         public void EnviarMensajeAIT(string mensaje) {
             int emisorId = GetCurrentUserId();
@@ -134,14 +140,14 @@ namespace Close_Portal.Hubs {
             var    timestamp = DateTime.Now;
             var    da        = new ChatDataAccess();
 
-            int guardId = da.GetActiveGuardId();
-            int caseId  = da.GetOrCreateCase(clientId: emisorId, guardId: guardId);
+            int guardId   = da.GetActiveGuardId();
+            int caseId    = da.GetOrCreateCase(clientId: emisorId, guardId: guardId);
             if (caseId <= 0) return;
 
             int messageId = GuardarMensaje(caseId: caseId, senderId: emisorId,
                                            message: mensaje.Trim());
 
-            Clients.Group("it-agents").recibirMensajeDeCliente(new {
+            var payload = new {
                 messageId,
                 caseId,
                 clientId   = emisorId,
@@ -149,7 +155,16 @@ namespace Close_Portal.Hubs {
                 message    = mensaje.Trim(),
                 sentAt     = timestamp.ToString("yyyy-MM-ddTHH:mm:ss"),
                 isClient   = true
-            });
+            };
+
+            // Enrutar al agente IT del spot de la guardia activa
+            int itAgentId = da.GetActiveITAgentId(guardId);
+            if (itAgentId > 0) {
+                Clients.Group("user-" + itAgentId).recibirMensajeDeCliente(payload);
+            } else {
+                // Fallback: spot vacío — notificar a cualquier admin registrado
+                Clients.Group("it-agents").recibirMensajeDeCliente(payload);
+            }
         }
 
         // ── Paso 2b: IT Agente → Cliente específico ───────────────────────────
@@ -183,8 +198,9 @@ namespace Close_Portal.Hubs {
                 isClient   = false
             });
 
-            // Sincronizar al propio panel IT (por si hay más de una pestaña abierta)
-            Clients.Group("it-agents").mensajeEnviado(new {
+            // Sincronizar al propio agente (otras pestañas abiertas del mismo usuario)
+            // Se usa el grupo personal "user-{emisorId}" para no notificar a otros admins.
+            Clients.Group("user-" + emisorId).mensajeEnviado(new {
                 messageId,
                 caseId,
                 clientId,

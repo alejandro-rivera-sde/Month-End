@@ -61,6 +61,37 @@ namespace Close_Portal.DataAccess {
             }
         }
 
+        /// <summary>
+        /// Returns the User_Id of the IT agent assigned to a spot in the given guard.
+        /// "IT agent" = the spot user whose Role_Id >= 3 (Administrador or Owner),
+        /// matching the same criteria used by RegisterAsITAgent() on the client.
+        /// Returns 0 if the guard has no such spot filled (not yet assigned, etc.).
+        /// Falls back to 0 when guardId is 0 (no active guard).
+        /// </summary>
+        public int GetActiveITAgentId(int guardId) {
+            if (guardId <= 0) return 0;
+            try {
+                using (var conn = new SqlConnection(_connStr))
+                using (var cmd = new SqlCommand(@"
+                    SELECT TOP 1 gs.User_Id
+                    FROM   MonthEnd_Guard_Spots gs
+                    INNER JOIN MonthEnd_Users u ON u.User_Id = gs.User_Id
+                    WHERE  gs.Guard_Id  = @GuardId
+                      AND  gs.User_Id   IS NOT NULL
+                      AND  u.Role_Id   >= 3
+                      AND  u.Active     = 1
+                      AND  u.Locked     = 0", conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? (int)result : 0;
+                }
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[ChatDataAccess.GetActiveITAgentId] ERROR: {ex.Message}");
+                return 0;
+            }
+        }
+
         // ── Casos de soporte ─────────────────────────────────────────────────
 
         /// <summary>
