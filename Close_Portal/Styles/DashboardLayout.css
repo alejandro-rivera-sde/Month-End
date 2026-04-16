@@ -535,6 +535,12 @@
     .sidebar.collapsed ~ .main-content {
         margin-right: 0;
     }
+
+    /* Sidebar off-screen — footer ocupa todo el ancho */
+    .dashboard-footer,
+    .sidebar.collapsed ~ .main-content .dashboard-footer {
+        right: 0;
+    }
 }
 
 @media (max-width: 768px) {
