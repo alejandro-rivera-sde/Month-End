@@ -144,6 +144,7 @@
     <Content Include="Scripts\login.js" />
     <Content Include="Scripts\request_closure.js" />
     <Content Include="Scripts\theme-toggle.js" />
+    <Content Include="Scripts\i18n.js" />
     <Content Include="Scripts\translations.js" />
     <Content Include="Scripts\user_management.js" />
     <Content Include="Scripts\validate_request.js" />
