@@ -72,6 +72,24 @@ const translations = {
         "admin.user_management": "User Management",
         "admin.warehouse_management": "Warehouse Management",
 
+        // Sidebar — IT sections
+        "sidebar.it": "IT",
+        "sidebar.email_service": "Email Service",
+        "sidebar.processes": "Processes",
+        "sidebar.it_support": "IT Support",
+        "sidebar.support_chat": "Support Chat",
+        "sidebar.support": "Support",
+        "sidebar.chat_it": "IT Chat",
+        "sidebar.theme_toggle": "Toggle Theme",
+
+        // Notifications panel
+        "notif.title": "Notifications",
+        "notif.mark_read": "Mark all as read",
+
+        // Logout modal
+        "modal.logout_title": "Sign Out",
+        "modal.logout_confirm": "Are you sure you want to sign out?",
+
         // User Management
         "um.title": "User Management",
         "um.subtitle": "Manage users, roles and WMS access",
@@ -123,6 +141,12 @@ const translations = {
         "um.modal.username_hint": "Display name within the portal",
         "um.modal.department_label": "Department",
         "um.modal.department_placeholder": "Select department",
+        "um.modal.first_name": "First Name",
+        "um.modal.last_name": "Last Name",
+        "um.modal.phone": "Phones",
+        "um.tab.general": "General",
+        "um.tab.wms": "WMS",
+        "um.tab.locations": "Locations",
 
         // Warehouse Management
         "wm.title": "Warehouse Management",
@@ -358,6 +382,46 @@ const translations = {
         "rc.toast.error": "Error sending the request.",
         "rc.err.location_required": "Please select a location.",
 
+        // Email Service
+        "email.title": "Email Service",
+        "email.subtitle": "Administration of notifications, email groups and system alerts",
+        "email.service_control": "Service control",
+        "email.global_notif": "Global notifications",
+        "email.global_notif_desc": "Enable or disable sending all system emails.",
+        "email.state_warning": "State resets on server restart.",
+        "email.toggle_off": "Disabled",
+        "email.toggle_on": "Enabled",
+        "email.test_mode": "Test mode",
+        "email.test_mode_desc": "Redirects all emails to a single test recipient, ignoring actual groups.",
+        "email.test_email_placeholder": "email@domain.com",
+        "email.groups": "Email groups",
+        "email.groups_desc": "Groups configured on the server. To modify them, update the AppSettings on the server.",
+        "email.groups_loading": "Loading groups...",
+        "email.alerts": "Alerts",
+        "email.alerts_enable_all": "Enable all",
+        "email.alerts_disable_all": "Disable all",
+        "email.table_event": "Event",
+        "email.table_recipient": "Recipient",
+        "email.table_status": "Status",
+        "email.table_test": "Test",
+        "email.smtp_config": "SMTP Configuration",
+
+        // IT Support Chat page
+        "itsupport.title": "IT Support Chat",
+        "itsupport.conversations": "Conversations",
+        "itsupport.none_selected": "Select a conversation to start responding",
+        "itsupport.reply_placeholder": "Reply to client... (Enter to send, Shift+Enter for new line)",
+
+        // Support page
+        "support.title": "IT Support",
+        "support.message_placeholder": "Write your message... (Enter to send, Shift+Enter for line break)",
+
+        // Chat Widget
+        "chat.active_conversations": "Active conversations",
+        "chat.agent_placeholder": "Reply to client... (Enter to send)",
+        "chat.user_placeholder": "Write your message... (Enter to send)",
+        "chat.empty_state": "Have a question? The IT team will respond to you.",
+
         // Dashboard — Live
         "db.title": "Dashboard",
         "db.subtitle": "Location status for the active guard shift",
@@ -455,6 +519,24 @@ const translations = {
         "admin.user_management": "Administración de Usuarios",
         "admin.warehouse_management": "Gestión de Bodegas",
 
+        // Sidebar — secciones IT
+        "sidebar.it": "IT",
+        "sidebar.email_service": "Email Service",
+        "sidebar.processes": "Procesos",
+        "sidebar.it_support": "IT Support",
+        "sidebar.support_chat": "Chat de Soporte",
+        "sidebar.support": "Soporte",
+        "sidebar.chat_it": "Chat con IT",
+        "sidebar.theme_toggle": "Cambiar Tema",
+
+        // Panel de notificaciones
+        "notif.title": "Notificaciones",
+        "notif.mark_read": "Marcar como leídas",
+
+        // Modal de cierre de sesión
+        "modal.logout_title": "Cerrar Sesión",
+        "modal.logout_confirm": "¿Estás seguro que deseas cerrar sesión?",
+
         // User Management
         "um.title": "Gestión de Usuarios",
         "um.subtitle": "Administra usuarios, roles y accesos a WMS",
@@ -506,6 +588,12 @@ const translations = {
         "um.modal.username_hint": "Nombre visible dentro del portal",
         "um.modal.department_label": "Departamento",
         "um.modal.department_placeholder": "Seleccionar departamento",
+        "um.modal.first_name": "Nombre",
+        "um.modal.last_name": "Apellido",
+        "um.modal.phone": "Teléfonos",
+        "um.tab.general": "General",
+        "um.tab.wms": "WMS",
+        "um.tab.locations": "Locaciones",
 
         // Warehouse Management
         "wm.title": "Gestión de Bodegas",
@@ -747,6 +835,46 @@ const translations = {
         "rc.toast.sent": "Solicitud enviada correctamente.",
         "rc.toast.error": "Error al enviar la solicitud.",
         "rc.err.location_required": "Selecciona una locación.",
+
+        // Email Service
+        "email.title": "Email Service",
+        "email.subtitle": "Administración de notificaciones, grupos de correo y alertas del sistema",
+        "email.service_control": "Control del servicio",
+        "email.global_notif": "Notificaciones globales",
+        "email.global_notif_desc": "Activa o desactiva el envío de todos los correos del sistema.",
+        "email.state_warning": "El estado se reinicia al reiniciar el servidor.",
+        "email.toggle_off": "Desactivado",
+        "email.toggle_on": "Activado",
+        "email.test_mode": "Modo prueba",
+        "email.test_mode_desc": "Redirige todos los correos a un único destinatario de prueba, ignorando los grupos reales.",
+        "email.test_email_placeholder": "correo@dominio.com",
+        "email.groups": "Grupos de correo",
+        "email.groups_desc": "Grupos configurados en el servidor. Para modificarlos, actualiza los AppSettings en el servidor.",
+        "email.groups_loading": "Cargando grupos...",
+        "email.alerts": "Alertas",
+        "email.alerts_enable_all": "Activar todas",
+        "email.alerts_disable_all": "Desactivar todas",
+        "email.table_event": "Evento",
+        "email.table_recipient": "Destinatario",
+        "email.table_status": "Estado",
+        "email.table_test": "Prueba",
+        "email.smtp_config": "Configuración SMTP",
+
+        // Página IT Support Chat
+        "itsupport.title": "IT Support Chat",
+        "itsupport.conversations": "Conversaciones",
+        "itsupport.none_selected": "Selecciona una conversación para comenzar a responder",
+        "itsupport.reply_placeholder": "Responde al cliente... (Enter para enviar, Shift+Enter para nueva línea)",
+
+        // Página Soporte
+        "support.title": "Soporte IT",
+        "support.message_placeholder": "Escribe tu mensaje... (Enter para enviar, Shift+Enter para salto de línea)",
+
+        // Chat Widget
+        "chat.active_conversations": "Conversaciones activas",
+        "chat.agent_placeholder": "Responde al cliente... (Enter para enviar)",
+        "chat.user_placeholder": "Escribe tu mensaje... (Enter para enviar)",
+        "chat.empty_state": "¿Tienes alguna consulta? El equipo de IT te responderá.",
 
         // Dashboard — Live
         "db.title": "Dashboard",

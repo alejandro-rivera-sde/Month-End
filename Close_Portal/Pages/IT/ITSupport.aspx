@@ -16,7 +16,7 @@
         <div class="chat-page-header">
             <div class="chat-page-title">
                 <span class="material-icons">headset_mic</span>
-                <h2>IT Support Chat</h2>
+                <h2 data-translate-key="itsupport.title">IT Support Chat</h2>
             </div>
         </div>
 
@@ -30,10 +30,10 @@
 
             <!-- ── COLUMNA IZQUIERDA: lista de clientes ── -->
             <div class="chat-client-list-panel">
-                <div class="chat-list-header">Conversaciones</div>
+                <div class="chat-list-header" data-translate-key="itsupport.conversations">Conversaciones</div>
                 <div class="chat-client-list" id="clientList">
                     <!-- Llenado por it_chat.js vía WebMethod + SignalR -->
-                    <div class="chat-empty-list">Cargando...</div>
+                    <div class="chat-empty-list" data-translate-key="common.loading">Cargando...</div>
                 </div>
             </div>
 
@@ -43,7 +43,7 @@
                 <!-- Estado: ningún cliente seleccionado -->
                 <div class="chat-none-selected" id="noneSelected">
                     <span class="material-icons">forum</span>
-                    <p>Selecciona una conversación<br>para comenzar a responder</p>
+                    <p data-translate-key="itsupport.none_selected">Selecciona una conversación para comenzar a responder</p>
                 </div>
 
                 <!-- Panel de chat (oculto hasta seleccionar un cliente) -->
@@ -67,6 +67,7 @@
                                       class="chat-input"
                                       rows="1"
                                       placeholder="Responde al cliente... (Enter para enviar, Shift+Enter para nueva línea)"
+                                      data-translate-key="itsupport.reply_placeholder"
                                       maxlength="2000"></textarea>
                         </div>
                         <button type="button" class="chat-send-btn" id="chatSendBtn" title="Enviar respuesta">

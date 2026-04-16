@@ -16,7 +16,7 @@
         <div class="chat-page-header">
             <div class="chat-page-title">
                 <span class="material-icons">support_agent</span>
-                <h2>Soporte IT</h2>
+                <h2 data-translate-key="support.title">Soporte IT</h2>
             </div>
         </div>
 
@@ -42,6 +42,7 @@
                               class="chat-input"
                               rows="1"
                               placeholder="Escribe tu mensaje... (Enter para enviar, Shift+Enter para salto de línea)"
+                              data-translate-key="support.message_placeholder"
                               maxlength="2000"></textarea>
                 </div>
                 <button type="button" class="chat-send-btn" id="chatSendBtn" title="Enviar mensaje">

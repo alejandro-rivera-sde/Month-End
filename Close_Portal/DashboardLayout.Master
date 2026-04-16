@@ -89,42 +89,42 @@
                 </div>
 
                 <div class="nav-section" id="sectionIT" runat="server">
-                    <div class="nav-section-title">IT</div>
+                    <div class="nav-section-title" data-translate-key="sidebar.it">IT</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="~/email" runat="server">
                                 <span class="material-icons">mail</span>
-                                <span class="nav-text">Email Service</span>
+                                <span class="nav-text" data-translate-key="sidebar.email_service">Email Service</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="~/processes" runat="server">
                                 <span class="material-icons">settings_suggest</span>
-                                <span class="nav-text">Processes</span>
+                                <span class="nav-text" data-translate-key="sidebar.processes">Processes</span>
                             </a>
                         </li>
                     </ul>
                 </div>
 
                 <div class="nav-section" id="sectionITSupport" runat="server">
-                    <div class="nav-section-title">IT Support</div>
+                    <div class="nav-section-title" data-translate-key="sidebar.it_support">IT Support</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="~/it-support" runat="server">
                                 <span class="material-icons">headset_mic</span>
-                                <span class="nav-text">Support Chat</span>
+                                <span class="nav-text" data-translate-key="sidebar.support_chat">Support Chat</span>
                             </a>
                         </li>
                     </ul>
                 </div>
 
                 <div class="nav-section" id="sectionSupport" runat="server">
-                    <div class="nav-section-title">Soporte</div>
+                    <div class="nav-section-title" data-translate-key="sidebar.support">Soporte</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link" href="~/support" runat="server">
                                 <span class="material-icons">support_agent</span>
-                                <span class="nav-text">Chat con IT</span>
+                                <span class="nav-text" data-translate-key="sidebar.chat_it">Chat con IT</span>
                             </a>
                         </li>
                     </ul>
@@ -136,7 +136,7 @@
                         <li class="nav-item">
                             <a class="nav-link theme-toggle" href="javascript:void(0)">
                                 <span class="material-icons">dark_mode</span>
-                                <span class="nav-text">Toggle Theme</span>
+                                <span class="nav-text" data-translate-key="sidebar.theme_toggle">Toggle Theme</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -175,8 +175,8 @@
                         </button>
                         <div id="notifPanel" class="notif-panel" style="display:none;">
                             <div class="notif-panel-header">
-                                <span class="notif-panel-title">Notificaciones</span>
-                                <button type="button" class="notif-mark-read" onclick="markAllRead()">
+                                <span class="notif-panel-title" data-translate-key="notif.title">Notificaciones</span>
+                                <button type="button" class="notif-mark-read" onclick="markAllRead()" data-translate-key="notif.mark_read">
                                     Marcar como leídas
                                 </button>
                             </div>
@@ -230,18 +230,18 @@
                 <div class="modal-header border-0">
                     <h5 class="modal-title" id="logoutModalLabel">
                         <span class="material-icons align-middle me-2" style="color: var(--error-color);">logout</span>
-                        Cerrar Sesión
+                        <span data-translate-key="modal.logout_title">Cerrar Sesión</span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">¿Estás seguro que deseas cerrar sesión?</p>
+                    <p class="mb-0" data-translate-key="modal.logout_confirm">¿Estás seguro que deseas cerrar sesión?</p>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="common.cancel">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="confirmLogout">
                         <span class="material-icons align-middle me-1" style="font-size: 18px;">logout</span>
-                        Cerrar Sesión
+                        <span data-translate-key="common.logout">Cerrar Sesión</span>
                     </button>
                 </div>
             </div>

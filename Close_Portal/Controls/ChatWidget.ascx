@@ -67,7 +67,7 @@
 
     <!-- Vista A: Lista de casos activos (predeterminada) -->
     <div id="widgetCaseListView" class="widget-view-cases">
-        <div class="widget-cases-header">Conversaciones activas</div>
+        <div class="widget-cases-header" data-translate-key="chat.active_conversations">Conversaciones activas</div>
         <div id="widgetClientList" class="chat-client-list">
             <!-- Llenado por it_chat.js al abrir el widget -->
             <div class="chat-empty-list">Cargando...</div>
@@ -97,6 +97,7 @@
                           class="chat-input"
                           rows="1"
                           placeholder="Responde al cliente... (Enter para enviar)"
+                          data-translate-key="chat.agent_placeholder"
                           maxlength="2000"></textarea>
             </div>
             <button type="button" class="chat-send-btn" id="chatSendBtn" title="Enviar respuesta">
@@ -113,7 +114,7 @@
     <div class="chat-messages" id="chatMessages">
         <div class="chat-empty-state">
             <span class="material-icons">chat_bubble_outline</span>
-            <p>¿Tienes alguna consulta?<br>El equipo de IT te responderá.</p>
+            <p data-translate-key="chat.empty_state">¿Tienes alguna consulta? El equipo de IT te responderá.</p>
         </div>
     </div>
 
@@ -123,6 +124,7 @@
                       class="chat-input"
                       rows="1"
                       placeholder="Escribe tu mensaje... (Enter para enviar)"
+                      data-translate-key="chat.user_placeholder"
                       maxlength="2000"></textarea>
         </div>
         <button type="button" class="chat-send-btn" id="chatSendBtn" title="Enviar">
