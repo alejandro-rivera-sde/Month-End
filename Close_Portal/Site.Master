@@ -55,6 +55,9 @@
 
     <script src='<%= ResolveUrl("~/Scripts/theme-toggle.js") %>'></script>
 
+    <script src='<%= ResolveUrl("~/Scripts/translations.js") %>'></script>
+    <script src='<%= ResolveUrl("~/Scripts/i18n.js") %>'></script>
+
     <asp:ContentPlaceHolder ID="ScriptsContent" runat="server">
     </asp:ContentPlaceHolder>
 </body>

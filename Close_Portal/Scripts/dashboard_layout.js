@@ -85,44 +85,13 @@ if (!window.AppRoot) {
         if (!languageToggle) return;
         if (typeof translations === 'undefined') return;
 
-        function translatePage(lang) {
-            const texts = translations[lang];
-            if (!texts) return;
-
-            const elements = document.querySelectorAll('[data-translate-key]');
-            elements.forEach(element => {
-                const key = element.getAttribute('data-translate-key');
-                const translation = texts[key];
-
-                if (translation) {
-                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-                        if (element.hasAttribute('placeholder')) {
-                            element.placeholder = translation;
-                        } else {
-                            element.value = translation;
-                        }
-                    } else {
-                        const navText = element.querySelector('.nav-text');
-                        if (navText) {
-                            navText.textContent = translation;
-                        } else {
-                            element.textContent = translation;
-                        }
-                    }
-                }
-            });
-        }
-
         function applyLanguage(lang) {
-            document.documentElement.setAttribute('data-language', lang);
-            localStorage.setItem('language', lang);
+            window.I18n.apply(lang);
 
             const text = languageToggle.querySelector('.nav-text');
             if (text) {
                 text.textContent = lang === 'es' ? 'Switch to English' : 'Cambiar a español';
             }
-
-            translatePage(lang);
 
             if (typeof window.onLanguageChange === 'function') {
                 window.onLanguageChange(lang);

@@ -19,6 +19,8 @@ const translations = {
         "login.divider": "OR CONTINUE WITH",
         "login.footer": "Need an account?",
         "login.footer.link": "Contact your administrator",
+        "login.support_text": "Need portal access for your @novamex.com account?",
+        "login.support_link": "Submit your ticket here",
         "login.loading": "Validating...",
 
         // Messages
@@ -447,6 +449,10 @@ const translations = {
         "db.status.pending": "In validation",
         "db.status.rejected": "Rejected",
         "db.status.approved": "Closed",
+
+        // Error page
+        "error.countdown_prefix": "Closing session in",
+        "error.countdown_suffix": "seconds...",
     },
 
     es: {
@@ -466,6 +472,8 @@ const translations = {
         "login.divider": "O CONTINÚA CON",
         "login.footer": "¿Necesitas una cuenta?",
         "login.footer.link": "Contacta a tu administrador",
+        "login.support_text": "¿Necesitas acceso al portal para tu cuenta @novamex.com?",
+        "login.support_link": "Levanta tu ticket aquí",
         "login.loading": "Validando...",
 
         // Messages
@@ -901,6 +909,10 @@ const translations = {
         "db.status.pending": "En validación",
         "db.status.rejected": "Rechazada",
         "db.status.approved": "Cerrada",
+
+        // Página de error
+        "error.countdown_prefix": "Cerrando sesión en",
+        "error.countdown_suffix": "segundos...",
     }
 };
 

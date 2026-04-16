@@ -43,24 +43,26 @@
                 <!-- ========== STANDARD LOGIN (Oculto por defecto) ========== -->
                 <div id="standardLoginSection" style="display: none;">
                     <div class="form-field">
-                        <label for="emailStandard">Email</label>
-                        <input 
-                            type="email" 
-                            id="emailStandard" 
+                        <label for="emailStandard" data-translate-key="login.email.label">Email</label>
+                        <input
+                            type="email"
+                            id="emailStandard"
                             placeholder="email@novamex.com"
+                            data-translate-key="login.email.placeholder"
                         />
                     </div>
-                    
+
                     <div class="form-field">
-                        <label for="passwordStandard">Contraseña</label>
-                        <input 
-                            type="password" 
-                            id="passwordStandard" 
+                        <label for="passwordStandard" data-translate-key="login.password.label">Contraseña</label>
+                        <input
+                            type="password"
+                            id="passwordStandard"
                             placeholder="Tu contraseña"
+                            data-translate-key="login.password.placeholder"
                         />
                     </div>
-                    
-                    <button type="button" class="btn-submit" id="btnStandardLogin">
+
+                    <button type="button" class="btn-submit" id="btnStandardLogin" data-translate-key="login.button">
                         Iniciar Sesión
                     </button>
                 </div>
@@ -72,7 +74,10 @@
                 
                 <!-- Footer -->
                 <div class="login-footer">
-                    <p>¿Necesitas acceso al portal para tu cuenta @novamex.com? <a href="https://servicedesk.novamex.com:8080/" target="_blank" rel="noopener">Levanta tu ticket aquí</a></p>
+                    <p>
+                        <span data-translate-key="login.support_text">¿Necesitas acceso al portal para tu cuenta @novamex.com?</span>
+                        <a href="https://servicedesk.novamex.com:8080/" target="_blank" rel="noopener" data-translate-key="login.support_link">Levanta tu ticket aquí</a>
+                    </p>
                 </div>
             </div>
         </div>

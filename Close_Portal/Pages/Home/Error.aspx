@@ -22,14 +22,19 @@
 
         <a href='<%= ResolveUrl("~/Pages/Home/Logout.aspx") %>' class="err-btn">
             <span class="material-icons">logout</span>
-            Cerrar sesión
+            <span data-translate-key="common.logout">Cerrar sesión</span>
         </a>
 
         <p class="err-countdown" id="errCountdown">
-            Cerrando sesión en <span id="errSec">8</span> segundos...
+            <span data-translate-key="error.countdown_prefix">Cerrando sesión en</span>
+            <span id="errSec">8</span>
+            <span data-translate-key="error.countdown_suffix">segundos...</span>
         </p>
 
     </div>
+
+    <script src='<%= ResolveUrl("~/Scripts/translations.js") %>'></script>
+    <script src='<%= ResolveUrl("~/Scripts/i18n.js") %>'></script>
 
     <script>
         // Auto-redirect a Logout para que limpie la sesión correctamente
