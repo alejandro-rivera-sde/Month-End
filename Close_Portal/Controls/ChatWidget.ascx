@@ -47,10 +47,6 @@
         <div class="chat-widget-title">
             <%=IsAgent ? "IT Support" : "Soporte IT"%>
         </div>
-        <div class="chat-widget-status">
-            <span class="chat-status-dot chat-status-off" id="chatStatusDot"></span>
-            <span id="chatStatusText" class="chat-widget-status-text">Conectando...</span>
-        </div>
         <!-- Badge de no leídos visible cuando el widget está minimizado -->
         <span class="chat-header-badge" id="chatHeaderBadge" style="display:none;">0</span>
         <div class="chat-widget-header-actions">

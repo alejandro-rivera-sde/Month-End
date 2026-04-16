@@ -545,26 +545,6 @@
     flex: 1;
 }
 
-.chat-widget-status {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.chat-widget-status-text {
-    font-size: 11px;
-    opacity: 0.85;
-}
-
-/* Puntos de estado en contexto del header (fondo oscuro) */
-.chat-widget-header .chat-status-dot {
-    width: 7px;
-    height: 7px;
-}
-
-.chat-widget-header .chat-status-on  { background-color: #86efac; animation: none; }
-.chat-widget-header .chat-status-off { background-color: rgba(255, 255, 255, 0.35); }
-
 /* Grupo de botones de acción — separación suficiente para evitar clics accidentales */
 .chat-widget-header-actions {
     display: flex;

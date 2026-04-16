@@ -320,14 +320,12 @@
                 chatHub.server.joinGroups();
                 if (isAgentMode) chatHub.server.registerAsITAgent();
             }
-            updateConnectionStatus(change.newState === HUB_CONNECTED);
         });
 
         // Si el hub ya estaba conectado cuando se cargó este script
         if ($.connection.hub.state === HUB_CONNECTED) {
             chatHub.server.joinGroups();
             if (isAgentMode) chatHub.server.registerAsITAgent();
-            updateConnectionStatus(true);
         }
     }
 
@@ -727,13 +725,6 @@
     function scrollToBottom() {
         var c = document.getElementById('chatMessages');
         if (c) c.scrollTop = c.scrollHeight;
-    }
-
-    function updateConnectionStatus(connected) {
-        var dot = document.getElementById('chatStatusDot');
-        var text = document.getElementById('chatStatusText');
-        if (dot) dot.className = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
-        if (text) text.textContent = connected ? 'En línea' : 'Reconectando...';
     }
 
     function formatTime(isoStr) {
