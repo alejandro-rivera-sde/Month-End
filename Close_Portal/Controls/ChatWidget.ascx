@@ -35,6 +35,10 @@
     <span class="chat-fab-badge" id="chatWidgetBadge" style="display:none;">0</span>
 </button>
 
+<!-- ─── Backdrop para estado maximizado ──────────────────────────── -->
+<div id="chatWidgetBackdrop" class="chat-widget-backdrop"
+     onclick="maximizeChatWidget()"></div>
+
 <!-- ─── Panel flotante del chat ─────────────────────────────────── -->
 <div id="chatWidgetPanel" class="chat-widget-panel" style="display:none;">
 
@@ -58,6 +62,10 @@
         </div>
         <!-- Badge de no leídos visible cuando el widget está minimizado -->
         <span class="chat-header-badge" id="chatHeaderBadge" style="display:none;">0</span>
+        <button type="button" class="chat-widget-maximize-btn" id="chatMaximizeBtn"
+                onclick="event.stopPropagation(); maximizeChatWidget()" title="Maximizar">
+            <span class="material-icons">open_in_full</span>
+        </button>
         <button type="button" class="chat-widget-close-btn"
                 onclick="event.stopPropagation(); closeChatWidget()" title="Cerrar">
             <span class="material-icons">close</span>

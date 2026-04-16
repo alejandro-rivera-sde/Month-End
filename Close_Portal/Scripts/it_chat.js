@@ -32,9 +32,10 @@
     var selectedClientId = null;
 
     // Estado del widget (modos widget / agent-widget)
-    // Tres estados: closed | minimized | open
+    // Cuatro estados: closed | minimized | open | maximized
     var widgetOpen = false;
-    var widgetMinimized = false; // barra flotante visible, cuerpo oculto
+    var widgetMinimized = false;  // barra flotante, cuerpo oculto
+    var widgetMaximized = false;  // modal grande centrado + backdrop
     var widgetLoaded = false;
     var widgetUnread = 0;
     var widgetInConvView = false; // agent-widget: ¿vista de conversación activa?
@@ -50,14 +51,43 @@
 
     window.closeChatWidget = function () { closeChatWidgetInternal(); };
 
-    // Click en el header: open → minimized, minimized → open
+    // Botón maximizar: open ↔ maximized; desde minimizado también expande
+    window.maximizeChatWidget = function () {
+        if (widgetMaximized) {
+            // Restaurar a panel normal
+            widgetMaximized = false;
+            var panel    = document.getElementById('chatWidgetPanel');
+            var backdrop = document.getElementById('chatWidgetBackdrop');
+            var maxBtn   = document.getElementById('chatMaximizeBtn');
+            if (panel)    { panel.classList.remove('chat-maximized'); }
+            if (backdrop) { backdrop.classList.remove('visible'); }
+            if (maxBtn)   { var ic = maxBtn.querySelector('.material-icons'); if (ic) ic.textContent = 'open_in_full'; }
+            return;
+        }
+        // Si estaba minimizado, expandir primero
+        if (!widgetOpen) openChatWidgetInternal();
+
+        widgetMaximized = true;
+        var panel    = document.getElementById('chatWidgetPanel');
+        var backdrop = document.getElementById('chatWidgetBackdrop');
+        var maxBtn   = document.getElementById('chatMaximizeBtn');
+        if (panel)    { panel.classList.remove('chat-minimized'); panel.classList.add('chat-maximized'); }
+        if (backdrop) { backdrop.classList.add('visible'); }
+        if (maxBtn)   { var ic = maxBtn.querySelector('.material-icons'); if (ic) ic.textContent = 'close_fullscreen'; }
+    };
+
+    // Click en el header: open → minimized | minimized → open | maximized → open
     window.minimizeChatWidget = function () {
+        if (widgetMaximized) {
+            // Desde maximizado: el header click solo restaura al tamaño normal
+            window.maximizeChatWidget();
+            return;
+        }
         if (widgetMinimized) {
-            // Barra minimizada → expandir de nuevo
             openChatWidgetInternal();
             return;
         }
-        if (!widgetOpen) return; // estado closed — no debería ocurrir desde el header
+        if (!widgetOpen) return;
 
         // Open → Minimized: colapsar a barra
         widgetOpen = false;
@@ -65,7 +95,6 @@
 
         var panel = document.getElementById('chatWidgetPanel');
         var fab = document.getElementById('chatWidgetBtn');
-        // El panel sigue visible (display:flex), solo se añade la clase
         if (panel) panel.classList.add('chat-minimized');
         if (fab) fab.classList.add('chat-fab-hidden');
     };
@@ -87,18 +116,24 @@
     function openChatWidgetInternal() {
         widgetOpen = true;
         widgetMinimized = false;
+        widgetMaximized = false;
 
-        var panel = document.getElementById('chatWidgetPanel');
-        var fab = document.getElementById('chatWidgetBtn');
-        var icon = document.getElementById('chatFabIcon');
+        var panel    = document.getElementById('chatWidgetPanel');
+        var fab      = document.getElementById('chatWidgetBtn');
+        var icon     = document.getElementById('chatFabIcon');
+        var backdrop = document.getElementById('chatWidgetBackdrop');
+        var maxBtn   = document.getElementById('chatMaximizeBtn');
 
         if (panel) {
             panel.style.display = 'flex';
             panel.classList.remove('chat-minimized');
+            panel.classList.remove('chat-maximized');
             panel.classList.remove('widget-anim');
-            void panel.offsetWidth; // forzar reflow para reiniciar animación
+            void panel.offsetWidth;
             panel.classList.add('widget-anim');
         }
+        if (backdrop) backdrop.classList.remove('visible');
+        if (maxBtn) { var ic = maxBtn.querySelector('.material-icons'); if (ic) ic.textContent = 'open_in_full'; }
         if (fab) fab.classList.add('chat-fab-hidden');
         if (icon) icon.textContent = 'close';
 
@@ -119,15 +154,21 @@
     function closeChatWidgetInternal() {
         widgetOpen = false;
         widgetMinimized = false;
+        widgetMaximized = false;
 
-        var panel = document.getElementById('chatWidgetPanel');
-        var fab = document.getElementById('chatWidgetBtn');
-        var icon = document.getElementById('chatFabIcon');
+        var panel    = document.getElementById('chatWidgetPanel');
+        var fab      = document.getElementById('chatWidgetBtn');
+        var icon     = document.getElementById('chatFabIcon');
+        var backdrop = document.getElementById('chatWidgetBackdrop');
+        var maxBtn   = document.getElementById('chatMaximizeBtn');
 
         if (panel) {
             panel.style.display = 'none';
             panel.classList.remove('chat-minimized');
+            panel.classList.remove('chat-maximized');
         }
+        if (backdrop) backdrop.classList.remove('visible');
+        if (maxBtn) { var ic = maxBtn.querySelector('.material-icons'); if (ic) ic.textContent = 'open_in_full'; }
         if (fab) fab.classList.remove('chat-fab-hidden');
         if (icon) {
             icon.textContent = (window.ChatMode === 'agent-widget')
