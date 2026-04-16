@@ -7,7 +7,7 @@
 <asp:Content ID="HeadContent" ContentPlaceHolderID="HeadContent" runat="server">
     <meta name="referrer" content="strict-origin-when-cross-origin"/>
     
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src='<%= ResolveUrl("~/Scripts/jquery-3.7.1.min.js") %>'></script>
     <script src="https://accounts.google.com/gsi/client" async="async" defer="defer"></script>
     
     <link href='<%= ResolveUrl("~/Styles/Login.css") %>' rel="stylesheet" type="text/css" />

@@ -131,6 +131,7 @@
     <Content Include="Pages\Home\Logout.aspx" />
     <Content Include="Pages\Warehouses\RequestClosure.aspx" />
     <Content Include="Pages\Validation\ValidateRequest.aspx" />
+    <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\dashboard_layout.js" />
     <Content Include="Scripts\email_service.js" />
     <Content Include="Scripts\it_chat.js" />
@@ -141,6 +142,7 @@
     <Content Include="Styles\EmailService.css" />
     <Content Include="Styles\ITChat.css" />
     <Content Include="Styles\Live.css" />
+    <Content Include="Scripts\jquery-3.7.1.min.js" />
     <Content Include="Scripts\login.js" />
     <Content Include="Scripts\request_closure.js" />
     <Content Include="Scripts\theme-toggle.js" />
@@ -149,6 +151,10 @@
     <Content Include="Scripts\user_management.js" />
     <Content Include="Scripts\validate_request.js" />
     <Content Include="Scripts\warehouse_management.js" />
+    <Content Include="Styles\bootstrap.min.css" />
+    <Content Include="Styles\bootstrap-icons.min.css" />
+    <Content Include="Styles\fonts\bootstrap-icons.woff2" />
+    <Content Include="Styles\fonts\bootstrap-icons.woff" />
     <Content Include="Styles\Components.css" />
     <Content Include="Styles\DashboardLayout.css" />
     <Content Include="Styles\Error.css" />
