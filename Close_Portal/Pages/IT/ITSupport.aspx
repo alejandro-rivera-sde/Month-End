@@ -18,11 +18,6 @@
                 <span class="material-icons">headset_mic</span>
                 <h2>IT Support Chat</h2>
             </div>
-            <!-- Indicador de conexión -->
-            <div class="chat-connection-status">
-                <span class="chat-status-dot chat-status-off" id="chatStatusDot"></span>
-                <span id="chatStatusText">Conectando...</span>
-            </div>
         </div>
 
         <!-- ========== PANEL PRINCIPAL (dos columnas) ========== -->

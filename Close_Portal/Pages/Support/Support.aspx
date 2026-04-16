@@ -18,11 +18,6 @@
                 <span class="material-icons">support_agent</span>
                 <h2>Soporte IT</h2>
             </div>
-            <!-- Indicador de conexión en tiempo real -->
-            <div class="chat-connection-status">
-                <span class="chat-status-dot chat-status-off" id="chatStatusDot"></span>
-                <span id="chatStatusText">Conectando...</span>
-            </div>
         </div>
 
         <!-- ========== PANEL DE CHAT ========== -->
