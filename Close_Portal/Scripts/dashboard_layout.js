@@ -2,6 +2,28 @@
 // DASHBOARD_layout.JS - JavaScript para Dashboard con Bootstrap 5
 // ============================================================================
 
+// ─── PARCHE GLOBAL SIGNALR ──────────────────────────────────────────────────
+// Bloquea el evento deprecado 'unload' para evitar advertencias en consola
+// y usa el estándar moderno 'pagehide' para desconectar limpiamente el servidor.
+(function () {
+    // 1. Interceptamos la creación del evento unload
+    var originalAddEventListener = window.addEventListener;
+    window.addEventListener = function (type, listener, options) {
+        if (type === 'unload') {
+            return; // Ignoramos silenciosamente
+        }
+        return originalAddEventListener.call(window, type, listener, options);
+    };
+
+    // 2. Reemplazo moderno
+    window.addEventListener('pagehide', function () {
+        if (window.$ && $.connection && $.connection.hub && $.connection.hub.state === 1) { // 1 = Connected
+            $.connection.hub.stop();
+        }
+    });
+})();
+// ────────────────────────────────────────────────────────────────────────────
+
 // AppRoot: raíz de la app derivada desde la URL actual
 if (!window.AppRoot) {
     (function () {
@@ -209,6 +231,38 @@ if (!window.AppRoot) {
         }
     }
 
+    // ========== SLIDING FOOTER ==========
+    function initSlidingFooter() {
+        var footer = document.getElementById('dashFooter');
+        if (!footer) return;
+        var TRIGGER = 20;
+        var COOLDOWN = 350; // ms — igual a la duración de la transición CSS
+        var lastToggle = 0;
+
+        document.addEventListener('mousemove', function (e) {
+            var now = Date.now();
+            if (now - lastToggle < COOLDOWN) return; // ignorar durante la animación
+
+            var visible = footer.classList.contains('footer-visible');
+
+            if (!visible && e.clientY >= window.innerHeight - TRIGGER) {
+                // Mostrar al acercarse al borde inferior
+                footer.classList.add('footer-visible');
+                lastToggle = now;
+                return;
+            }
+
+            if (visible) {
+                // Ocultar solo si el cursor sube POR ENCIMA del borde superior del footer
+                var rect = footer.getBoundingClientRect();
+                if (e.clientY < rect.top) {
+                    footer.classList.remove('footer-visible');
+                    lastToggle = now;
+                }
+            }
+        });
+    }
+
     // ========== INICIALIZACIÓN ==========
     function init() {
         initLanguageToggle();
@@ -218,6 +272,7 @@ if (!window.AppRoot) {
         initLogoutModal();
         initOsNotifications();
         loadUnreadCount();
+        initSlidingFooter(); // Footer inicializado limpiamente
     }
 
     if (document.readyState === 'loading') {
