@@ -76,13 +76,21 @@ namespace Close_Portal {
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionIT;
 
         /// <summary>
-        /// sectionITSupport control — panel de agentes IT (Administrador+).
+        /// sectionITSupport control.
         /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionITSupport;
 
         /// <summary>
-        /// sectionSupport control — acceso al chat para usuarios Regular/Manager.
+        /// sectionSupport control.
         /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl sectionSupport;
 
         /// <summary>
@@ -138,6 +146,15 @@ namespace Close_Portal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.ContentPlaceHolder DashboardContent;
+
+        /// <summary>
+        /// chatWidget1 control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::Close_Portal.Controls.ChatWidget chatWidget1;
 
         /// <summary>
         /// AdditionalScripts control.

@@ -24,19 +24,19 @@
 (function () {
     'use strict';
 
-    var HUB_CONNECTED    = 1;
-    var chatHub          = null;
+    var HUB_CONNECTED = 1;
+    var chatHub = null;
 
     // Caso/cliente seleccionado actualmente (modos agent / agent-widget)
-    var selectedCaseId   = null;
+    var selectedCaseId = null;
     var selectedClientId = null;
 
     // Estado del widget (modos widget / agent-widget)
     // Tres estados: closed | minimized | open
-    var widgetOpen       = false;
-    var widgetMinimized  = false; // barra flotante visible, cuerpo oculto
-    var widgetLoaded     = false;
-    var widgetUnread     = 0;
+    var widgetOpen = false;
+    var widgetMinimized = false; // barra flotante visible, cuerpo oculto
+    var widgetLoaded = false;
+    var widgetUnread = 0;
     var widgetInConvView = false; // agent-widget: ¿vista de conversación activa?
 
     // ==========================================================================
@@ -60,37 +60,37 @@
         if (!widgetOpen) return; // estado closed — no debería ocurrir desde el header
 
         // Open → Minimized: colapsar a barra
-        widgetOpen      = false;
+        widgetOpen = false;
         widgetMinimized = true;
 
         var panel = document.getElementById('chatWidgetPanel');
-        var fab   = document.getElementById('chatWidgetBtn');
+        var fab = document.getElementById('chatWidgetBtn');
         // El panel sigue visible (display:flex), solo se añade la clase
         if (panel) panel.classList.add('chat-minimized');
-        if (fab)   fab.classList.add('chat-fab-hidden');
+        if (fab) fab.classList.add('chat-fab-hidden');
     };
 
     // Volver a la lista de casos (agent-widget: conversación → lista)
     window.widgetGoBack = function () {
-        selectedCaseId   = null;
+        selectedCaseId = null;
         selectedClientId = null;
         widgetInConvView = false;
 
         var caseView = document.getElementById('widgetCaseListView');
         var convView = document.getElementById('widgetConvView');
         if (caseView) caseView.style.display = 'flex';
-        if (convView) convView.style.display  = 'none';
+        if (convView) convView.style.display = 'none';
 
         clearMessages();
     };
 
     function openChatWidgetInternal() {
-        widgetOpen      = true;
+        widgetOpen = true;
         widgetMinimized = false;
 
         var panel = document.getElementById('chatWidgetPanel');
-        var fab   = document.getElementById('chatWidgetBtn');
-        var icon  = document.getElementById('chatFabIcon');
+        var fab = document.getElementById('chatWidgetBtn');
+        var icon = document.getElementById('chatFabIcon');
 
         if (panel) {
             panel.style.display = 'flex';
@@ -99,7 +99,7 @@
             void panel.offsetWidth; // forzar reflow para reiniciar animación
             panel.classList.add('widget-anim');
         }
-        if (fab)  fab.classList.add('chat-fab-hidden');
+        if (fab) fab.classList.add('chat-fab-hidden');
         if (icon) icon.textContent = 'close';
 
         clearWidgetBadge();
@@ -117,18 +117,18 @@
     }
 
     function closeChatWidgetInternal() {
-        widgetOpen      = false;
+        widgetOpen = false;
         widgetMinimized = false;
 
         var panel = document.getElementById('chatWidgetPanel');
-        var fab   = document.getElementById('chatWidgetBtn');
-        var icon  = document.getElementById('chatFabIcon');
+        var fab = document.getElementById('chatWidgetBtn');
+        var icon = document.getElementById('chatFabIcon');
 
         if (panel) {
             panel.style.display = 'none';
             panel.classList.remove('chat-minimized');
         }
-        if (fab)  fab.classList.remove('chat-fab-hidden');
+        if (fab) fab.classList.remove('chat-fab-hidden');
         if (icon) {
             icon.textContent = (window.ChatMode === 'agent-widget')
                 ? 'mark_chat_unread'
@@ -138,16 +138,16 @@
 
     function clearWidgetBadge() {
         widgetUnread = 0;
-        var badge  = document.getElementById('chatWidgetBadge');   // sobre el FAB
+        var badge = document.getElementById('chatWidgetBadge');   // sobre el FAB
         var hBadge = document.getElementById('chatHeaderBadge');   // en la barra minimizada
-        if (badge)  badge.style.display  = 'none';
+        if (badge) badge.style.display = 'none';
         if (hBadge) hBadge.style.display = 'none';
     }
 
     function addWidgetUnread() {
         widgetUnread++;
-        var count  = widgetUnread > 99 ? '99+' : String(widgetUnread);
-        var badge  = document.getElementById('chatWidgetBadge');
+        var count = widgetUnread > 99 ? '99+' : String(widgetUnread);
+        var badge = document.getElementById('chatWidgetBadge');
         var hBadge = document.getElementById('chatHeaderBadge');
 
         if (widgetMinimized) {
@@ -237,8 +237,8 @@
             chatHub.client.recibirMensajeDeCliente = function (data) {
                 // ¿Estamos leyendo activamente esta conversación?
                 var inThisConv = (data.caseId === selectedCaseId
-                               && widgetOpen
-                               && widgetInConvView);
+                    && widgetOpen
+                    && widgetInConvView);
 
                 // Actualizar lista de casos siempre (aunque el widget esté cerrado)
                 refreshCaseEntry(
@@ -310,7 +310,7 @@
     // ==========================================================================
 
     function initSendControls() {
-        var sendBtn  = document.getElementById('chatSendBtn');
+        var sendBtn = document.getElementById('chatSendBtn');
         var msgInput = document.getElementById('chatInput');
         if (!sendBtn || !msgInput) return;
 
@@ -383,11 +383,11 @@
     function loadHistorialCliente() {
         showLoadingMessages();
         $.ajax({
-            type:        'POST',
-            url:         window.ChatWebMethodBase + 'GetHistorial',
-            data:        '{}',
+            type: 'POST',
+            url: window.ChatWebMethodBase + 'GetHistorial',
+            data: '{}',
             contentType: 'application/json; charset=utf-8',
-            dataType:    'json',
+            dataType: 'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
                 clearMessages();
@@ -422,16 +422,16 @@
 
     function loadCases() {
         $.ajax({
-            type:        'POST',
-            url:         window.ChatWebMethodBase + 'GetCases',
-            data:        '{}',
+            type: 'POST',
+            url: window.ChatWebMethodBase + 'GetCases',
+            data: '{}',
             contentType: 'application/json; charset=utf-8',
-            dataType:    'json',
+            dataType: 'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
                 if (d && d.success) renderCaseList(d.cases || []);
             },
-            error: function () {}
+            error: function () { }
         });
     }
 
@@ -449,7 +449,7 @@
     function buildCaseItem(c) {
         var item = document.createElement('div');
         item.className = 'client-item' + (c.caseId === selectedCaseId ? ' active' : '');
-        item.dataset.caseId   = c.caseId;
+        item.dataset.caseId = c.caseId;
         item.dataset.clientId = c.clientId;
 
         var avatar = document.createElement('div');
@@ -489,7 +489,7 @@
     }
 
     function refreshCaseEntry(caseId, clientId, clientName, message, addBadge) {
-        var list     = getClientListEl();
+        var list = getClientListEl();
         var existing = list ? list.querySelector('[data-case-id="' + caseId + '"]') : null;
 
         if (existing) {
@@ -515,9 +515,9 @@
 
         } else {
             var newItem = buildCaseItem({
-                caseId:      caseId,
-                clientId:    clientId,
-                clientName:  clientName,
+                caseId: caseId,
+                clientId: clientId,
+                clientName: clientName,
                 lastMessage: message,
                 unreadCount: addBadge ? 1 : 0
             });
@@ -530,7 +530,7 @@
     }
 
     function selectCase(caseId, clientId, clientName) {
-        selectedCaseId   = caseId;
+        selectedCaseId = caseId;
         selectedClientId = clientId;
 
         if (window.ChatMode === 'agent-widget') {
@@ -540,12 +540,12 @@
             var caseView = document.getElementById('widgetCaseListView');
             var convView = document.getElementById('widgetConvView');
             if (caseView) caseView.style.display = 'none';
-            if (convView) convView.style.display  = 'flex';
+            if (convView) convView.style.display = 'flex';
 
             // Mostrar nombre y avatar del cliente en el sub-header
-            var nameEl   = document.getElementById('widgetClientName');
+            var nameEl = document.getElementById('widgetClientName');
             var avatarEl = document.getElementById('widgetConvAvatar');
-            if (nameEl)   nameEl.textContent   = clientName;
+            if (nameEl) nameEl.textContent = clientName;
             if (avatarEl) avatarEl.textContent = clientName.charAt(0).toUpperCase();
 
             // Quitar badge del item de esta conversación
@@ -575,9 +575,9 @@
                 if (badge) badge.remove();
             }
 
-            var chatPanel    = document.getElementById('chatPanel');
+            var chatPanel = document.getElementById('chatPanel');
             var noneSelected = document.getElementById('noneSelected');
-            if (chatPanel)    chatPanel.style.display = 'flex';
+            if (chatPanel) chatPanel.style.display = 'flex';
             if (noneSelected) noneSelected.style.display = 'none';
 
             var clientNameEl = document.getElementById('chatClientName');
@@ -596,11 +596,11 @@
         clearMessages();
         showLoadingMessages();
         $.ajax({
-            type:        'POST',
-            url:         window.ChatWebMethodBase + 'GetHistorial',
-            data:        JSON.stringify({ clientId: clientId }),
+            type: 'POST',
+            url: window.ChatWebMethodBase + 'GetHistorial',
+            data: JSON.stringify({ clientId: clientId }),
             contentType: 'application/json; charset=utf-8',
-            dataType:    'json',
+            dataType: 'json',
             success: function (resp) {
                 var d = resp.d !== undefined ? resp.d : resp;
                 clearMessages();
@@ -689,9 +689,9 @@
     }
 
     function updateConnectionStatus(connected) {
-        var dot  = document.getElementById('chatStatusDot');
+        var dot = document.getElementById('chatStatusDot');
         var text = document.getElementById('chatStatusText');
-        if (dot)  dot.className    = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
+        if (dot) dot.className = 'chat-status-dot ' + (connected ? 'chat-status-on' : 'chat-status-off');
         if (text) text.textContent = connected ? 'En línea' : 'Reconectando...';
     }
 
