@@ -530,44 +530,25 @@
 .chat-widget-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     padding: 12px 14px;
     background: var(--chat-accent);
     color: #fff;
     flex-shrink: 0;
-    cursor: pointer; /* clickeable para minimizar / expandir */
+    cursor: pointer;
 }
-
-.chat-widget-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.chat-widget-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.chat-widget-avatar .material-icons { font-size: 18px; }
 
 .chat-widget-title {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
+    flex: 1;
 }
 
 .chat-widget-status {
     display: flex;
     align-items: center;
     gap: 5px;
-    margin-top: 2px;
 }
 
 .chat-widget-status-text {
@@ -584,13 +565,23 @@
 .chat-widget-header .chat-status-on  { background-color: #86efac; animation: none; }
 .chat-widget-header .chat-status-off { background-color: rgba(255, 255, 255, 0.35); }
 
-/* Botón cerrar en el header */
+/* Grupo de botones de acción — separación suficiente para evitar clics accidentales */
+.chat-widget-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Botones del header (maximizar y cerrar) */
+.chat-widget-maximize-btn,
 .chat-widget-close-btn {
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.80);
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -598,11 +589,13 @@
     flex-shrink: 0;
 }
 
+.chat-widget-maximize-btn:hover,
 .chat-widget-close-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
 }
 
+.chat-widget-maximize-btn .material-icons,
 .chat-widget-close-btn .material-icons { font-size: 18px; }
 
 /* El área de mensajes del widget usa las mismas clases que las páginas:

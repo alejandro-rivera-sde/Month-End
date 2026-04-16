@@ -44,32 +44,25 @@
 
     <!-- Header — siempre visible; click → minimiza / expande; X → cierra al FAB -->
     <div class="chat-widget-header" onclick="minimizeChatWidget()">
-        <div class="chat-widget-header-left">
-            <div class="chat-widget-avatar">
-                <span class="material-icons">
-                    <%=IsAgent ? "mark_chat_unread" : "support_agent"%>
-                </span>
-            </div>
-            <div>
-                <div class="chat-widget-title">
-                    <%=IsAgent ? "IT Support" : "Soporte IT"%>
-                </div>
-                <div class="chat-widget-status">
-                    <span class="chat-status-dot chat-status-off" id="chatStatusDot"></span>
-                    <span id="chatStatusText" class="chat-widget-status-text">Conectando...</span>
-                </div>
-            </div>
+        <div class="chat-widget-title">
+            <%=IsAgent ? "IT Support" : "Soporte IT"%>
+        </div>
+        <div class="chat-widget-status">
+            <span class="chat-status-dot chat-status-off" id="chatStatusDot"></span>
+            <span id="chatStatusText" class="chat-widget-status-text">Conectando...</span>
         </div>
         <!-- Badge de no leídos visible cuando el widget está minimizado -->
         <span class="chat-header-badge" id="chatHeaderBadge" style="display:none;">0</span>
-        <button type="button" class="chat-widget-maximize-btn" id="chatMaximizeBtn"
-                onclick="event.stopPropagation(); maximizeChatWidget()" title="Maximizar">
-            <span class="material-icons">open_in_full</span>
-        </button>
-        <button type="button" class="chat-widget-close-btn"
-                onclick="event.stopPropagation(); closeChatWidget()" title="Cerrar">
-            <span class="material-icons">close</span>
-        </button>
+        <div class="chat-widget-header-actions">
+            <button type="button" class="chat-widget-maximize-btn" id="chatMaximizeBtn"
+                    onclick="event.stopPropagation(); maximizeChatWidget()" title="Maximizar">
+                <span class="material-icons">open_in_full</span>
+            </button>
+            <button type="button" class="chat-widget-close-btn"
+                    onclick="event.stopPropagation(); closeChatWidget()" title="Cerrar">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
     </div>
 
 <% if (IsAgent) { %>
