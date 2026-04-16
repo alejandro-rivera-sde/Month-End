@@ -38,8 +38,8 @@
 <!-- ─── Panel flotante del chat ─────────────────────────────────── -->
 <div id="chatWidgetPanel" class="chat-widget-panel" style="display:none;">
 
-    <!-- Header — siempre visible -->
-    <div class="chat-widget-header">
+    <!-- Header — siempre visible; click → minimiza / expande; X → cierra al FAB -->
+    <div class="chat-widget-header" onclick="minimizeChatWidget()">
         <div class="chat-widget-header-left">
             <div class="chat-widget-avatar">
                 <span class="material-icons">
@@ -56,8 +56,10 @@
                 </div>
             </div>
         </div>
+        <!-- Badge de no leídos visible cuando el widget está minimizado -->
+        <span class="chat-header-badge" id="chatHeaderBadge" style="display:none;">0</span>
         <button type="button" class="chat-widget-close-btn"
-                onclick="closeChatWidget()" title="Cerrar">
+                onclick="event.stopPropagation(); closeChatWidget()" title="Cerrar">
             <span class="material-icons">close</span>
         </button>
     </div>

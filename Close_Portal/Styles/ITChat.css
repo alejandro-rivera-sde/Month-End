@@ -535,6 +535,7 @@
     background: var(--chat-accent);
     color: #fff;
     flex-shrink: 0;
+    cursor: pointer; /* clickeable para minimizar / expandir */
 }
 
 .chat-widget-header-left {
@@ -737,4 +738,40 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* =========================================================
+   WIDGET — ESTADO MINIMIZADO
+   Tres estados: closed (FAB visible) | minimized (barra) | open (panel completo)
+   ========================================================= */
+
+/* FAB oculto cuando el panel está abierto o minimizado */
+.chat-fab.chat-fab-hidden {
+    display: none !important;
+}
+
+/* Panel minimizado: colapsa a solo el header como barra flotante */
+.chat-widget-panel.chat-minimized {
+    height: auto !important;
+    bottom: 28px; /* misma posición que el FAB */
+}
+
+/* En estado minimizado, ocultar todo el cuerpo — solo queda el header */
+.chat-widget-panel.chat-minimized > *:not(.chat-widget-header) {
+    display: none !important;
+}
+
+/* Badge de no leídos dentro del header (se muestra cuando minimizado) */
+.chat-header-badge {
+    background: var(--error-color, #e53935);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    pointer-events: none;
+    flex-shrink: 0;
 }

@@ -32,7 +32,9 @@
     var selectedClientId = null;
 
     // Estado del widget (modos widget / agent-widget)
+    // Tres estados: closed | minimized | open
     var widgetOpen       = false;
+    var widgetMinimized  = false; // barra flotante visible, cuerpo oculto
     var widgetLoaded     = false;
     var widgetUnread     = 0;
     var widgetInConvView = false; // agent-widget: ¿vista de conversación activa?
@@ -42,11 +44,31 @@
     // ==========================================================================
 
     window.toggleChatWidget = function () {
-        if (widgetOpen) { closeChatWidgetInternal(); }
-        else            { openChatWidgetInternal();  }
+        // FAB solo visible en estado closed — siempre abre
+        openChatWidgetInternal();
     };
 
     window.closeChatWidget = function () { closeChatWidgetInternal(); };
+
+    // Click en el header: open → minimized, minimized → open
+    window.minimizeChatWidget = function () {
+        if (widgetMinimized) {
+            // Barra minimizada → expandir de nuevo
+            openChatWidgetInternal();
+            return;
+        }
+        if (!widgetOpen) return; // estado closed — no debería ocurrir desde el header
+
+        // Open → Minimized: colapsar a barra
+        widgetOpen      = false;
+        widgetMinimized = true;
+
+        var panel = document.getElementById('chatWidgetPanel');
+        var fab   = document.getElementById('chatWidgetBtn');
+        // El panel sigue visible (display:flex), solo se añade la clase
+        if (panel) panel.classList.add('chat-minimized');
+        if (fab)   fab.classList.add('chat-fab-hidden');
+    };
 
     // Volver a la lista de casos (agent-widget: conversación → lista)
     window.widgetGoBack = function () {
@@ -63,16 +85,23 @@
     };
 
     function openChatWidgetInternal() {
-        widgetOpen = true;
-        var panel  = document.getElementById('chatWidgetPanel');
-        var icon   = document.getElementById('chatFabIcon');
+        widgetOpen      = true;
+        widgetMinimized = false;
+
+        var panel = document.getElementById('chatWidgetPanel');
+        var fab   = document.getElementById('chatWidgetBtn');
+        var icon  = document.getElementById('chatFabIcon');
+
         if (panel) {
             panel.style.display = 'flex';
+            panel.classList.remove('chat-minimized');
             panel.classList.remove('widget-anim');
-            void panel.offsetWidth;
+            void panel.offsetWidth; // forzar reflow para reiniciar animación
             panel.classList.add('widget-anim');
         }
+        if (fab)  fab.classList.add('chat-fab-hidden');
         if (icon) icon.textContent = 'close';
+
         clearWidgetBadge();
 
         if (!widgetLoaded) {
@@ -88,10 +117,18 @@
     }
 
     function closeChatWidgetInternal() {
-        widgetOpen = false;
-        var panel  = document.getElementById('chatWidgetPanel');
-        var icon   = document.getElementById('chatFabIcon');
-        if (panel) panel.style.display = 'none';
+        widgetOpen      = false;
+        widgetMinimized = false;
+
+        var panel = document.getElementById('chatWidgetPanel');
+        var fab   = document.getElementById('chatWidgetBtn');
+        var icon  = document.getElementById('chatFabIcon');
+
+        if (panel) {
+            panel.style.display = 'none';
+            panel.classList.remove('chat-minimized');
+        }
+        if (fab)  fab.classList.remove('chat-fab-hidden');
         if (icon) {
             icon.textContent = (window.ChatMode === 'agent-widget')
                 ? 'mark_chat_unread'
@@ -101,16 +138,24 @@
 
     function clearWidgetBadge() {
         widgetUnread = 0;
-        var badge = document.getElementById('chatWidgetBadge');
-        if (badge) badge.style.display = 'none';
+        var badge  = document.getElementById('chatWidgetBadge');   // sobre el FAB
+        var hBadge = document.getElementById('chatHeaderBadge');   // en la barra minimizada
+        if (badge)  badge.style.display  = 'none';
+        if (hBadge) hBadge.style.display = 'none';
     }
 
     function addWidgetUnread() {
         widgetUnread++;
-        var badge = document.getElementById('chatWidgetBadge');
-        if (badge) {
-            badge.textContent = widgetUnread > 99 ? '99+' : String(widgetUnread);
-            badge.style.display = 'block';
+        var count  = widgetUnread > 99 ? '99+' : String(widgetUnread);
+        var badge  = document.getElementById('chatWidgetBadge');
+        var hBadge = document.getElementById('chatHeaderBadge');
+
+        if (widgetMinimized) {
+            // Widget minimizado → badge en el header de la barra
+            if (hBadge) { hBadge.textContent = count; hBadge.style.display = 'inline-block'; }
+        } else {
+            // Widget cerrado → badge sobre el FAB
+            if (badge) { badge.textContent = count; badge.style.display = 'block'; }
         }
     }
 
