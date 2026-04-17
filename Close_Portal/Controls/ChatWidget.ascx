@@ -25,16 +25,6 @@
     window.AgentName         = '<%=AgentNameJs%>';
 </script>
 
-<!-- ─── Botón FAB (Floating Action Button) ──────────────────────── -->
-<button type="button" class="chat-fab" id="chatWidgetBtn"
-        onclick="toggleChatWidget()"
-        title="<%=IsAgent ? "IT Support — Conversaciones" : "Soporte IT"%>">
-    <span class="material-icons" id="chatFabIcon">
-        <%=IsAgent ? "mark_chat_unread" : "support_agent"%>
-    </span>
-    <span class="chat-fab-badge" id="chatWidgetBadge" style="display:none;">0</span>
-</button>
-
 <!-- ─── Backdrop para estado maximizado ──────────────────────────── -->
 <div id="chatWidgetBackdrop" class="chat-widget-backdrop"
      onclick="maximizeChatWidget()"></div>

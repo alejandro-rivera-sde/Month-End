@@ -786,7 +786,7 @@
 
 .header-dept-code {
     color: rgba(255,255,255,.95);
-    font-size: 15px;
+    font-size: 25px;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -797,12 +797,12 @@
 
 .header-dept-code:not(:empty) + .header-page-name::before {
     content: '·';
-    margin: 0 8px;
+    margin: 0 10px;
     color: rgba(255,255,255,.5);
 }
 
 .header-page-name {
-    font-size: 15px;
+    font-size: 25px;
     font-weight: 600;
     color: rgba(255,255,255,.95);
     white-space: nowrap;

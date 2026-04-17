@@ -166,6 +166,14 @@
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="position-relative">
+                        <button type="button" class="btn btn-link p-2" id="chatTriggerBtn"
+                                onclick="toggleChatWidget()" title="Soporte IT">
+                            <span class="material-icons">support_agent</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="chatWidgetBadge" style="display:none;">0</span>
+                        </button>
+                    </div>
+                    <div class="position-relative">
                         <button type="button" class="btn btn-link p-2" id="notifBtn" onclick="toggleNotifPanel()">
                             <span class="material-icons">notifications_active</span>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"

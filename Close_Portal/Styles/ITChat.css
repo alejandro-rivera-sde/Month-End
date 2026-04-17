@@ -502,8 +502,8 @@
 /* ─── PANEL FLOTANTE ───────────────────────────────────────── */
 .chat-widget-panel {
     position: fixed;
-    bottom: 96px;     /* justo encima del FAB */
-    right: 28px;
+    bottom: 28px;
+    right: calc(var(--sidebar-w, 260px) + 16px);
     width: 360px;
     height: 490px;
     background: var(--card-bg);
@@ -586,19 +586,18 @@
 }
 
 /* ─── RESPONSIVE ────────────────────────────────────────────── */
+/* On mobile/tablet the sidebar is a hidden overlay — no right offset needed */
+@media (max-width: 992px) {
+    .chat-widget-panel {
+        right: 16px;
+    }
+}
+
 @media (max-width: 480px) {
     .chat-widget-panel {
         right: 10px;
         width: calc(100vw - 20px);
-        bottom: 80px;
         height: 420px;
-    }
-
-    .chat-fab {
-        right: 10px;
-        bottom: 14px;
-        width: 50px;
-        height: 50px;
     }
 }
 
@@ -726,7 +725,7 @@
 /* Panel minimizado: colapsa a solo el header como barra flotante */
 .chat-widget-panel.chat-minimized {
     height: auto !important;
-    bottom: 28px; /* misma posición que el FAB */
+    bottom: 28px;
 }
 
 /* En estado minimizado, ocultar todo el cuerpo — solo queda el header */

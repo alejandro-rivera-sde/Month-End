@@ -144,6 +144,10 @@ if (!window.AppRoot) {
         if (icon) icon.textContent = isCollapsed ? 'chevron_left' : 'chevron_right';
     }
 
+    function updateSidebarCssVar(isCollapsed) {
+        document.documentElement.style.setProperty('--sidebar-w', isCollapsed ? '70px' : '260px');
+    }
+
     function initSidebarToggle() {
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
@@ -156,6 +160,7 @@ if (!window.AppRoot) {
                 var isCollapsed = sidebar.classList.contains('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
                 updateToggleIcon(isCollapsed);
+                updateSidebarCssVar(isCollapsed);
             } else {
                 sidebar.classList.toggle('open');
             }
@@ -166,8 +171,10 @@ if (!window.AppRoot) {
             if (savedState === 'true') {
                 sidebar.classList.add('collapsed');
                 updateToggleIcon(true);
+                updateSidebarCssVar(true);
             } else {
                 updateToggleIcon(false);
+                updateSidebarCssVar(false);
             }
         }
 
