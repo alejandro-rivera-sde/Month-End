@@ -785,12 +785,8 @@
 }
 
 .header-dept-code {
-    background: rgba(255,255,255,.15);
     color: rgba(255,255,255,.95);
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
