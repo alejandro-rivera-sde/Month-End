@@ -135,7 +135,7 @@
                             </td>
                             <td>
                                 <%# !string.IsNullOrEmpty(Eval("DepartmentCode")?.ToString())
-                                    ? $"<span class='dept-badge'>{Eval("DepartmentCode")}</span>"
+                                    ? $"<span class='dept-badge {GetDeptColorClass(Eval("DepartmentCode")?.ToString())}'>{Eval("DepartmentCode")}</span>"
                                     : "<span style='color:var(--text-muted);font-size:11px'>—</span>" %>
                             </td>
                             <td>
@@ -149,7 +149,7 @@
                                             title='Editar usuario'>
                                         <span class='material-icons'>edit</span>
                                     </button>
-                                    <button type='button' class='btn-icon delete'
+                                    <button type='button' class='btn-icon {((bool)Eval("Active") ? "btn-deactivate" : "btn-activate")}'
                                             onclick='confirmToggleActive({Eval("UserId")}, {Eval("Active").ToString().ToLower()})'
                                             title='{((bool)Eval("Active") ? "Desactivar usuario" : "Activar usuario")}'>
                                         <span class='material-icons'>{((bool)Eval("Active") ? "person_off" : "person")}</span>

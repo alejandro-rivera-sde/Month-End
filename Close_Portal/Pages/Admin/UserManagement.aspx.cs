@@ -30,6 +30,13 @@ namespace Close_Portal.Pages.Admin {
         // ============================================================
         // LOAD STATS
         // ============================================================
+        protected string GetDeptColorClass(string code) {
+            if (string.IsNullOrEmpty(code)) return "dept-c0";
+            int hash = 0;
+            foreach (char c in code) hash = (hash * 31 + c) & 0xff;
+            return "dept-c" + (hash % 8);
+        }
+
         private void LoadStats() {
             try {
                 using (SqlConnection conn = new SqlConnection(_connStr)) {

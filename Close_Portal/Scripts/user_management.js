@@ -765,9 +765,9 @@ function updateUserRow(row) {
     roleBadge.className   = 'badge badge-' + row.RoleBadge;
     roleBadge.textContent = row.RoleName;
 
-    // [2] Departamento — solo badge
+    // [2] Departamento — solo badge con color
     if (row.DepartmentCode) {
-        cells[2].innerHTML = "<span class='dept-badge'>" + escHtml(row.DepartmentCode) + "</span>";
+        cells[2].innerHTML = "<span class='dept-badge " + deptColorClass(row.DepartmentCode) + "'>" + escHtml(row.DepartmentCode) + "</span>";
     } else {
         cells[2].innerHTML = "<span style='color:var(--text-muted);font-size:11px'>—</span>";
     }
@@ -781,11 +781,12 @@ function updateUserRow(row) {
     if (row.RoleId < row.CurrentRoleId || row.UserId === parseInt(window.CurrentUserId)) {
         const toggleTitle = row.Active ? 'Desactivar usuario' : 'Activar usuario';
         const toggleIcon  = row.Active ? 'person_off' : 'person';
+        var toggleClass = row.Active ? 'btn-deactivate' : 'btn-activate';
         cells[4].innerHTML =
             "<div class='actions'>" +
             "<button type='button' class='btn-icon edit' onclick='openModalEdit(" + row.UserId + ")' title='Editar usuario'>" +
             "<span class='material-icons'>edit</span></button>" +
-            "<button type='button' class='btn-icon delete' " +
+            "<button type='button' class='btn-icon " + toggleClass + "' " +
             "onclick='confirmToggleActive(" + row.UserId + ", " + row.Active + ")' " +
             "title='" + toggleTitle + "'>" +
             "<span class='material-icons'>" + toggleIcon + "</span></button>" +
@@ -795,6 +796,13 @@ function updateUserRow(row) {
             "<div class='actions'><span class='um-no-action' title='Sin permisos para editar'>" +
             "<span class='material-icons'>lock</span></span></div>";
     }
+}
+
+function deptColorClass(code) {
+    if (!code) return 'dept-c0';
+    var hash = 0;
+    for (var i = 0; i < code.length; i++) hash = (hash * 31 + code.charCodeAt(i)) & 0xff;
+    return 'dept-c' + (hash % 8);
 }
 
 function escHtml(str) {
