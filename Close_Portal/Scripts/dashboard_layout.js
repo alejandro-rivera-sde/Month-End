@@ -122,7 +122,7 @@ document.addEventListener('hidden.bs.modal', function () {
             }
             var name = key ? window.I18n.t(key) : '';
             el.textContent = name;
-            if (name) document.title = name + ' \u2014 Close Portal';
+            if (name) document.title = name;
         }
 
         function applyLanguage(lang) {
