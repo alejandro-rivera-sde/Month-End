@@ -292,18 +292,18 @@
 }
 
 .badge-admin {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background: rgba(14, 165, 233, 0.1);
+    color: #0284c7;
 }
 
 .badge-manager {
-    background: rgba(14, 165, 233, 0.1);
-    color: #0369a1;
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
 }
 
 .badge-regular {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
 }
 
 .badge-active {
