@@ -509,10 +509,21 @@ namespace Close_Portal.Pages.Main {
             if (guardId == 0)
                 return new List<LocationDto>();
 
+            // Personas asignadas a un spot de la guardia ven todas las locaciones
+            bool isInSpot = false;
+            if (roleId < RoleLevel.Owner) {
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM MonthEnd_Guard_Spots WHERE Guard_Id = @GuardId AND User_Id = @UserId", conn)) {
+                    cmd.Parameters.AddWithValue("@GuardId", guardId);
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    isInSpot = (int)cmd.ExecuteScalar() > 0;
+                }
+            }
+
             string sql;
 
-            if (roleId >= RoleLevel.Owner) {
-                // Owner ve todas las locaciones de la guardia
+            if (roleId >= RoleLevel.Owner || isInSpot) {
+                // Owner o persona en spot ve todas las locaciones de la guardia
                 sql = @"
                     SELECT wl.Location_Id, wl.Location_Name
                     FROM   MonthEnd_Locations wl
@@ -536,7 +547,7 @@ namespace Close_Portal.Pages.Main {
             var list = new List<LocationDto>();
             using (var cmd = new SqlCommand(sql, conn)) {
                 cmd.Parameters.AddWithValue("@GuardId", guardId);
-                if (roleId < RoleLevel.Owner)
+                if (roleId < RoleLevel.Owner && !isInSpot)
                     cmd.Parameters.AddWithValue("@UserId", userId);
 
                 using (var dr = cmd.ExecuteReader()) {
