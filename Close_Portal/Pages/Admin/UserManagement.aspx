@@ -10,12 +10,8 @@
 
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
 
-    <!-- ========== PAGE HEADER ========== -->
+    <!-- ========== TOOLBAR HEADER ========== -->
     <div class="page-header">
-        <div class="page-title">
-            <h2 data-translate-key="um.title">Gestión de Usuarios</h2>
-            <p data-translate-key="um.subtitle">Administra usuarios, roles y accesos a WMS</p>
-        </div>
         <button type="button" class="btn-new" onclick="openModalNew()">
             <span class="material-icons">person_add</span>
             <span data-translate-key="um.btn_new">Nuevo Usuario</span>

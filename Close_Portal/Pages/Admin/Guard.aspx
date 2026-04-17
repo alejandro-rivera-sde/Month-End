@@ -12,13 +12,6 @@
 
     <!-- ========== PAGE HEADER ========== -->
     <div class="page-header">
-        <div class="page-title">
-            <h2>
-                <span class="material-icons gd-title-icon">security</span>
-                <span data-translate-key="gd.title">Gestión de Guardia</span>
-            </h2>
-            <p data-translate-key="gd.subtitle">Administra la guardia activa y asigna responsables por departamento</p>
-        </div>
         <div class="gd-header-badge" id="guardStatusBadge">
             <span class="material-icons">shield</span>
             <span id="guardStatusText"></span>

@@ -159,9 +159,10 @@
         <div class="main-content">
             <header class="dashboard-header" id="dashboardHeader" runat="server">
                 <div class="d-flex align-items-center">
-                    <span class="header-wms-name">
-                        <asp:Literal ID="litWmsName" runat="server"></asp:Literal>
-                    </span>
+                    <div class="header-context">
+                        <span class="header-dept-code"><asp:Literal ID="litWmsName" runat="server"></asp:Literal></span>
+                        <span class="header-page-name" id="headerPageName"></span>
+                    </div>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="position-relative">

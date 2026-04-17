@@ -12,10 +12,6 @@
 
     <!-- ========== PAGE HEADER ========== -->
     <div class="page-header">
-        <div class="page-title">
-            <h2 data-translate-key="wm.title">Gestión de Bodegas</h2>
-            <p data-translate-key="wm.subtitle">Administra las locaciones y sus asignaciones</p>
-        </div>
         <button type="button" class="btn-new" onclick="openModalNew()">
             <span class="material-icons">add_business</span>
             <span data-translate-key="wm.btn_new">Nueva Locación</span>

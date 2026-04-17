@@ -12,16 +12,6 @@
 
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
 
-    <div class="page-header">
-        <div class="page-title">
-            <h2>
-                <span class="material-icons rc-title-icon">lock</span>
-                <span data-translate-key="rc.title">Solicitar Cierre</span>
-            </h2>
-            <p data-translate-key="rc.subtitle">Envía una solicitud de cierre de operaciones al Administrador de tu locación</p>
-        </div>
-    </div>
-
     <!-- ── GRID: formulario izquierda + historial derecha ── -->
     <div class="rc-grid">
 

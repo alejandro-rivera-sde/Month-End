@@ -12,14 +12,6 @@
 
     <div class="chat-page-wrapper">
 
-        <!-- ========== PAGE HEADER ========== -->
-        <div class="chat-page-header">
-            <div class="chat-page-title">
-                <span class="material-icons">support_agent</span>
-                <h2 data-translate-key="support.title">Soporte IT</h2>
-            </div>
-        </div>
-
         <!-- ========== PANEL DE CHAT ========== -->
         <!--
             El chat está embebido en esta misma página ASPX.

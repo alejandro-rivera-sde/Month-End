@@ -12,14 +12,6 @@
 
     <div class="chat-page-wrapper">
 
-        <!-- ========== PAGE HEADER ========== -->
-        <div class="chat-page-header">
-            <div class="chat-page-title">
-                <span class="material-icons">headset_mic</span>
-                <h2 data-translate-key="itsupport.title">IT Support Chat</h2>
-            </div>
-        </div>
-
         <!-- ========== PANEL PRINCIPAL (dos columnas) ========== -->
         <!--
             Toda la UI está embebida en esta página ASPX, sin popups ni iframes.

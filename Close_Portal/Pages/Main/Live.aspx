@@ -10,17 +10,6 @@
 
 <asp:Content ID="DashboardContentArea" ContentPlaceHolderID="DashboardContent" runat="server">
 
-    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
-    <div class="page-header">
-        <div class="page-title">
-            <h2>
-                <span class="material-icons db-title-icon">dashboard</span>
-                <span data-translate-key="db.title">Dashboard</span>
-            </h2>
-            <p data-translate-key="db.subtitle">Estado de locaciones en el turno de guardia activo</p>
-        </div>
-    </div>
-
     <!-- ── BANNER GUARDIA ──────────────────────────────────── -->
     <div id="dbGuardBanner" class="db-guard-banner db-guard-loading">
         <span class="material-icons db-spin">autorenew</span>

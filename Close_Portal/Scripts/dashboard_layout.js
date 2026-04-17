@@ -85,8 +85,35 @@ if (!window.AppRoot) {
         if (!languageToggle) return;
         if (typeof translations === 'undefined') return;
 
+        var PAGE_ROUTE_KEYS = {
+            '/live':       'db.title',
+            '/users':      'um.title',
+            '/locations':  'wm.title',
+            '/guard':      'gd.title',
+            '/validate':   'vr.title',
+            '/closure':    'rc.title',
+            '/email':      'email.title',
+            '/processes':  'sidebar.processes',
+            '/it-support': 'itsupport.title',
+            '/support':    'support.title'
+        };
+
+        function updateHeaderPageName() {
+            var el = document.getElementById('headerPageName');
+            if (!el) return;
+            var path = window.location.pathname.toLowerCase();
+            var key = null;
+            for (var route in PAGE_ROUTE_KEYS) {
+                if (path.indexOf(route) !== -1) { key = PAGE_ROUTE_KEYS[route]; break; }
+            }
+            var name = key ? window.I18n.t(key) : '';
+            el.textContent = name;
+            if (name) document.title = name + ' \u2014 Close Portal';
+        }
+
         function applyLanguage(lang) {
             window.I18n.apply(lang);
+            updateHeaderPageName();
 
             const text = languageToggle.querySelector('.nav-text');
             if (text) {

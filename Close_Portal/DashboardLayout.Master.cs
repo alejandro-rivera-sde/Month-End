@@ -40,7 +40,6 @@ namespace Close_Portal {
             string userName = Session["FullName"]?.ToString();
             string email = Session["Email"]?.ToString();
             string roleName = Session["RoleName"]?.ToString();
-            string wmsCode = Session["WmsCode"]?.ToString() ?? "";
             int userId = Session["UserId"] != null ? (int)Session["UserId"] : -1;
 
             if (string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(email))
@@ -51,14 +50,7 @@ namespace Close_Portal {
             litUserName.Text = userName;
             litUserRole.Text = roleName;
 
-            // Consultar departamento del usuario
-            string deptCode = GetUserDepartmentCode(userId);
-            string wmsName = GetWmsFullName(wmsCode);
-
-            // Header: "DEPT · MonthEnd_WMS" — si no tiene departamento, solo MonthEnd_WMS
-            litWmsName.Text = !string.IsNullOrEmpty(deptCode)
-                ? $"{deptCode} · {wmsName}"
-                : wmsName;
+            litWmsName.Text = GetUserDepartmentCode(userId);
 
             string initials = userName.Length >= 2
                 ? userName.Substring(0, 2).ToUpper()
@@ -71,7 +63,7 @@ namespace Close_Portal {
                 string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
                 using (var conn = new SqlConnection(cs))
                 using (var cmd = new SqlCommand(@"
-                    SELECT d.Department_Name
+                    SELECT d.Department_Code
                     FROM   MonthEnd_Users u
                     INNER JOIN MonthEnd_Departments d ON d.Department_Id = u.Department_Id
                     WHERE  u.User_Id = @UserId", conn)) {
@@ -84,17 +76,6 @@ namespace Close_Portal {
                 System.Diagnostics.Debug.WriteLine($"[GetUserDepartmentCode] ERROR: {ex.Message}");
                 return "";
             }
-        }
-        private string GetWmsFullName(string wmsCode) {
-            var wmsMap = new Dictionary<string, string> {
-                { "NVMCLX", "Calexico"     },
-                { "NVMMES", "Dallas"       },
-                { "NVMMSQ", "Mesquite"     },
-                { "NVMMXL", "Mexicali"     },
-                { "NVMLRD", "Nuevo Laredo" }
-            };
-            if (string.IsNullOrEmpty(wmsCode)) return "";
-            return wmsMap.ContainsKey(wmsCode.ToUpper()) ? wmsMap[wmsCode.ToUpper()] : wmsCode;
         }
         public string PageTitleText {
             get { return ((ContentPlaceHolder)Master.FindControl("TitleContent")).Page.Title; }

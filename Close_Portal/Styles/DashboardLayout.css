@@ -777,19 +777,41 @@
         color: rgba(255, 255, 255, 0.9) !important;
     }
 
-/* WMS Name en header */
-.header-wms-name {
-    font-size: 30px;
+/* Contexto de página en header (dept · nombre de página) */
+.header-context {
     display: flex;
-    justify-content: center;
     align-items: center;
+    gap: 0;
+}
+
+.header-dept-code {
+    background: rgba(255,255,255,.15);
+    color: rgba(255,255,255,.95);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.header-dept-code:empty { display: none; }
+
+.header-dept-code:not(:empty) + .header-page-name::before {
+    content: '·';
+    margin: 0 8px;
+    color: rgba(255,255,255,.5);
+}
+
+.header-page-name {
+    font-size: 15px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
-    letter-spacing: 0.3px;
-    min-width: 0;
+    color: rgba(255,255,255,.95);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 /* ── NOTIFICATION PANEL ─────────────────────────────────── */

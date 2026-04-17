@@ -13,13 +13,6 @@
 <asp:Content ID="DashboardContent" ContentPlaceHolderID="DashboardContent" runat="server">
 
     <div class="page-header">
-        <div class="page-title">
-            <h2>
-                <span class="material-icons vr-title-icon">fact_check</span>
-                <span data-translate-key="vr.title">Validar Solicitudes</span>
-            </h2>
-            <p data-translate-key="vr.subtitle">Revisa y aprueba o rechaza las solicitudes de cierre de tus locaciones</p>
-        </div>
         <button type="button" class="vr-btn-closed" onclick="openClosedPanel()">
             <span class="material-icons">lock</span>
             <span data-translate-key="vr.btn.closed">Solicitudes Cerradas</span>

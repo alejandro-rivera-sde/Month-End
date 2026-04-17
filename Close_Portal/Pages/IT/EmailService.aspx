@@ -12,13 +12,6 @@
 
     <!-- ========== PAGE HEADER ========== -->
     <div class="page-header">
-        <div class="page-title">
-            <h2>
-                <span class="material-icons es-title-icon">mail</span>
-                <span data-translate-key="email.title">Email Service</span>
-            </h2>
-            <p data-translate-key="email.subtitle">Administración de notificaciones, grupos de correo y alertas del sistema</p>
-        </div>
         <div class="es-header-badge" id="esStatusBadge">
             <span class="material-icons">circle</span>
             <span id="esStatusText" data-translate-key="common.loading">Cargando...</span>
