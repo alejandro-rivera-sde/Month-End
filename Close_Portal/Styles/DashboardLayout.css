@@ -810,6 +810,96 @@
     text-overflow: ellipsis;
 }
 
+/* ── PROFILE TRIGGER ────────────────────────────────────── */
+.user-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 4px 8px;
+    transition: background 0.15s;
+}
+.user-profile-trigger:hover { background: rgba(255,255,255,.10); }
+
+/* ── PROFILE MODAL ──────────────────────────────────────── */
+.profile-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 12px;
+}
+.profile-phone-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.profile-phone-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.profile-phone-input:focus { border-color: var(--primary-color); }
+.profile-ext-input {
+    width: 80px;
+    flex-shrink: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.profile-ext-input:focus { border-color: var(--primary-color); }
+.profile-btn-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--error-color, #e53935);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: background 0.15s;
+}
+.profile-btn-remove:hover { background: var(--bg-elevated); }
+.profile-btn-remove .material-icons { font-size: 18px; }
+.profile-btn-add-phone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--primary-color);
+    background: none;
+    border: 1px dashed var(--primary-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.profile-btn-add-phone:hover { background: var(--bg-elevated); }
+.profile-btn-add-phone .material-icons { font-size: 16px; }
+.profile-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
 /* ── NOTIFICATION PANEL ─────────────────────────────────── */
 .notif-panel {
     position: absolute;

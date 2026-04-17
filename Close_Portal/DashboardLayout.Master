@@ -196,7 +196,8 @@
                         </div>
                     </div>
                     
-                    <div class="user-avatar">
+                    <div class="user-profile-trigger" onclick="openProfileModal()" title="Editar perfil">
+                        <div class="user-avatar">
                             <asp:Literal ID="litUserInitials" runat="server">UN</asp:Literal>
                         </div>
                         <div class="user-info d-none d-md-block">
@@ -207,6 +208,7 @@
                                 <asp:Literal ID="litUserRole" runat="server">User</asp:Literal>
                             </div>
                         </div>
+                    </div>
 
                     <button class="btn btn-link menu-toggle" id="menuToggle">
                         <span class="material-icons" id="menuToggleIcon">chevron_right</span>
@@ -231,6 +233,35 @@
     </div>
 
     <uc:ChatWidget ID="chatWidget1" runat="server" />
+
+    <!-- ── PROFILE MODAL ─────────────────────────────────────────────── -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <span class="material-icons align-middle me-2" style="color: var(--primary-color);">manage_accounts</span>
+                        <span data-translate-key="profile.title">Mi Perfil</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="profile-section-title" data-translate-key="profile.phones">Teléfonos</div>
+                    <div id="profilePhoneList"></div>
+                    <button type="button" class="profile-btn-add-phone" onclick="profileAddPhone()">
+                        <span class="material-icons">add</span>
+                        <span data-translate-key="profile.add_phone">Agregar teléfono</span>
+                    </button>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="common.cancel">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="profileSaveBtn" onclick="profileSavePhones()">
+                        <span data-translate-key="common.save">Guardar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

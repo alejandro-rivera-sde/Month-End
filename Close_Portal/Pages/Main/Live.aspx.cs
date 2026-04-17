@@ -446,6 +446,85 @@ namespace Close_Portal.Pages.Main {
         }
 
         // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object GetMyPhones() {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                var phones = new System.Collections.Generic.List<object>();
+                using (var conn = new SqlConnection(cs))
+                using (var cmd = new SqlCommand(
+                    "SELECT Phone_Id, Phone, Extension FROM MonthEnd_User_Phones WHERE User_Id = @UserId AND Active = 1 ORDER BY Phone_Id", conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader()) {
+                        while (r.Read()) {
+                            phones.Add(new {
+                                phoneId   = (int)r["Phone_Id"],
+                                phone     = r["Phone"]?.ToString()     ?? "",
+                                extension = r["Extension"]?.ToString() ?? ""
+                            });
+                        }
+                    }
+                }
+                return new { success = true, phones };
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[GetMyPhones] ERROR: {ex.Message}");
+                return new { success = false };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        [WebMethod(EnableSession = true)]
+        public static object SaveMyPhones(string[] phones, string[] extensions) {
+            try {
+                var session = HttpContext.Current.Session;
+                if (session["UserId"] == null) return new { success = false, message = "No autenticado" };
+                int userId = Convert.ToInt32(session["UserId"]);
+                string cs = ConfigurationManager.ConnectionStrings["ClosePortalDB"].ConnectionString;
+                using (var conn = new SqlConnection(cs)) {
+                    conn.Open();
+                    using (var tx = conn.BeginTransaction()) {
+                        try {
+                            using (var cmd = new SqlCommand(
+                                "UPDATE MonthEnd_User_Phones SET Active = 0 WHERE User_Id = @UserId", conn, tx)) {
+                                cmd.Parameters.AddWithValue("@UserId", userId);
+                                cmd.ExecuteNonQuery();
+                            }
+                            if (phones != null) {
+                                for (int i = 0; i < phones.Length; i++) {
+                                    string p = phones[i]?.Trim();
+                                    if (string.IsNullOrWhiteSpace(p)) continue;
+                                    string ext = (extensions != null && i < extensions.Length)
+                                                 ? extensions[i]?.Trim() : null;
+                                    using (var cmd = new SqlCommand(
+                                        "INSERT INTO MonthEnd_User_Phones (User_Id, Phone, Extension, Active) VALUES (@UserId, @Phone, @Ext, 1)",
+                                        conn, tx)) {
+                                        cmd.Parameters.AddWithValue("@UserId", userId);
+                                        cmd.Parameters.AddWithValue("@Phone", p);
+                                        cmd.Parameters.AddWithValue("@Ext", string.IsNullOrWhiteSpace(ext) ? (object)DBNull.Value : ext);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                            }
+                            tx.Commit();
+                            return new { success = true };
+                        } catch (Exception ex) {
+                            tx.Rollback();
+                            System.Diagnostics.Debug.WriteLine($"[SaveMyPhones tx] ERROR: {ex.Message}");
+                            return new { success = false, message = "Error al guardar" };
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"[SaveMyPhones] ERROR: {ex.Message}");
+                return new { success = false, message = "Error de servidor" };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
         // HELPERS PRIVADOS
         // ════════════════════════════════════════════════════════════════
 

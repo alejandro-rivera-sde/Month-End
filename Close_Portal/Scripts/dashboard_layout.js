@@ -234,6 +234,104 @@ if (!window.AppRoot) {
         }
     }
 
+    // ========== PROFILE MODAL ==========
+
+    window.openProfileModal = function () {
+        var modal = document.getElementById('profileModal');
+        if (!modal) return;
+        loadProfilePhones();
+        new bootstrap.Modal(modal).show();
+    };
+
+    window.profileAddPhone = function () {
+        var list = document.getElementById('profilePhoneList');
+        if (!list) return;
+        list.appendChild(buildPhoneRow('', ''));
+        var inputs = list.querySelectorAll('.profile-phone-input');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+    };
+
+    window.profileSavePhones = function () {
+        var list = document.getElementById('profilePhoneList');
+        if (!list) return;
+        var phones = [], exts = [];
+        list.querySelectorAll('.profile-phone-row').forEach(function (row) {
+            phones.push(row.querySelector('.profile-phone-input').value.trim());
+            exts.push(row.querySelector('.profile-ext-input').value.trim());
+        });
+        var btn = document.getElementById('profileSaveBtn');
+        if (btn) btn.disabled = true;
+        $.ajax({
+            type: 'POST',
+            url: window.AppRoot + 'Pages/Main/Live.aspx/SaveMyPhones',
+            data: JSON.stringify({ phones: phones, extensions: exts }),
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            success: function (resp) {
+                var d = resp.d !== undefined ? resp.d : resp;
+                if (d && d.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide();
+                } else {
+                    alert(d && d.message ? d.message : 'Error al guardar');
+                }
+            },
+            error: function () { alert('Error de comunicación'); },
+            complete: function () { if (btn) btn.disabled = false; }
+        });
+    };
+
+    function loadProfilePhones() {
+        var list = document.getElementById('profilePhoneList');
+        if (!list) return;
+        list.innerHTML = '<div class="profile-loading"><span class="material-icons notif-spin">autorenew</span></div>';
+        $.ajax({
+            type: 'POST',
+            url: window.AppRoot + 'Pages/Main/Live.aspx/GetMyPhones',
+            data: '{}',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            success: function (resp) {
+                var d = resp.d !== undefined ? resp.d : resp;
+                if (d && d.success) renderProfilePhones(d.phones || []);
+                else list.innerHTML = '<p class="text-danger small ps-1">Error al cargar</p>';
+            },
+            error: function () { list.innerHTML = '<p class="text-danger small ps-1">Error de comunicación</p>'; }
+        });
+    }
+
+    function renderProfilePhones(phones) {
+        var list = document.getElementById('profilePhoneList');
+        list.innerHTML = '';
+        if (phones.length === 0) { window.profileAddPhone(); return; }
+        phones.forEach(function (p) { list.appendChild(buildPhoneRow(p.phone, p.extension)); });
+    }
+
+    function buildPhoneRow(phone, ext) {
+        var row = document.createElement('div');
+        row.className = 'profile-phone-row';
+        var phInput = document.createElement('input');
+        phInput.type = 'tel';
+        phInput.className = 'profile-phone-input';
+        phInput.placeholder = 'Teléfono';
+        phInput.value = phone || '';
+        phInput.maxLength = 20;
+        var exInput = document.createElement('input');
+        exInput.type = 'text';
+        exInput.className = 'profile-ext-input';
+        exInput.placeholder = 'Ext.';
+        exInput.value = ext || '';
+        exInput.maxLength = 10;
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'profile-btn-remove';
+        delBtn.innerHTML = '<span class="material-icons">delete_outline</span>';
+        delBtn.addEventListener('click', function () { row.remove(); });
+        row.appendChild(phInput);
+        row.appendChild(exInput);
+        row.appendChild(delBtn);
+        return row;
+    }
+
     // ========== SLIDING FOOTER ==========
     function initSlidingFooter() {
         var footer = document.getElementById('dashFooter');

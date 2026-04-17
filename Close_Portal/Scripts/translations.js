@@ -453,6 +453,11 @@ const translations = {
         // Error page
         "error.countdown_prefix": "Closing session in",
         "error.countdown_suffix": "seconds...",
+
+        // Profile modal
+        "profile.title":     "My Profile",
+        "profile.phones":    "Phone Numbers",
+        "profile.add_phone": "Add phone",
     },
 
     es: {
@@ -913,6 +918,11 @@ const translations = {
         // Página de error
         "error.countdown_prefix": "Cerrando sesión en",
         "error.countdown_suffix": "segundos...",
+
+        // Modal de perfil
+        "profile.title":     "Mi Perfil",
+        "profile.phones":    "Teléfonos",
+        "profile.add_phone": "Agregar teléfono",
     }
 };
 
