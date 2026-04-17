@@ -44,6 +44,7 @@
 
         document.documentElement.setAttribute('data-language', lang);
         localStorage.setItem('language', lang);
+        document.dispatchEvent(new CustomEvent('i18n:applied', { detail: { lang: lang } }));
     }
 
     window.I18n = { apply: apply, t: t, currentLang: currentLang };

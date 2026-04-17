@@ -13,7 +13,18 @@ if (!window.AppRoot) {
 function esT(key) { return (window.I18n && window.I18n.t) ? window.I18n.t(key) : key; }
 function esTP(key, p0) { return esT(key).replace('{0}', p0); }
 
+var _esLastConfig = null;
+
 document.addEventListener('DOMContentLoaded', () => loadConfig());
+
+document.addEventListener('i18n:applied', () => {
+    if (!_esLastConfig) return;
+    renderServiceControl(_esLastConfig);
+    renderGroups(_esLastConfig.groups || []);
+    renderAlerts(_esLastConfig.alerts || [], _esLastConfig.availableGroups || []);
+    renderSmtp(_esLastConfig.smtp);
+    updateStatusBadge(_esLastConfig);
+});
 
 // ─── AJAX ──────────────────────────────────────────────────
 function esCall(method, data, onSuccess) {
@@ -35,6 +46,7 @@ function esCall(method, data, onSuccess) {
 function loadConfig() {
     esCall('GetEmailConfig', {}, (resp) => {
         if (!resp.success) { esToast(resp.message, 'error'); return; }
+        _esLastConfig = resp;
         renderServiceControl(resp);
         renderGroups(resp.groups || []);
         renderAlerts(resp.alerts || [], resp.availableGroups || []);
