@@ -127,15 +127,16 @@
     border-radius: 10px 10px 0 0;
     padding: 14px 20px;
     display: flex;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
     align-items: center;
     border-bottom: none;
 }
 
 .search-box {
     position: relative;
-    flex: 1;
-    max-width: 320px;
+    flex: 2 1 200px;
+    min-width: 180px;
 }
 
     .search-box .material-icons {
@@ -167,6 +168,8 @@
         }
 
 .filter-select {
+    flex: 1 1 140px;
+    min-width: 130px;
     padding: 8px 12px;
     border: 1px solid var(--border-color);
     border-radius: 7px;
@@ -1263,13 +1266,12 @@ input:checked + .slider {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .toolbar {
-        flex-wrap: wrap;
+    .search-box {
+        flex: 1 1 100%;
     }
 
-    .search-box {
-        max-width: 100%;
-        width: 100%;
+    .filter-select {
+        flex: 1 1 calc(50% - 5px);
     }
 }
 

@@ -765,30 +765,23 @@ function updateUserRow(row) {
     roleBadge.className   = 'badge badge-' + row.RoleBadge;
     roleBadge.textContent = row.RoleName;
 
-    // [2] Departamento
+    // [2] Departamento — solo badge
     if (row.DepartmentCode) {
-        cells[2].innerHTML =
-            "<span class='dept-badge'>" + escHtml(row.DepartmentCode) + "</span>" +
-            "<span class='dept-name'> "  + escHtml(row.DepartmentName) + "</span>";
+        cells[2].innerHTML = "<span class='dept-badge'>" + escHtml(row.DepartmentCode) + "</span>";
     } else {
         cells[2].innerHTML = "<span style='color:var(--text-muted);font-size:11px'>—</span>";
     }
 
-    // [3] Tags WMS/locaciones
-    cells[3].querySelector('.wms-tags').innerHTML = row.WmsTagsHtml || '';
-
-    // [4] Login type — no editable, sin cambios
-
-    // [5] Badge de estado
-    const statusBadge = cells[5].querySelector('.badge');
+    // [3] Badge de estado
+    const statusBadge = cells[3].querySelector('.badge');
     statusBadge.className   = 'badge badge-' + row.StatusBadge;
     statusBadge.textContent = row.StatusLabel;
 
-    // [6] Acciones — reconstruir botones con el estado actual
+    // [4] Acciones — reconstruir botones con el estado actual
     if (row.RoleId < row.CurrentRoleId || row.UserId === parseInt(window.CurrentUserId)) {
         const toggleTitle = row.Active ? 'Desactivar usuario' : 'Activar usuario';
         const toggleIcon  = row.Active ? 'person_off' : 'person';
-        cells[6].innerHTML =
+        cells[4].innerHTML =
             "<div class='actions'>" +
             "<button type='button' class='btn-icon edit' onclick='openModalEdit(" + row.UserId + ")' title='Editar usuario'>" +
             "<span class='material-icons'>edit</span></button>" +
@@ -798,7 +791,7 @@ function updateUserRow(row) {
             "<span class='material-icons'>" + toggleIcon + "</span></button>" +
             "</div>";
     } else {
-        cells[6].innerHTML =
+        cells[4].innerHTML =
             "<div class='actions'><span class='um-no-action' title='Sin permisos para editar'>" +
             "<span class='material-icons'>lock</span></span></div>";
     }

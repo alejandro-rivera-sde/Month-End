@@ -107,8 +107,6 @@
                     <th data-translate-key="um.table.user">Usuario</th>
                     <th data-translate-key="um.table.role">Rol</th>
                     <th data-translate-key="um.table.department">Departamento</th>
-                    <th data-translate-key="um.table.locations">Locaciones</th>
-                    <th data-translate-key="um.table.login">Login</th>
                     <th data-translate-key="um.table.status">Estado</th>
                     <th data-translate-key="um.table.actions">Acciones</th>
                 </tr>
@@ -137,17 +135,8 @@
                             </td>
                             <td>
                                 <%# !string.IsNullOrEmpty(Eval("DepartmentCode")?.ToString())
-                                    ? $"<span class='dept-badge'>{Eval("DepartmentCode")}</span><span class='dept-name'> {Eval("DepartmentName")}</span>"
+                                    ? $"<span class='dept-badge'>{Eval("DepartmentCode")}</span>"
                                     : "<span style='color:var(--text-muted);font-size:11px'>—</span>" %>
-                            </td>
-                            <td>
-                                <div class="wms-tags"><%# Eval("WmsTagsHtml") %></div>
-                            </td>
-                            <td>
-                                <div class="login-type">
-                                    <span class="material-icons"><%# Eval("LoginIcon") %></span>
-                                    <%# Eval("LoginTypeLabel") %>
-                                </div>
                             </td>
                             <td>
                                 <span class="badge badge-<%# Eval("StatusBadge") %>"><%# Eval("StatusLabel") %></span>
