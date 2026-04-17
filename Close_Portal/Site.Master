@@ -11,7 +11,7 @@
     <meta http-equiv="Expires" content="0" />
 
     <!-- Bootstrap Icons (local) -->
-    <link rel="stylesheet" href='<%= ResolveUrl("~/Styles/bootstrap-icons.min.css") %>'/>
+    <link runat="server" rel="stylesheet" href="~/Styles/bootstrap-icons.min.css"/>
 
     <!-- CSS del Proyecto -->
     <link runat="server" href="~/Styles/Variables.css" rel="stylesheet" type="text/css" />
@@ -20,7 +20,7 @@
     <link runat="server" href="~/Styles/DashboardLayout.css" rel="stylesheet" type="text/css" />
 
     <!-- Bootstrap 5 CSS (local) -->
-    <link href='<%= ResolveUrl("~/Styles/bootstrap.min.css") %>' rel="stylesheet" />
+    <link runat="server" href="~/Styles/bootstrap.min.css" rel="stylesheet" />
 
     <title>
         <asp:ContentPlaceHolder ID="TitleContent" runat="server">
