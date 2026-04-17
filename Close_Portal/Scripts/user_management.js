@@ -785,7 +785,7 @@ function updateUserRow(row) {
     statusBadge.textContent = row.StatusLabel;
 
     // [6] Acciones — reconstruir botones con el estado actual
-    if (row.RoleId < row.CurrentRoleId) {
+    if (row.RoleId < row.CurrentRoleId || row.UserId === parseInt(window.CurrentUserId)) {
         const toggleTitle = row.Active ? 'Desactivar usuario' : 'Activar usuario';
         const toggleIcon  = row.Active ? 'person_off' : 'person';
         cells[6].innerHTML =

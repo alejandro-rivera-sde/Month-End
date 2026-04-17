@@ -154,7 +154,7 @@
                             </td>
                             <td>
                                 <div class="actions">
-                                    <%# (int)Eval("RoleId") < (int)(Session["RoleId"] ?? 0) ? $@"
+                                    <%# ((int)Eval("RoleId") < (int)(Session["RoleId"] ?? 0) || (int)Eval("UserId") == Convert.ToInt32(Session["UserId"] ?? 0)) ? $@"
                                     <button type='button' class='btn-icon edit'
                                             onclick='openModalEdit({Eval("UserId")})'
                                             title='Editar usuario'>

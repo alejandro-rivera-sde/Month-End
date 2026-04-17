@@ -649,7 +649,8 @@ namespace Close_Portal.Pages.Admin {
 
                 var (targetEmail, targetFullName, _, targetRoleId) = GetUserInfo(userId);
 
-                if (targetRoleId >= currentRoleId)
+                int currentUserId = session["UserId"] != null ? Convert.ToInt32(session["UserId"]) : -1;
+                if (targetRoleId >= currentRoleId && userId != currentUserId)
                     return new { Success = false, Message = "No tienes permisos para modificar este usuario" };
 
                 // Capturar estado previo de Locked para detectar cambio
@@ -956,10 +957,11 @@ namespace Close_Portal.Pages.Admin {
                 var (targetEmail, targetFullName, _, targetRoleId) = GetUserInfo(userId);
                 string performedBy = System.Web.HttpContext.Current.Session["Email"]?.ToString() ?? "Sistema";
 
-                int currentRoleId = System.Web.HttpContext.Current.Session["RoleId"] != null
-                    ? (int)System.Web.HttpContext.Current.Session["RoleId"] : -1;
+                var session2 = System.Web.HttpContext.Current.Session;
+                int currentRoleId = session2["RoleId"] != null ? (int)session2["RoleId"] : -1;
+                int currentUserId2 = session2["UserId"] != null ? Convert.ToInt32(session2["UserId"]) : -1;
 
-                if (targetRoleId >= currentRoleId)
+                if (targetRoleId >= currentRoleId && userId != currentUserId2)
                     return new { Success = false, Message = "No tienes permisos para modificar este usuario" };
 
                 using (SqlConnection conn = new SqlConnection(_connStr)) {
