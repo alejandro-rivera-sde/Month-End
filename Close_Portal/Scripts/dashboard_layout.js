@@ -81,6 +81,10 @@ if (!window.AppRoot) {
 document.addEventListener('show.bs.modal', function () {
     requestAnimationFrame(function () { document.body.style.paddingRight = ''; });
 });
+document.addEventListener('hide.bs.modal', function (e) {
+    var focused = e.target.querySelector(':focus');
+    if (focused) focused.blur();
+});
 document.addEventListener('hidden.bs.modal', function () {
     document.body.style.paddingRight = '';
 });
