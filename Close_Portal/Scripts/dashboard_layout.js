@@ -75,6 +75,16 @@ if (!window.AppRoot) {
     }
 })();
 
+// Bootstrap sets body padding-right as an inline style after firing 'show.bs.modal'.
+// requestAnimationFrame runs after Bootstrap's sync code but before the browser paints,
+// so clearing it here prevents the visible header shift on all dashboard modals.
+document.addEventListener('show.bs.modal', function () {
+    requestAnimationFrame(function () { document.body.style.paddingRight = ''; });
+});
+document.addEventListener('hidden.bs.modal', function () {
+    document.body.style.paddingRight = '';
+});
+
 (function () {
     'use strict';
 
