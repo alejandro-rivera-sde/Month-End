@@ -491,8 +491,18 @@ namespace Close_Portal.Services {
                         if (!string.IsNullOrEmpty(t)) mail.To.Add(t);
                     }
                     using (var smtp = new SmtpClient(SmtpHost, SmtpPort)) {
-                        smtp.Credentials = new NetworkCredential(SmtpUser, SmtpPassword);
                         smtp.EnableSsl = SmtpSsl;
+
+                        // Validar si existen credenciales en el web.config
+                        if (!string.IsNullOrWhiteSpace(SmtpUser) && !string.IsNullOrWhiteSpace(SmtpPassword)) {
+                            // Entorno local: usa tu correo y App Password
+                            smtp.Credentials = new NetworkCredential(SmtpUser, SmtpPassword);
+                        } else {
+                            // Producción: SMTP Relay por IP (sin contraseña)
+                            // Evitamos que .NET intente usar las credenciales de Windows del servidor
+                            smtp.UseDefaultCredentials = false;
+                        }
+
                         smtp.Send(mail);
                     }
                 }
