@@ -127,7 +127,7 @@ namespace Close_Portal.Services {
                                            string targetRole, string performedByEmail) {
             Send(
                 subject: $"[Close Portal] Usuario agregado: {targetUsername ?? targetEmail}",
-                body: BuildTemplate("Nuevo usuario agregado", "#10b981", "&#10010;", new[] {
+                body: EmailTemplateBuilder.Simple("Nuevo usuario agregado", AlertStyles.UserAdded, new[] {
                     $"<b>Usuario:</b> {targetUsername ?? "(sin nombre)"}",
                     $"<b>Email:</b> {targetEmail}",
                     targetRole != null ? $"<b>Rol asignado:</b> {targetRole}" : null,
@@ -142,7 +142,7 @@ namespace Close_Portal.Services {
                                              string performedByEmail) {
             Send(
                 subject: $"[Close Portal] Usuario desactivado: {targetUsername ?? targetEmail}",
-                body: BuildTemplate("Usuario desactivado", "#ef4444", "&#10006;", new[] {
+                body: EmailTemplateBuilder.Simple("Usuario desactivado", AlertStyles.UserRemoved, new[] {
                     $"<b>Usuario:</b> {targetUsername ?? "(sin nombre)"}",
                     $"<b>Email:</b> {targetEmail}",
                     $"<b>Realizado por:</b> {performedByEmail}",
@@ -156,7 +156,7 @@ namespace Close_Portal.Services {
                                              string newRole, string performedByEmail) {
             Send(
                 subject: $"[Close Portal] Usuario modificado: {targetUsername ?? targetEmail}",
-                body: BuildTemplate("Usuario modificado", "#6366f1", "&#9998;", new[] {
+                body: EmailTemplateBuilder.Simple("Usuario modificado", AlertStyles.UserUpdated, new[] {
                     $"<b>Usuario:</b> {targetUsername ?? "(sin nombre)"}",
                     $"<b>Email:</b> {targetEmail}",
                     $"<b>Nuevo rol:</b> {newRole}",
@@ -171,10 +171,23 @@ namespace Close_Portal.Services {
                 string managerEmail, string managerName,
                 string requesterName, string requesterEmail,
                 string wmsCode, string wmsName, string notes, int requestId) {
+
+            string notesLine = string.IsNullOrWhiteSpace(notes) ? null
+                : $"<b>Notas:</b> {System.Web.HttpUtility.HtmlEncode(notes)}";
+
             Send(
                 subject: $"[Close Portal] Solicitud de cierre — {wmsCode}",
-                body: BuildClosureRequestTemplate(managerName, requesterName,
-                          requesterEmail, wmsCode, wmsName, notes, requestId),
+                body: EmailTemplateBuilder.ClosureRequest(
+                    "Solicitud de cierre",
+                    AlertStyles.ClosureRequest,
+                    $"Hola <strong>{System.Web.HttpUtility.HtmlEncode(managerName)}</strong>, tienes una nueva solicitud de cierre pendiente.",
+                    new[] {
+                        $"<b>Solicitud #:</b> {requestId}",
+                        $"<b>Bodega:</b> {System.Web.HttpUtility.HtmlEncode(wmsCode)} — {System.Web.HttpUtility.HtmlEncode(wmsName)}",
+                        $"<b>Solicitado por:</b> {System.Web.HttpUtility.HtmlEncode(requesterName)} ({System.Web.HttpUtility.HtmlEncode(requesterEmail)})",
+                        notesLine
+                    },
+                    $"Solicitud #{requestId} — Close Portal."),
                 recipientList: managerEmail,
                 alertKey: "ClosureRequest");
         }
@@ -194,51 +207,18 @@ namespace Close_Portal.Services {
 
             if (recipients.Count == 0) return;
 
-            var spotRows = new System.Text.StringBuilder();
-            foreach (var s in spots)
-                spotRows.Append($@"
-                <tr>
-                  <td style='padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'>
-                    <span style='display:inline-block;background:#fef3c7;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;margin-right:10px;vertical-align:middle;'>{System.Web.HttpUtility.HtmlEncode(s.DeptCode)}</span>
-                    {System.Web.HttpUtility.HtmlEncode(s.DeptName)}
-                  </td>
-                  <td style='padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;font-weight:600;'>
-                    {System.Web.HttpUtility.HtmlEncode(s.Username ?? s.Email)}
-                  </td>
-                </tr>");
-
-            string body = $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
-<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
-<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
-<table width='560' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
-  <tr><td style='background:#f59e0b;padding:28px 32px;text-align:center;'>
-    <div style='font-size:40px;color:#fff;margin-bottom:8px;'>&#128737;</div>
-    <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>Guardia iniciada</h1>
-    <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
-  </td></tr>
-  <tr><td style='padding:28px 32px;'>
-    <p style='margin:0 0 20px;font-size:15px;color:#334155;'>Guardia iniciada el <strong>{startTime:dd/MM/yyyy}</strong> a las <strong>{startTime:HH:mm} hrs</strong> por <strong>{System.Web.HttpUtility.HtmlEncode(startedByEmail)}</strong>.</p>
-    <table width='100%' cellpadding='0' cellspacing='0' style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;'>
-      <thead><tr style='background:#f8fafc;'>
-        <th style='padding:10px 14px;text-align:left;font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0;'>Departamento</th>
-        <th style='padding:10px 14px;text-align:left;font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0;'>Responsable</th>
-      </tr></thead>
-      <tbody>{spotRows}</tbody>
-    </table>
-  </td></tr>
-  <tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
-    <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal.</p>
-  </td></tr>
-</table></td></tr></table></body></html>";
+            string intro = $"Guardia iniciada el <strong>{startTime:dd/MM/yyyy}</strong> a las <strong>{startTime:HH:mm} hrs</strong> por <strong>{System.Web.HttpUtility.HtmlEncode(startedByEmail)}</strong>.";
 
             Send(subject: $"[Close Portal] Guardia iniciada — {startTime:dd/MM/yyyy HH:mm} hrs",
-                 body: body, recipientList: string.Join(";", recipients), alertKey: "GuardStarted");
+                 body: EmailTemplateBuilder.WithSpotsTable("Guardia iniciada", AlertStyles.GuardStarted, intro, spots),
+                 recipientList: string.Join(";", recipients),
+                 alertKey: "GuardStarted");
         }
 
         public static void NotifyGuardClosed(DateTime closedAt, string triggeredByEmail) {
             Send(
                 subject: $"[Close Portal] Guardia cerrada — {closedAt:dd/MM/yyyy HH:mm} hrs",
-                body: BuildTemplate("Guardia cerrada", "#6366f1", "&#128274;", new[] {
+                body: EmailTemplateBuilder.Simple("Guardia cerrada", AlertStyles.GuardClosed, new[] {
                     "<b>Todas las locaciones cerraron correctamente.</b>",
                     $"<b>Cierre registrado:</b> {closedAt:dd/MM/yyyy HH:mm} hrs",
                     $"<b>Disparado por:</b> {triggeredByEmail ?? "Sistema"}"
@@ -254,7 +234,7 @@ namespace Close_Portal.Services {
         public static void NotifyGuardDraft(int guardId, DateTime startTime, string createdByEmail) {
             Send(
                 subject: $"[Close Portal] Guardia programada — {startTime:dd/MM/yyyy HH:mm} hrs",
-                body: BuildTemplate("Guardia programada", "#f59e0b", "&#128197;", new[] {
+                body: EmailTemplateBuilder.Simple("Guardia programada", AlertStyles.GuardDraft, new[] {
                     "<b>Se ha programado una nueva guardia de cierre.</b>",
                     $"<b>Inicio programado:</b> {startTime:dd/MM/yyyy HH:mm} hrs",
                     $"<b>Creada por:</b> {createdByEmail ?? "Sistema"}",
@@ -274,7 +254,7 @@ namespace Close_Portal.Services {
                 ? startTime.Value.ToString("dd/MM/yyyy HH:mm") + " hrs" : "—";
             Send(
                 subject: $"[Close Portal] Guardia cancelada (draft) — {fechaStr}",
-                body: BuildTemplate("Guardia draft cancelada", "#ef4444", "&#10006;", new[] {
+                body: EmailTemplateBuilder.Simple("Guardia draft cancelada", AlertStyles.GuardDraftCancelled, new[] {
                     "<b>La guardia programada en borrador ha sido cancelada.</b>",
                     $"<b>Inicio que estaba programado:</b> {fechaStr}",
                     $"<b>Cancelada por:</b> {cancelledByEmail ?? "Sistema"}",
@@ -299,52 +279,18 @@ namespace Close_Portal.Services {
             string fechaStr = startTime.HasValue
                 ? startTime.Value.ToString("dd/MM/yyyy HH:mm") + " hrs" : "—";
 
-            var spotRows = new System.Text.StringBuilder();
-            foreach (var s in spots)
-                spotRows.Append($@"
-                <tr>
-                  <td style='padding:8px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;'>
-                    <span style='display:inline-block;background:#fef3c7;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;margin-right:8px;'>{System.Web.HttpUtility.HtmlEncode(s.DeptCode)}</span>
-                    {System.Web.HttpUtility.HtmlEncode(s.DeptName)}
-                  </td>
-                  <td style='padding:8px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;font-weight:600;'>
-                    {System.Web.HttpUtility.HtmlEncode(s.Username ?? s.Email ?? "Sin asignar")}
-                  </td>
-                </tr>");
-
-            string spotsTable = spots.Count > 0
-                ? $@"<table width='100%' cellpadding='0' cellspacing='0' style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-top:16px;'>
-                      <thead><tr style='background:#f8fafc;'>
-                        <th style='padding:8px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;'>Departamento</th>
-                        <th style='padding:8px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;'>Responsable</th>
-                      </tr></thead>
-                      <tbody>{spotRows}</tbody></table>"
-                : "";
-
-            string body = $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
-<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
-<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
-<table width='560' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
-  <tr><td style='background:#10b981;padding:28px 32px;text-align:center;'>
-    <div style='font-size:40px;color:#fff;margin-bottom:8px;'>&#128737;</div>
-    <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>Guardia confirmada</h1>
-    <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
-  </td></tr>
-  <tr><td style='padding:28px 32px;'>
-    <p style='margin:0 0 8px;font-size:15px;color:#334155;'>La guardia ha sido <strong>confirmada y está activa</strong>.</p>
-    <table width='100%' cellpadding='0' cellspacing='0'>
-      <tr><td style='padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Inicio:</b> {fechaStr}</td></tr>
-      <tr><td style='padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Confirmada por:</b> {System.Web.HttpUtility.HtmlEncode(confirmedByEmail ?? "Sistema")}</td></tr>
-    </table>
-    {spotsTable}
-  </td></tr>
-  <tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
-    <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal.</p>
-  </td></tr>
-</table></td></tr></table></body></html>";
-
             Send(subject: $"[Close Portal] Guardia confirmada — {fechaStr}",
-                 body: body, recipientList: audience, alertKey: "GuardConfirmed");
+                 body: EmailTemplateBuilder.WithInfoAndOptionalSpotsTable(
+                     "Guardia confirmada",
+                     AlertStyles.GuardConfirmed,
+                     "La guardia ha sido <strong>confirmada y está activa</strong>.",
+                     new[] {
+                         $"<b>Inicio:</b> {fechaStr}",
+                         $"<b>Confirmada por:</b> {System.Web.HttpUtility.HtmlEncode(confirmedByEmail ?? "Sistema")}"
+                     },
+                     spots),
+                 recipientList: audience,
+                 alertKey: "GuardConfirmed");
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -361,7 +307,7 @@ namespace Close_Portal.Services {
 
             Send(
                 subject: $"[Close Portal] Guardia cancelada — {fechaStr}",
-                body: BuildTemplate("Guardia cancelada", "#ef4444", "&#10006;", new[] {
+                body: EmailTemplateBuilder.Simple("Guardia cancelada", AlertStyles.GuardCancelled, new[] {
                     "<b>La guardia activa ha sido cancelada.</b>",
                     $"<b>Inicio que estaba programado:</b> {fechaStr}",
                     $"<b>Cancelada por:</b> {cancelledByEmail ?? "Sistema"}",
@@ -381,8 +327,6 @@ namespace Close_Portal.Services {
                 string reviewNotes, string reviewedBy) {
 
             bool approved = status == "Approved";
-            string color = approved ? "#10b981" : "#ef4444";
-            string icon = approved ? "&#10003;" : "&#10006;";
             string label = approved ? "aprobada" : "rechazada";
 
             string notesLine = !string.IsNullOrWhiteSpace(reviewNotes)
@@ -391,7 +335,7 @@ namespace Close_Portal.Services {
 
             Send(
                 subject: $"[Close Portal] Solicitud de cierre {label} — {locationName}",
-                body: BuildTemplate($"Solicitud {label}", color, icon, new[] {
+                body: EmailTemplateBuilder.Simple($"Solicitud {label}", AlertStyles.ClosureResponse(approved), new[] {
                     $"Hola <b>{System.Web.HttpUtility.HtmlEncode(requesterName)}</b>, tu solicitud de cierre fue <b>{label}</b>.",
                     $"<b>Locación:</b> {System.Web.HttpUtility.HtmlEncode(locationName)}",
                     $"<b>Estado:</b> {(approved ? "Aprobada ✓" : "Rechazada ✗")}",
@@ -411,7 +355,7 @@ namespace Close_Portal.Services {
                 string targetEmail, string targetUsername, string performedByEmail) {
             Send(
                 subject: "[Close Portal] Tu cuenta ha sido bloqueada",
-                body: BuildTemplate("Cuenta bloqueada", "#ef4444", "&#128274;", new[] {
+                body: EmailTemplateBuilder.Simple("Cuenta bloqueada", AlertStyles.UserBlocked, new[] {
                     $"Hola <b>{System.Web.HttpUtility.HtmlEncode(targetUsername ?? targetEmail)}</b>.",
                     "Tu cuenta de <b>Close Portal</b> ha sido bloqueada temporalmente.",
                     "Si crees que esto es un error, contacta al administrador del sistema.",
@@ -430,7 +374,7 @@ namespace Close_Portal.Services {
                 string targetEmail, string targetUsername, string performedByEmail) {
             Send(
                 subject: "[Close Portal] Tu cuenta ha sido desbloqueada",
-                body: BuildTemplate("Cuenta desbloqueada", "#10b981", "&#128275;", new[] {
+                body: EmailTemplateBuilder.Simple("Cuenta desbloqueada", AlertStyles.UserUnblocked, new[] {
                     $"Hola <b>{System.Web.HttpUtility.HtmlEncode(targetUsername ?? targetEmail)}</b>.",
                     "Tu cuenta de <b>Close Portal</b> ha sido desbloqueada. Ya puedes iniciar sesión.",
                     $"<b>Acción realizada por:</b> {System.Web.HttpUtility.HtmlEncode(performedByEmail ?? "Sistema")}",
@@ -457,7 +401,7 @@ namespace Close_Portal.Services {
 
                 Send(
                     subject: $"[Close Portal] Spot {deptCode} sin asignar — guardia activa",
-                    body: BuildTemplate($"Spot {deptCode} sin responsable", "#f59e0b", "&#9888;", new[] {
+                    body: EmailTemplateBuilder.Simple($"Spot {deptCode} sin responsable", AlertStyles.DefaultSpotReminder, new[] {
                         $"La guardia ha sido confirmada pero el spot de <b>{deptCode}</b> no tiene responsable asignado.",
                         "Por favor, accede a Close Portal y asigna un responsable para este departamento.",
                         $"<b>Fecha:</b> {DateTime.Now:dd/MM/yyyy HH:mm} hrs"
@@ -490,7 +434,7 @@ namespace Close_Portal.Services {
 
                     Send(
                         subject: $"[Close Portal] Recordatorio: guardia sin confirmar ({hoursElapsed}h)",
-                        body: BuildTemplate("Guardia sin confirmar", "#f59e0b", "&#9201;", new[] {
+                        body: EmailTemplateBuilder.Simple("Guardia sin confirmar", AlertStyles.GuardDraftReminder, new[] {
                             $"Existe una guardia en borrador que lleva <b>{hoursElapsed} hora{(hoursElapsed != 1 ? "s" : "")}</b> sin ser confirmada.",
                             $"<b>Programada el:</b> {createdAt:dd/MM/yyyy HH:mm} hrs",
                             "Por favor, ingresa a Close Portal y confirma la guardia o cancélala si ya no es necesaria.",
@@ -551,63 +495,6 @@ namespace Close_Portal.Services {
             } catch (Exception ex) {
                 Debug.WriteLine($"[EmailService] ERROR: {ex.Message}");
             }
-        }
-
-        // ════════════════════════════════════════════════════════════════
-        // BUILDERS
-        // ════════════════════════════════════════════════════════════════
-        private static string BuildTemplate(string title, string color,
-                                            string icon, string[] lines) {
-            string rows = "";
-            foreach (var l in lines) {
-                if (string.IsNullOrEmpty(l)) continue;
-                rows += $"<tr><td style='padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'>{l}</td></tr>";
-            }
-            return $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
-<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
-<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
-<table width='540' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
-<tr><td style='background:{color};padding:28px 32px;text-align:center;'>
-  <div style='font-size:40px;color:#fff;margin-bottom:8px;'>{icon}</div>
-  <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>{title}</h1>
-  <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
-</td></tr>
-<tr><td style='padding:28px 32px;'><table width='100%' cellpadding='0' cellspacing='0'>{rows}</table></td></tr>
-<tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
-  <p style='margin:0;color:#94a3b8;font-size:12px;'>Notificación automática de Close Portal.</p>
-</td></tr>
-</table></td></tr></table></body></html>";
-        }
-
-        private static string BuildClosureRequestTemplate(
-                string managerName, string requesterName, string requesterEmail,
-                string wmsCode, string wmsName, string notes, int requestId) {
-
-            string notesRow = string.IsNullOrWhiteSpace(notes) ? "" :
-                $"<tr><td style='padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Notas:</b> {System.Web.HttpUtility.HtmlEncode(notes)}</td></tr>";
-
-            return $@"<!DOCTYPE html><html><head><meta charset='utf-8'></head>
-<body style='margin:0;padding:0;background:#f8fafc;font-family:sans-serif;'>
-<table width='100%' cellpadding='0' cellspacing='0'><tr><td align='center' style='padding:40px 20px;'>
-<table width='540' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);'>
-<tr><td style='background:#6366f1;padding:28px 32px;text-align:center;'>
-  <div style='font-size:40px;color:#fff;margin-bottom:8px;'>&#128274;</div>
-  <h1 style='margin:0;color:#fff;font-size:20px;font-weight:700;'>Solicitud de cierre</h1>
-  <p style='margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;'>Close Portal &mdash; Novamex</p>
-</td></tr>
-<tr><td style='padding:28px 32px;'>
-  <p style='margin:0 0 20px;font-size:15px;color:#334155;'>Hola <strong>{System.Web.HttpUtility.HtmlEncode(managerName)}</strong>, tienes una nueva solicitud de cierre pendiente.</p>
-  <table width='100%' cellpadding='0' cellspacing='0'>
-    <tr><td style='padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Solicitud #:</b> {requestId}</td></tr>
-    <tr><td style='padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Bodega:</b> {System.Web.HttpUtility.HtmlEncode(wmsCode)} — {System.Web.HttpUtility.HtmlEncode(wmsName)}</td></tr>
-    <tr><td style='padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;'><b>Solicitado por:</b> {System.Web.HttpUtility.HtmlEncode(requesterName)} ({System.Web.HttpUtility.HtmlEncode(requesterEmail)})</td></tr>
-    {notesRow}
-  </table>
-</td></tr>
-<tr><td style='background:#f8fafc;padding:14px 32px;text-align:center;border-top:1px solid #e2e8f0;'>
-  <p style='margin:0;color:#94a3b8;font-size:12px;'>Solicitud #{requestId} — Close Portal.</p>
-</td></tr>
-</table></td></tr></table></body></html>";
         }
 
         private static string MergeGroups(params string[] groups) {
