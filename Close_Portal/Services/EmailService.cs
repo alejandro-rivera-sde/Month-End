@@ -271,9 +271,12 @@ namespace Close_Portal.Services {
         public static void NotifyGuardConfirmed(
                 int guardId, DateTime? startTime,
                 string confirmedByEmail,
-                List<(string DeptCode, string DeptName, string Username, string Email)> spots) {
+                List<(string DeptCode, string DeptName, string Username, string Email)> spots,
+                string audienceOverride = null) {
 
-            string audience = new EmailDataAccess().GetGuardAudienceEmails(guardId);
+            string audience = !string.IsNullOrWhiteSpace(audienceOverride)
+                ? audienceOverride
+                : new EmailDataAccess().GetGuardAudienceEmails(guardId);
             if (string.IsNullOrWhiteSpace(audience)) return;
 
             string fechaStr = startTime.HasValue
@@ -389,14 +392,16 @@ namespace Close_Portal.Services {
         // Se envía al confirmar la guardia si hay spots sin asignar.
         // Destinatario: grupo estático DefaultSpot{deptCode}
         // ════════════════════════════════════════════════════════════════
-        public static void NotifyDefaultSpotReminders(int guardId) {
+        public static void NotifyDefaultSpotReminders(int guardId,
+                IList<string> deptCodesOverride = null, string recipientOverride = null) {
             var da = new EmailDataAccess();
-            var unfilledDepts = da.GetUnfilledSpotDeptCodes(guardId);
+            IList<string> unfilledDepts = deptCodesOverride
+                ?? da.GetUnfilledSpotDeptCodes(guardId);
             if (unfilledDepts == null || unfilledDepts.Count == 0) return;
 
             foreach (var deptCode in unfilledDepts) {
-                string groupKey = $"DefaultSpot{deptCode.ToUpper()}";
-                string recipients = ResolveGroup(groupKey);
+                string recipients = recipientOverride
+                    ?? ResolveGroup($"DefaultSpot{deptCode.ToUpper()}");
                 if (string.IsNullOrWhiteSpace(recipients)) continue;
 
                 Send(

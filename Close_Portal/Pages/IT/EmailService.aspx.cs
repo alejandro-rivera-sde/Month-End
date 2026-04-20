@@ -406,7 +406,8 @@ namespace Close_Portal.Pages.IT {
                             ("AR", "Cuentas por Cobrar", "Usuario AR Prueba", EmailService.TestRecipient),
                             ("CS", "Customer Service",   "Usuario CS Prueba", EmailService.TestRecipient),
                             ("IT", "Tecnología",          null,                null)
-                        });
+                        },
+                        audienceOverride: EmailService.TestRecipient);
                     break;
                 case "GuardCancelled":
                     EmailService.NotifyGuardCancelled(DateTime.Now, performer, EmailService.TestRecipient);
@@ -427,7 +428,9 @@ namespace Close_Portal.Pages.IT {
                     EmailService.NotifyGuardDraft(0, DateTime.Now.AddHours(-3), performer);
                     break;
                 case "DefaultSpotReminder":
-                    EmailService.NotifyDefaultSpotReminders(0);
+                    EmailService.NotifyDefaultSpotReminders(0,
+                        deptCodesOverride: new[] { "TEST" },
+                        recipientOverride: EmailService.TestRecipient);
                     break;
             }
         }
