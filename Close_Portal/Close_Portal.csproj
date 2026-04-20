@@ -293,6 +293,8 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RouteConfig.cs" />
+    <Compile Include="Services\EmailAlertStyle.cs" />
+    <Compile Include="Services\EmailTemplateBuilder.cs" />
     <Compile Include="Services\EmailService.cs" />
     <Compile Include="Services\GoogleAuthService.cs" />
     <Compile Include="Services\GoogleTestService.cs" />
