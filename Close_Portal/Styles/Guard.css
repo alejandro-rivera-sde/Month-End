@@ -1,0 +1,1825 @@
+﻿/* =========================================================
+   Guard.css  — Módulo de Gestión de Guardia
+   Prefijo: gd-   (evita conflictos con Bootstrap 5 y Dashboard)
+   Theme:   usa 100% variables de Variables.css  (dark/light)
+   Modelo:  1 guardia con N spots (uno por departamento)
+   ========================================================= */
+
+/* ─── ACCENT LOCAL DEL MÓDULO ─────────────────────────── */
+:root {
+    --gd-accent: #f59e0b;
+    --gd-accent-hover: #d97706;
+    --gd-accent-alpha: rgba(245, 158, 11, 0.12);
+}
+
+/* ─── PAGE HEADER ─────────────────────────────────────── */
+.page-title p {
+    color: var(--text-secondary);
+}
+
+.gd-title-icon {
+    vertical-align: middle;
+    margin-right: 8px;
+    color: var(--gd-accent);
+    font-size: 28px;
+}
+
+.gd-header-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+    .gd-header-badge.active {
+        background: var(--success-bg);
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+
+    .gd-header-badge.pending {
+        background: var(--gd-accent-alpha);
+        border-color: var(--gd-accent);
+        color: var(--gd-accent);
+    }
+
+    .gd-header-badge.draft {
+        background: rgba(99, 102, 241, 0.12);
+        border-color: #6366f1;
+        color: #818cf8;
+    }
+
+    .gd-header-badge.inactive {
+        background: var(--error-bg);
+        border-color: var(--error-color);
+        color: var(--error-color);
+    }
+
+    .gd-header-badge .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── SECTIONS ────────────────────────────────────────── */
+.gd-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+}
+
+.gd-history-section {
+    padding-bottom: 8px;
+}
+
+.gd-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+    .gd-section-header .material-icons {
+        color: var(--gd-accent);
+        font-size: 22px;
+    }
+
+    .gd-section-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+/* ─── COUNT BADGE ─────────────────────────────────────── */
+.gd-count-badge {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    min-width: 28px;
+    text-align: center;
+}
+
+/* ─── EMPTY PANEL (sin guardia) ───────────────────────── */
+.gd-empty-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 56px 24px;
+    text-align: center;
+}
+
+    .gd-empty-panel p {
+        margin: 0;
+        font-size: 15px;
+        color: var(--text-secondary);
+    }
+
+.gd-empty-icon {
+    font-size: 56px !important;
+    color: var(--border-color) !important;
+}
+
+.gd-btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--gd-accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-create:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-create .material-icons {
+        font-size: 20px;
+    }
+
+/* ─── GUARD HEADER (cabecera de guardia activa) ───────── */
+.gd-guard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.gd-guard-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+    .gd-guard-meta .material-icons {
+        font-size: 16px;
+        color: var(--gd-accent);
+    }
+
+.gd-guard-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gd-btn-danger-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+    .gd-btn-danger-sm:hover {
+        background: var(--error-bg);
+    }
+
+    .gd-btn-danger-sm .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── START STATUS BANNER ─────────────────────────────── */
+.gd-start-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--success-bg);
+    border: 1px solid var(--success-color);
+    border-radius: 10px;
+    color: var(--success-color);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+    .gd-start-status .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── SPOTS GRID ──────────────────────────────────────── */
+.gd-spots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+/* ─── SPOT CARD ───────────────────────────────────────── */
+.gd-spot-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gd-spot-filled {
+    border-color: var(--success-color);
+    background: var(--success-bg);
+}
+
+.gd-spot-pending {
+    border-color: var(--border-color);
+    border-style: dashed;
+}
+
+    .gd-spot-pending:hover {
+        border-color: var(--gd-accent);
+        box-shadow: 0 2px 12px var(--gd-accent-alpha);
+        border-style: solid;
+    }
+
+/* ─── DEPARTMENT BADGE ────────────────────────────────── */
+.gd-spot-dept {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gd-dept-badge {
+    display: inline-block;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.30);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .gd-dept-badge {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.gd-dept-badge-sm {
+    font-size: 10px;
+    padding: 2px 7px;
+}
+
+.gd-dept-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* ─── SPOT USER BLOCK ─────────────────────────────────── */
+.gd-spot-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.gd-spot-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gd-spot-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-spot-user-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-spot-empty-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 6px 0;
+}
+
+    .gd-spot-empty-user .material-icons {
+        font-size: 22px;
+        opacity: 0.45;
+    }
+
+/* ─── SPOT FOOTER ─────────────────────────────────────── */
+.gd-spot-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 34px;
+}
+
+.gd-spot-assigned-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gd-btn-spot-assign {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--gd-accent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gd-accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+    .gd-btn-spot-assign:hover {
+        background: var(--gd-accent);
+        color: #000;
+    }
+
+    .gd-btn-spot-assign .material-icons {
+        font-size: 16px;
+    }
+
+.gd-btn-spot-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+    .gd-btn-spot-clear:hover {
+        border-color: var(--error-color);
+        color: var(--error-color);
+        background: var(--error-bg);
+    }
+
+    .gd-btn-spot-clear .material-icons {
+        font-size: 17px;
+    }
+
+/* ─── AVATAR ──────────────────────────────────────────── */
+.gd-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
+}
+
+.gd-avatar-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gd-accent), var(--gd-accent-hover));
+}
+
+/* ─── HISTORY TABLE ───────────────────────────────────── */
+.gd-empty-schedule {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+}
+
+    .gd-empty-schedule .material-icons {
+        font-size: 48px;
+        opacity: 0.4;
+    }
+
+    .gd-empty-schedule p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+.gd-table-wrapper {
+    overflow-x: auto;
+}
+
+.gd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+    .gd-table thead th {
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
+    }
+
+    .gd-table tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s;
+    }
+
+        .gd-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .gd-table tbody tr:hover {
+            background: var(--divider-color);
+        }
+
+    .gd-table td {
+        padding: 14px;
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+.gd-datetime .gd-date {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+/* History spots column */
+.gd-hist-spots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.gd-hist-spot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.gd-hist-spot-empty {
+    opacity: 0.5;
+    font-style: italic;
+}
+
+/* ─── MODAL OVERLAY ────────────────────────────────────── */
+.gd-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: gd-fadeIn 0.15s ease;
+}
+
+@keyframes gd-fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.gd-modal {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-xl);
+    animation: gd-slideIn 0.2s ease;
+    z-index: 9999;
+    /* overflow:hidden removido — cortaba el calendario nativo del datetime-local */
+}
+
+@keyframes gd-slideIn {
+    from {
+        transform: translateY(-16px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.gd-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    border-radius: 16px 16px 0 0;
+}
+
+    .gd-modal-header .material-icons {
+        color: var(--gd-accent);
+        font-size: 22px;
+    }
+
+    .gd-modal-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+.gd-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+    .gd-modal-close:hover {
+        color: var(--text-primary);
+        background: var(--border-color);
+    }
+
+.gd-modal-body {
+    padding: 24px;
+    /* max-height/overflow-y removidos — impedían expandir el picker nativo */
+}
+
+.gd-modal-dept-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.gd-modal-error {
+    background: var(--error-bg);
+    border: 1px solid var(--error-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--error-color);
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+/* ─── USER LIST (modal de asignación) ─────────────────── */
+.gd-user-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+}
+
+    .gd-user-search:focus-within {
+        border-color: var(--gd-accent);
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+    }
+
+    .gd-user-search .material-icons {
+        font-size: 17px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+
+.gd-user-search-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    width: 100%;
+}
+
+    .gd-user-search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+.gd-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: clamp(200px, 40vh, 520px);
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.gd-user-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+    .gd-user-option:hover {
+        border-color: var(--gd-accent);
+        background: var(--gd-accent-alpha);
+    }
+
+.gd-user-option-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gd-owner-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-owner-email {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gd-user-option-arrow {
+    color: var(--text-muted);
+    font-size: 18px !important;
+    flex-shrink: 0;
+}
+
+/* ─── LOADING ──────────────────────────────────────────── */
+.gd-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 20px 0;
+    justify-content: center;
+}
+
+@keyframes gd-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.gd-spin {
+    animation: gd-spin 1s linear infinite;
+}
+
+/* ─── MODAL FOOTER ────────────────────────────────────── */
+.gd-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.gd-btn-cancel {
+    padding: 10px 22px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+    .gd-btn-cancel:hover {
+        border-color: var(--text-secondary);
+        color: var(--text-primary);
+    }
+
+.gd-btn-confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: var(--gd-accent);
+    color: #000;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .gd-btn-confirm:hover {
+        opacity: 0.88;
+    }
+
+    .gd-btn-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .gd-btn-confirm .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── CONFIRM MODAL ───────────────────────────────────── */
+.gd-confirm-modal {
+    max-width: 400px;
+}
+
+.gd-confirm-body {
+    padding: 24px;
+    text-align: center;
+}
+
+.gd-confirm-icon {
+    font-size: 48px;
+    color: var(--error-color);
+    margin-bottom: 12px;
+}
+
+.gd-confirm-body p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.gd-confirm-body strong {
+    color: var(--text-primary);
+}
+
+.gd-btn-danger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: var(--error-color);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+    .gd-btn-danger:hover {
+        opacity: 0.88;
+    }
+
+    .gd-btn-danger:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        background: var(--error-color);
+        filter: grayscale(0.3);
+    }
+
+    .gd-btn-danger .material-icons {
+        font-size: 18px;
+    }
+
+/* Draft badge inline en cabecera */
+.gd-draft-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: var(--gd-accent-alpha);
+    color: var(--gd-accent);
+    border: 1px solid var(--gd-accent);
+    margin-left: 10px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+/* Botón Crear guardia (paso 3) en gd-guard-actions */
+.gd-btn-confirm-guard {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    background: var(--success-color);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-confirm-guard:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-confirm-guard:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .gd-btn-confirm-guard .material-icons {
+        font-size: 18px;
+    }
+
+/* Picker inline dentro de la sección de locaciones */
+.gd-loc-picker-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    grid-column: 1 / -1; /* span all columns when inside gd-loc-grid */
+    width: 100%;
+}
+
+/* ─── CONFIRM LOCATIONS BUTTON (header inline) ─────────── */
+.gd-loc-confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-left: auto;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+    .gd-loc-confirm-btn .material-icons {
+        font-size: 14px;
+    }
+
+/* Estado: sin cambios pendientes — verde, deshabilitado */
+.gd-loc-confirmed-state {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+    .gd-loc-confirmed-state:disabled {
+        opacity: 1;
+        cursor: default;
+    }
+
+/* Estado: cambios sin guardar — primary, activo */
+.gd-loc-dirty-state {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+    .gd-loc-dirty-state:hover {
+        opacity: 0.88;
+    }
+
+/* ─── MODAL FORM FIELDS ────────────────────────────────── */
+.gd-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+    .gd-field-group + .gd-field-group {
+        margin-top: 16px;
+    }
+
+    .gd-field-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+/* Input + botón calendario en un solo row */
+.gd-datetime-row {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .gd-datetime-row:focus-within {
+        border-color: var(--gd-accent);
+        box-shadow: 0 0 0 3px var(--gd-accent-alpha);
+    }
+
+    .gd-datetime-row input[type="datetime-local"] {
+        flex: 1;
+        padding: 10px 14px;
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        min-width: 0;
+        color-scheme: light; /* light mode: picker con fondo blanco */
+    }
+
+[data-theme="dark"] .gd-datetime-row input[type="datetime-local"] {
+    color-scheme: dark; /* dark mode: picker con fondo oscuro */
+}
+
+/* Ícono de calendario nativo — visible en ambos modos */
+.gd-datetime-row input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin-right: 6px;
+    /* Light mode: fuerza el ícono a negro/gris oscuro */
+    filter: brightness(0) opacity(0.5);
+}
+
+[data-theme="dark"] .gd-datetime-row input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    /* Dark mode: invierte a blanco */
+    filter: brightness(0) invert(1) opacity(0.65);
+}
+
+.gd-field-error {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--error-color);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gd-field-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ─── ESTIMATED END TIME BANNER ────────────────────────── */
+.gd-est-end-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--gd-accent-alpha);
+    border: 1px solid var(--gd-accent);
+    border-radius: 10px;
+    color: var(--gd-accent);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+    .gd-est-end-status .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── LOCATION PICKER (dentro del modal de creación) ───── */
+.gd-loc-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+    .gd-loc-picker-header .material-icons {
+        font-size: 17px;
+        color: var(--gd-accent);
+    }
+
+.gd-loc-toggle-all {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+    .gd-loc-toggle-all:hover {
+        border-color: var(--gd-accent);
+        color: var(--gd-accent);
+    }
+
+.gd-loc-picker-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+    padding-right: 4px;
+}
+
+/* Search box inside picker */
+.gd-loc-picker-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 7px 12px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+
+    .gd-loc-picker-search:focus-within {
+        border-color: var(--gd-accent);
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+    }
+
+    .gd-loc-picker-search .material-icons {
+        font-size: 17px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+
+.gd-loc-picker-search-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    width: 100%;
+}
+
+    .gd-loc-picker-search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+.gd-loc-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+    .gd-loc-check-item:hover {
+        border-color: var(--gd-accent);
+        background: var(--gd-accent-alpha);
+    }
+
+    .gd-loc-check-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--gd-accent);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+.gd-loc-check-name {
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── LOCACIONES EN OPERACIÓN ─────────────────────────────── */
+.gd-loc-subtitle {
+    margin: -8px 0 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.gd-loc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 36px 24px;
+    color: var(--text-muted);
+}
+
+    .gd-loc-empty .material-icons {
+        font-size: 40px;
+        opacity: 0.4;
+    }
+
+    .gd-loc-empty p {
+        margin: 0;
+        font-size: 13px;
+    }
+
+.gd-loc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.gd-loc-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+}
+
+    .gd-loc-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+.gd-loc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px 12px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.gd-loc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.gd-loc-card-body {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--card-bg);
+}
+
+.gd-loc-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.gd-loc-row-icon {
+    font-size: 14px !important;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.gd-loc-notes {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* Status badges */
+.gd-loc-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+    .gd-loc-status-badge .material-icons {
+        font-size: 13px;
+    }
+
+.gd-loc-pending-badge {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.gd-loc-approved-badge {
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+.gd-loc-rejected-badge {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+.gd-loc-norequest-badge {
+    background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    color: var(--text-muted);
+}
+
+/* Card left-border accent */
+.gd-loc-pending {
+    border-left: 3px solid var(--gd-accent);
+}
+
+.gd-loc-approved {
+    border-left: 3px solid var(--success-color);
+}
+
+.gd-loc-rejected {
+    border-left: 3px solid var(--error-color);
+}
+
+.gd-loc-norequest {
+    border-left: 3px solid var(--text-muted);
+}
+
+/* ─── TOAST ────────────────────────────────────────────── */
+@keyframes gd-toastSlideIn {
+    from { opacity: 0; transform: translateX(24px) translateY(-8px); }
+    to   { opacity: 1; transform: translateX(0)    translateY(0); }
+}
+
+.gd-toast {
+    position: fixed;
+    top: 90px;            /* just below the sticky dashboard-header */
+    right: 276px;         /* sidebar (260px) + 16px gap — aligns with main-content right edge */
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-xl);
+    animation: gd-toastSlideIn 0.25s ease;
+    max-width: 380px;
+}
+
+    .gd-toast.success {
+        background: var(--success-bg);
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+    }
+
+    .gd-toast.error {
+        background: var(--error-bg);
+        border: 1px solid var(--error-color);
+        color: var(--error-color);
+    }
+
+    .gd-toast.info {
+        background: var(--gd-accent-alpha);
+        border: 1px solid var(--gd-accent);
+        color: var(--gd-accent);
+    }
+
+/* ═══════════════════════════════════════════════════════════
+   NUEVOS ESTILOS — Carrusel de pasos, Cierre manual, Locaciones sin responsable
+   Agregar al final de Guard.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── BADGE: LISTA PARA CIERRE ───────────────────────────── */
+.gd-header-badge.closing {
+    background: rgba(220, 38, 38, 0.10);
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+/* ─── CAROUSEL SECTION ────────────────────────────────────── */
+.gd-carousel-section {
+    padding-bottom: 28px;
+}
+
+/* ─── TABS ────────────────────────────────────────────────── */
+.gd-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin: 20px -28px 0;
+    padding: 0 20px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+    .gd-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+.gd-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 18px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 0;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+    .gd-tab:hover {
+        color: var(--text-primary);
+        background: var(--gd-accent-alpha);
+    }
+
+    .gd-tab.gd-tab-active {
+        color: var(--gd-accent);
+        border-bottom-color: var(--gd-accent);
+    }
+
+    /* Tab 3 en fase de cierre */
+    .gd-tab.gd-tab-closing {
+        color: var(--error-color);
+    }
+
+        .gd-tab.gd-tab-closing.gd-tab-active {
+            border-bottom-color: var(--error-color);
+        }
+
+    .gd-tab .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── TAB PANELS ──────────────────────────────────────────── */
+.gd-tab-panel {
+    display: none;
+    padding-top: 24px;
+}
+
+    .gd-tab-panel.gd-tab-panel-active {
+        display: block;
+    }
+
+/* ─── LOCATION COUNT ROW (Panel 1 header) ─────────────────── */
+.gd-loc-count-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+    .gd-loc-count-row .gd-loc-subtitle {
+        margin: 0;
+    }
+
+/* ─── STEP PANELS (Panel 2 sub-estados) ─────────────────────  */
+.gd-step-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px 40px;
+    gap: 18px;
+}
+
+.gd-step-icon-wrap {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .gd-step-icon-wrap .material-icons {
+        font-size: 34px;
+    }
+
+.gd-step-icon-amber {
+    background: var(--gd-accent-alpha);
+    color: var(--gd-accent);
+}
+
+.gd-step-icon-green {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.gd-step-icon-red {
+    background: rgba(220, 38, 38, 0.10);
+    color: #dc2626;
+}
+
+.gd-step-icon-muted {
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+.gd-step-panel h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.gd-step-panel p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    max-width: 500px;
+}
+
+/* ─── PROGRESS STAT ──────────────────────────────────────── */
+.gd-progress-locs {
+    margin-top: 4px;
+}
+
+.gd-progress-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+    .gd-progress-stat .material-icons {
+        font-size: 18px;
+        color: var(--success-color);
+    }
+
+/* ─── CIERRE CHECKLIST ───────────────────────────────────── */
+.gd-closure-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    text-align: left;
+}
+
+.gd-closure-check-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    user-select: none;
+}
+
+    .gd-closure-check-item:hover {
+        border-color: var(--success-color);
+        background: var(--success-bg);
+    }
+
+    /* Cuando el checkbox está marcado */
+    .gd-closure-check-item:has(input:checked) {
+        border-color: var(--success-color);
+        background: var(--success-bg);
+        color: var(--success-color);
+    }
+
+    .gd-closure-check-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success-color);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .gd-closure-check-item strong {
+        color: inherit;
+    }
+
+.gd-closure-icon {
+    font-size: 20px !important;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.gd-closure-check-item:has(input:checked) .gd-closure-icon {
+    color: var(--success-color);
+}
+
+/* ─── BOTÓN CERRAR GUARDIA ───────────────────────────────── */
+.gd-btn-close-guard {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+    .gd-btn-close-guard:hover:not(:disabled) {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .gd-btn-close-guard:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .gd-btn-close-guard .material-icons {
+        font-size: 18px;
+    }
+
+/* ─── LOCACIONES SIN RESPONSABLE (picker en borrador) ───────  */
+.gd-loc-unattended-group {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1.5px dashed rgba(220, 38, 38, 0.45);
+}
+
+.gd-loc-unattended-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #dc2626;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+    .gd-loc-unattended-header .material-icons {
+        font-size: 15px;
+    }
+
+/* (reglas de gd-loc-check-danger movidas al bloque de gd-loc-missing-tag) */
+
+.gd-loc-missing-tag {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border-radius: 20px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+    /* Rojo — faltan Admin y Regular */
+    .gd-loc-missing-tag.gd-loc-missing-both {
+        color: #dc2626;
+        background: rgba(220, 38, 38, 0.10);
+        border-color: rgba(220, 38, 38, 0.30);
+    }
+
+    /* Naranja — falta Admin */
+    .gd-loc-missing-tag.gd-loc-missing-admin {
+        color: #c2410c;
+        background: rgba(234, 88, 12, 0.10);
+        border-color: rgba(234, 88, 12, 0.30);
+    }
+
+    /* Amarillo — falta Regular */
+    .gd-loc-missing-tag.gd-loc-missing-regular {
+        color: #92400e;
+        background: rgba(217, 119, 6, 0.12);
+        border-color: rgba(217, 119, 6, 0.30);
+    }
+
+/* ✅ Locación completa — Admin + Regular */
+.gd-loc-check-item.gd-loc-check-ok {
+    border-width: 2px;
+    border-color: #16a34a;
+    background: rgba(22, 163, 74, 0.10);
+    font-weight: 700;
+}
+
+    .gd-loc-check-item.gd-loc-check-ok .gd-loc-check-name {
+        color: #4ade80;
+    }
+
+    .gd-loc-check-item.gd-loc-check-ok input[type="checkbox"] {
+        accent-color: #16a34a;
+    }
+
+/* Item danger — base */
+.gd-loc-check-item.gd-loc-check-danger {
+    border-width: 2px;
+    font-weight: 700;
+}
+
+/* 🔴 Faltan ambos */
+.gd-loc-check-item.gd-loc-missing-both {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+}
+
+    .gd-loc-check-item.gd-loc-missing-both .gd-loc-check-name {
+        color: #ef4444;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-both input[type="checkbox"] {
+        accent-color: #dc2626;
+    }
+
+/* 🟡 Falta Admin — amarillo canario */
+.gd-loc-check-item.gd-loc-missing-admin {
+    border-color: #eab308;
+    background: rgba(234, 179, 8, 0.13);
+}
+
+    .gd-loc-check-item.gd-loc-missing-admin .gd-loc-check-name {
+        color: #fde047;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-admin input[type="checkbox"] {
+        accent-color: #eab308;
+    }
+
+/* 🔵 Falta Regular */
+.gd-loc-check-item.gd-loc-missing-regular {
+    border-color: #0891b2;
+    background: rgba(8, 145, 178, 0.12);
+}
+
+    .gd-loc-check-item.gd-loc-missing-regular .gd-loc-check-name {
+        color: #22d3ee;
+    }
+
+    .gd-loc-check-item.gd-loc-missing-regular input[type="checkbox"] {
+        accent-color: #0891b2;
+    }
+
+/* Leyenda en el header */
+.gd-loc-legend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.gd-loc-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+    .gd-loc-legend-dot.gd-loc-missing-both {
+        background: #dc2626;
+    }
+
+    .gd-loc-legend-dot.gd-loc-missing-admin {
+        background: #eab308;
+    }
+
+    .gd-loc-legend-dot.gd-loc-missing-regular {
+        background: #0891b2;
+    }
+
+.gd-loc-legend-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-right: 6px;
+}
+
+/* ─── TAB 3: FINALIZAR GUARDIA ─────────────────────────────── */
+.gd-tab.gd-tab-close {
+    color: #dc2626;
+}
+
+    .gd-tab.gd-tab-close.gd-tab-active {
+        color: #dc2626;
+        border-bottom-color: #dc2626;
+    }
+
+    .gd-tab.gd-tab-close:hover {
+        background: rgba(220, 38, 38, 0.08);
+        color: #dc2626;
+    }

@@ -1,0 +1,101 @@
+# ============================================================
+# Ignorar TODO por defecto
+# ============================================================
+*
+
+# ============================================================
+# EXCEPCIONES — Solo esto se sube
+# ============================================================
+
+# Raíz del repositorio
+!.gitignore
+!Close_Portal.sln
+!Startup.cs
+!RouteConfig.cs
+!Global.asax
+!Global.asax.cs
+
+# Proyecto principal
+!Close_Portal/
+!Close_Portal/Close_Portal.csproj
+!Close_Portal/packages.config
+
+# Hubs
+!Close_Portal/Hubs/
+Close_Portal/Hubs/*
+!Close_Portal/Hubs/*.cs
+Close_Portal/Hubs/*.designer.cs
+
+# Masters
+!Close_Portal/DashboardLayout.Master
+!Close_Portal/DashboardLayout.Master.cs
+!Close_Portal/Site.Master
+!Close_Portal/Site.Master.cs
+
+# Controls
+!Close_Portal/Controls/
+Close_Portal/Controls/*
+!Close_Portal/Controls/*.ascx
+!Close_Portal/Controls/*.ascx.cs
+Close_Portal/Controls/*.ascx.designer.cs
+
+# Controllers
+!Close_Portal/Controllers/
+Close_Portal/Controllers/*
+!Close_Portal/Controllers/*.cs
+Close_Portal/Controllers/*.designer.cs
+
+# Core
+!Close_Portal/Core/
+Close_Portal/Core/*
+!Close_Portal/Core/*.cs
+Close_Portal/Core/*.designer.cs
+
+# Data_Access
+!Close_Portal/Data_Access/
+Close_Portal/Data_Access/*
+!Close_Portal/Data_Access/*.cs
+Close_Portal/Data_Access/*.designer.cs
+
+# Models
+!Close_Portal/Models/
+Close_Portal/Models/*
+!Close_Portal/Models/*.cs
+Close_Portal/Models/*.designer.cs
+
+# Properties
+!Close_Portal/Properties/
+Close_Portal/Properties/*
+!Close_Portal/Properties/*.cs
+Close_Portal/Properties/*.designer.cs
+
+# Services
+!Close_Portal/Services/
+Close_Portal/Services/*
+!Close_Portal/Services/*.cs
+Close_Portal/Services/*.designer.cs
+
+# Scripts
+!Close_Portal/Scripts/
+Close_Portal/Scripts/*
+!Close_Portal/Scripts/*.js
+
+# Styles
+!Close_Portal/Styles/
+Close_Portal/Styles/*
+!Close_Portal/Styles/*.css
+
+# App_Data
+!Close_Portal/App_Data/
+Close_Portal/App_Data/*
+!Close_Portal/App_Data/EmailTemplates/
+Close_Portal/App_Data/EmailTemplates/*
+!Close_Portal/App_Data/EmailTemplates/*.html
+
+# Pages (con subcarpetas)
+!Close_Portal/Pages/
+!Close_Portal/Pages/*/
+Close_Portal/Pages/*/*
+!Close_Portal/Pages/*/*.aspx
+!Close_Portal/Pages/*/*.aspx.cs
+Close_Portal/Pages/*/*.aspx.designer.cs

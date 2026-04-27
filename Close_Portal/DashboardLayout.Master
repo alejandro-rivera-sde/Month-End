@@ -1,0 +1,311 @@
+﻿<%@ Master Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardLayout.master.cs" Inherits="Close_Portal.DashboardLayout" %>
+<%@ Register TagPrefix="uc" TagName="ChatWidget" Src="~/Controls/ChatWidget.ascx" %>
+
+<asp:Content ID="TitleContent" ContentPlaceHolderID="TitleContent" runat="server">
+    <asp:ContentPlaceHolder ID="PageTitle" runat="server">
+        Dashboard - Close Portal
+    </asp:ContentPlaceHolder>
+</asp:Content>
+
+<asp:Content ID="HeadContent" ContentPlaceHolderID="HeadContent" runat="server">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+    <asp:ContentPlaceHolder ID="AdditionalCSS" runat="server">
+    </asp:ContentPlaceHolder>
+
+    <link href='<%= ResolveUrl("~/Styles/ITChat.css") %>' rel="stylesheet" type="text/css" />
+</asp:Content>
+
+<asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
+    <div class="dashboard-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+
+                <div class="nav-section">
+                    <div class="nav-section-title" data-translate-key="sidebar.navigation">Navigation</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/live" runat="server">
+                                <span class="material-icons">dashboard</span>
+                                <span class="nav-text" data-translate-key="dashboard.title">Dashboard</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionAdmin" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.admin">Admin</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/users" runat="server">
+                                <span class="material-icons">manage_accounts</span>
+                                <span class="nav-text" data-translate-key="admin.user_management">Administración de Usuarios</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/locations" runat="server">
+                                <span class="material-icons">warehouse</span>
+                                <span class="nav-text" data-translate-key="admin.warehouse_management">Gestión de Bodegas</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionGuard" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.guard">Guardia</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/guard" runat="server">
+                                <span class="material-icons">security</span>
+                                <span class="nav-text" data-translate-key="guard.nav">Gestión de Guardia</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionValidation" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.validation">Validation</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/validate" runat="server">
+                                <span class="material-icons">check_circle</span>
+                                <span class="nav-text" data-translate-key="validation.request">Validar Solicitud</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionWarehouses" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.warehouses">Warehouses</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/closure" runat="server">
+                                <span class="material-icons">lock</span>
+                                <span class="nav-text" data-translate-key="warehouses.request_closure">Solicitar Cierre</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionIT" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.it">IT</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/email" runat="server">
+                                <span class="material-icons">mail</span>
+                                <span class="nav-text" data-translate-key="sidebar.email_service">Email Service</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/processes" runat="server">
+                                <span class="material-icons">settings_suggest</span>
+                                <span class="nav-text" data-translate-key="sidebar.processes">Processes</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionITSupport" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.it_support">IT Support</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/it-support" runat="server">
+                                <span class="material-icons">headset_mic</span>
+                                <span class="nav-text" data-translate-key="sidebar.support_chat">Support Chat</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section" id="sectionSupport" runat="server">
+                    <div class="nav-section-title" data-translate-key="sidebar.support">Soporte</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="~/support" runat="server">
+                                <span class="material-icons">support_agent</span>
+                                <span class="nav-text" data-translate-key="sidebar.chat_it">Chat con IT</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title" data-translate-key="sidebar.settings">Settings</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link theme-toggle" href="javascript:void(0)">
+                                <span class="material-icons">dark_mode</span>
+                                <span class="nav-text" data-translate-key="sidebar.theme_toggle">Toggle Theme</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link language-toggle" href="javascript:void(0)">
+                                <span class="material-icons">language</span>
+                                <span class="nav-text">Español</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logoutLink">
+                                <span class="material-icons">logout</span>
+                                <span class="nav-text" data-translate-key="common.logout">Logout</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+            </nav>
+        </aside>
+
+        <div class="main-content">
+            <header class="dashboard-header" id="dashboardHeader" runat="server">
+                <div class="d-flex align-items-center">
+                    <div class="header-context">
+                        <span class="header-dept-code"><asp:Literal ID="litWmsName" runat="server"></asp:Literal></span>
+                        <span class="header-page-name" id="headerPageName"></span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="position-relative">
+                        <button type="button" class="btn btn-link p-2" id="chatTriggerBtn"
+                                onclick="toggleChatWidget()" title="Soporte IT">
+                            <span class="material-icons">support_agent</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="chatWidgetBadge" style="display:none;">0</span>
+                        </button>
+                    </div>
+                    <div class="position-relative">
+                        <button type="button" class="btn btn-link p-2" id="notifBtn" onclick="toggleNotifPanel()">
+                            <span class="material-icons">notifications_active</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="notifBadge" style="display:none;">
+                                0
+                            </span>
+                        </button>
+                        <div id="notifPanel" class="notif-panel" style="display:none;">
+                            <div class="notif-panel-header">
+                                <span class="notif-panel-title" data-translate-key="notif.title">Notificaciones</span>
+                                <button type="button" class="notif-mark-read" onclick="markAllRead()" data-translate-key="notif.mark_read">
+                                    Marcar como leídas
+                                </button>
+                            </div>
+                            <div id="notifList" class="notif-list">
+                                <div class="notif-loading">
+                                    <span class="material-icons notif-spin">autorenew</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-profile-trigger" onclick="openProfileModal()" title="Editar perfil">
+                        <div class="user-avatar">
+                            <asp:Literal ID="litUserInitials" runat="server">UN</asp:Literal>
+                        </div>
+                        <div class="user-info d-none d-md-block">
+                            <div class="user-name">
+                                <asp:Literal ID="litUserName" runat="server">Usuario</asp:Literal>
+                            </div>
+                            <div class="user-role">
+                                <asp:Literal ID="litUserRole" runat="server">User</asp:Literal>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-link menu-toggle" id="menuToggle">
+                        <span class="material-icons" id="menuToggleIcon">chevron_right</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <asp:ContentPlaceHolder ID="DashboardContent" runat="server">
+                    </asp:ContentPlaceHolder>
+            </main>
+
+            <footer id="dashFooter" class="dashboard-footer text-center py-3 mt-auto">
+                <p class="text-muted mb-2" data-translate-key="footer.developed_by">
+                    Cierre de mes | alejandro.rivera@novamex.com
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="https://servicedesk.novamex.com:8080/" target="_blank" rel="noopener noreferrer" class="text-muted text-decoration-none small" data-translate-key="footer.support">Support</a>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <uc:ChatWidget ID="chatWidget1" runat="server" />
+
+    <!-- ── PROFILE MODAL ─────────────────────────────────────────────── -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <span class="material-icons align-middle me-2" style="color: var(--primary-color);">manage_accounts</span>
+                        <span data-translate-key="profile.title">Mi Perfil</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="profile-section-title" data-translate-key="profile.phones">Teléfonos</div>
+                    <div id="profilePhoneList"></div>
+                    <button type="button" class="profile-btn-add-phone" onclick="profileAddPhone()">
+                        <span class="material-icons">add</span>
+                        <span data-translate-key="profile.add_phone">Agregar teléfono</span>
+                    </button>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="common.cancel">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="profileSaveBtn" onclick="profileSavePhones()">
+                        <span data-translate-key="common.save">Guardar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="logoutModalLabel">
+                        <span class="material-icons align-middle me-2" style="color: var(--error-color);">logout</span>
+                        <span data-translate-key="modal.logout_title">Cerrar Sesión</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" data-translate-key="modal.logout_confirm">¿Estás seguro que deseas cerrar sesión?</p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate-key="common.cancel">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmLogout">
+                        <span class="material-icons align-middle me-1" style="font-size: 18px;">logout</span>
+                        <span data-translate-key="common.logout">Cerrar Sesión</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</asp:Content>
+
+<asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
+    <script src='<%= ResolveUrl("~/Scripts/jquery-3.7.1.min.js") %>'></script>
+
+    <script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
+    <script src='<%= ResolveUrl("~/signalr/hubs") %>'></script>
+
+    <script>
+        window.AppRoot                = '<%= ResolveUrl("~/") %>';
+        window.CurrentRoleId          = <%= Session["RoleId"] ?? "0" %>;
+        window.CurrentUserId          = '<%= Session["UserId"] ?? "0" %>';
+        window.DashboardPageUrl       = '<%= ResolveUrl("~/Pages/Main/Live.aspx") %>';
+        window.UserPrefsWebMethodBase = '<%= ResolveUrl("~/Pages/Main/UserPrefs.aspx/") %>';
+    </script>
+
+    <script src='<%= ResolveUrl("~/Scripts/dashboard_layout.js") %>?v=<%= Close_Portal.SiteMaster.AppVersion %>'></script>
+
+    <asp:ContentPlaceHolder ID="AdditionalScripts" runat="server">
+    </asp:ContentPlaceHolder>
+
+    <script src='<%= ResolveUrl("~/Scripts/it_chat.js") %>'></script>
+</asp:Content>

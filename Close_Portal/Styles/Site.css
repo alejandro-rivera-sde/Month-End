@@ -1,0 +1,106 @@
+﻿/* ===================================
+   Site.css - Estilos Globales
+   =================================== */
+
+/* Ocultar contenido hasta que i18n aplique traducciones (evita flash en español) */
+html.i18n-pending body {
+    visibility: hidden;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    height: 100% !important;
+    min-height: 100vh !important;
+    overflow-y: scroll; /* scrollbar siempre visible — evita el layout shift */
+    /* Scrollbar estándar moderno (Para que Firefox no se quede atrás) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--bg-secondary);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* Se eliminó -moz-osx-font-smoothing para limpiar la consola */
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    height: 100% !important;
+    min-height: 100vh !important;
+    margin: 0;
+    padding: 0;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* CRÍTICO: Form del Master Page debe ocupar 100% de altura */
+form.master-form {
+    min-height: 100vh !important;
+    height: 100% !important;
+    margin: 0;
+    padding: 0;
+    display: block;
+}
+
+/* Alternativa: forzar en todos los forms */
+body > form {
+    min-height: 100vh !important;
+    height: auto !important;
+}
+
+/* ===================================
+   Scrollbar Personalizado (Chrome, Edge, Safari)
+   =================================== */
+/* La regla @supports esconde esto de Firefox para evitar el error de "bad selector" */
+@supports selector(::-webkit-scrollbar) {
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 6px;
+    }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+}
+
+/* Links */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+    a:hover {
+        color: var(--primary-hover);
+    }
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* Selection */
+::selection {
+    background-color: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+/* Form elements reset */
+input, button, textarea, select {
+    font-family: inherit;
+}
+
+/* Prevenir scroll horizontal — manejado por dashboard-wrapper */

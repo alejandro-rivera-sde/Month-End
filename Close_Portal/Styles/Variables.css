@@ -1,0 +1,123 @@
+/* Variables.css - Sistema de Temas */
+
+:root {
+    /* LIGHT MODE */
+    --bg-primary:    #f8f9fa;
+    --bg-secondary:  #ffffff;
+    --bg-elevated:   #ffffff;
+    --card-bg:       #ffffff;
+    --input-bg:      #ffffff;
+
+    --text-primary:   #1e293b;
+    --text-secondary: #64748b;
+    --text-muted:     #94a3b8;
+    --text-inverse:   #ffffff;
+
+    --border-color:  #e2e8f0;
+    --border-light:  #f1f5f9;
+    --divider-color: rgba(0, 0, 0, 0.06);
+    --input-border:  #cbd5e1;
+    --card-border:   #e2e8f0;
+
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --input-focus:   #6366f1;
+
+    --secondary-color: #8b5cf6;
+    --accent-color:    #ec4899;
+
+    --gradient-primary:   linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --gradient-secondary: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+
+    --success-color: #10b981;
+    --success-bg:    #d1fae5;
+    --success-text:  #065f46;
+
+    --error-color: #ef4444;
+    --error-bg:    #fee2e2;
+    --error-text:  #991b1b;
+
+    --warning-color: #f59e0b;
+    --warning-bg:    #fef3c7;
+    --warning-text:  #92400e;
+
+    --info-color: #3b82f6;
+    --info-bg:    #eff6ff;
+    --info-text:  #1e40af;
+
+    --overlay-bg: rgba(0, 0, 0, 0.50);
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.10);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.10);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.10);
+
+    --transition-fast:   150ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow:   500ms ease;
+}
+
+/* ── DARK (VS Code Dark+) ─────────────────────────────────── */
+[data-theme="dark"] {
+    /* Backgrounds */
+    --bg-primary:    #1E1E1E;   /* VS editor bg — iconic */
+    --bg-secondary:  #252526;   /* VS sidebar bg */
+    --bg-elevated:   #2D2D30;   /* VS panel / hover bg */
+    --card-bg:       #252526;
+    --input-bg:      #3C3C3C;   /* VS input bg */
+
+    /* Text */
+    --text-primary:   #D4D4D4;   /* VS editor foreground — iconic */
+    --text-secondary: #CCCCCC;
+    --text-muted:     #808080;   /* VS line-numbers */
+    --text-inverse:   #1E1E1E;
+
+    /* Borders */
+    --border-color:  #3E3E42;   /* VS panel border */
+    --border-light:  #4E4E52;
+    --divider-color: rgba(255, 255, 255, 0.06);
+    --input-border:  #3E3E42;
+    --card-border:   #3E3E42;
+
+    /* Brand — VS blue (dark variant) */
+    --primary-color: #569CD6;   /* VS keyword / link blue */
+    --primary-hover: #4FC1FF;
+    --input-focus:   #007ACC;
+
+    /* Secondary / Accent */
+    --secondary-color: #C586C0;   /* VS purple keyword */
+    --accent-color:    #F44747;   /* VS error squiggle */
+
+    /* Gradients */
+    --gradient-primary:   linear-gradient(135deg, #007ACC 0%, #569CD6 100%);
+    --gradient-secondary: linear-gradient(135deg, #C586C0 0%, #569CD6 100%);
+
+    /* Status — Success */
+    --success-color: #4EC9B0;   /* VS teal / type color */
+    --success-bg:    rgba(78, 201, 176, 0.12);
+    --success-text:  #4EC9B0;
+
+    /* Status — Error */
+    --error-color: #F44747;   /* VS error squiggle */
+    --error-bg:    rgba(244, 71, 71, 0.10);
+    --error-text:  #F44747;
+
+    /* Status — Warning (new) */
+    --warning-color: #CCA700;   /* VS warning */
+    --warning-bg:    rgba(204, 167, 0, 0.12);
+    --warning-text:  #CCA700;
+
+    /* Status — Info (new) */
+    --info-color: #4FC1FF;   /* VS light blue */
+    --info-bg:    rgba(79, 193, 255, 0.12);
+    --info-text:  #4FC1FF;
+
+    /* Overlay (new) */
+    --overlay-bg: rgba(0, 0, 0, 0.65);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.40);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.50);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.60);
+}
